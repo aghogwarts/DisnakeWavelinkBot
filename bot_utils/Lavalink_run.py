@@ -15,13 +15,15 @@ def run_lavalink_process():
 
         print(f'The location of the binary is: {process.stdout}')
 
-        output = subprocess.run(bash_command, shell=True, capture_output=True, text=True) # running the command on shell.
+        output = subprocess.run(bash_command, shell=True, capture_output=True, text=True) # running the command on
+        # shell.
         # and yes this command is dangerous.
         logger.info("Lavalink has started.")
         print(output.stdout)
         logger.info("Lavalink is running.")
     else:
-        print(f'Sorry program {program} is not installed in your system.')
+        print(f'Sorry program {program} is not installed in your system. Please install it in order to run our Jar '
+              f'application.')
         print(process.stderr)
         logger.info("Lavalink is not running.")
         return
@@ -30,3 +32,4 @@ def run_lavalink_process():
 def lavalink_alive():
     target = threading.Thread(target=run_lavalink_process)
     target.start()
+
