@@ -658,7 +658,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await player.set_eq(eq)
 
     @commands.slash_command(description="Create and set your own equalizer.")
-    async def equalizer(self, ctx: disnake.ApplicationCommandInteraction,
+    async def customequalizer(self, ctx: disnake.ApplicationCommandInteraction,
                         equalizer: str = Param(description="Your equalizer name"),
                         levels: str = Param(description="Your equalizer levels in a list.")):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
@@ -725,9 +725,10 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await ctx.response.author.send_message(embed=disnake.Embed)
 
     @commands.slash_command(description="Seek to a specific time in the song.")
-    async def seek(self, ctx: disnake.ApplicationCommandInteraction, position: str = Param(description="The position to seek to")):
+    async def seek(self, ctx: disnake.ApplicationCommandInteraction, position: str = Param(description="The position "
+                                                                                                       "to seek to")):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
-        time_regex = r'^(?:(?:([01]?\d|2[0-3]):)?([0-5]?\d):)?([0-5]?\d)$'
+        time_regex = r"([0-9]{1,2})[:ms](([0-9]{1,2})s?)?"
 
         if not player.is_paused or not player.is_connected:
             return
@@ -828,8 +829,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
        {self.bot.icons['arrow']} **Lines**: `{lines}`
        {self.bot.icons['arrow']} **Functions**: `{funcs}`""", inline=True)
             em.add_field(name="Developers", value=f"""
-       {self.bot.icons['arrow']} `KortaPo#5915`, {self.bot.icons['arrow']}""",
-                         inline=True)
+       {self.bot.icons['arrow']} `KortaPo#5915`""", inline=True)
             em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_footer(text=f"Python {version[0]}.{version[1]}.{version[2]} • discord.py {disnake.__version__}")
         await ctx.edit_original_message(embed=em)
