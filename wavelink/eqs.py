@@ -127,4 +127,5 @@ class Equalizer:
                   (4, 0.25), (5, 0.25), (6, 0.0), (7, -0.25), (8, -0.25),
                   (9, 0.0), (10, 0.0), (11, 0.5), (12, 0.25), (13, -0.025)]
 
-        return cls(levels=levels, name='Piano')
+        return cls(levels=levels, name='piano')
+

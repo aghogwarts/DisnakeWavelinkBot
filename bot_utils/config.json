@@ -1,6 +1,4 @@
-{
-    "TOKEN": "Your Bot Token",
-    "ICONS": {
+{"ICONS": {
     "greentick": "✅",
         "redtick": "❌",
         "arrow": "▶",

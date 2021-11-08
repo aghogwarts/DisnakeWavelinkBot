@@ -23,6 +23,8 @@ Wavelink has been rewritten. (Imports changed from discord to disnake)
 
 You will need `python 3.8` or above to run this program.
 
+The entire music bot operates on slash commands.
+
 ## What is Lavalink and how this music bot works??
 Lavalink is a standalone audio streaming node and an API that is based on `Lavaplayer`. Unlike youtube_dl or ffmpeg which downloads tracks and plays, Lavalink loads the tracks and streams the audio
 through a websocket. 
@@ -34,17 +36,6 @@ If you want know more about Lavalink, vist this repo:
 https://github.com/freyacodes/Lavalink
 
 
-## WTF, Wavelink doesn't run on discord.py v2.0, so how it works on this....
-Magic! :)
-Wavelink does not work on discord.py v2.0, because they removed an event called `on_socket_response`, and Wavelink depends
-on it to play audio. This
-Without `on_socket_response`, Lavalink would load the tracks and the Bot would connect to a vc but you will not hear
-any audio from it.
-
-Disnake, however, added back `on_socket_response`, and Thus wavelink works. ;)
-
-~~Use disnake~~
-
 ## How to run this.
 Go to the website - https://discord.com/developers/applications.
 
@@ -52,7 +43,9 @@ Create your own bot account.
 
 Enable Privileged Intents - Member Intents /Presence Intents.
 
-Go to the ``config.json`` file and Enter your ``Discord Bot Token``.
+Enable ``applications/commands`` scope to make sure your bot can have slash commands.
+
+Go to the ``config.yaml`` file and Enter your ``Discord Bot Token``.
 
 You need to python installed on your system in order to run the program.
 

@@ -145,7 +145,9 @@ class RootCommand(Feature):
         # Show websocket latency in milliseconds
         summary.append(f"Average websocket latency: {round(self.bot.latency * 1000, 2)}ms")
 
-        await ctx.send("\n".join(summary))
+        await ctx.send(embed=disnake.Embed(description="\n".join(summary), colour=disnake.Colour.random()).set_footer(
+            text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url)
+        )
 
     # pylint: disable=no-member
     @Feature.Command(parent="jsk", name="hide")

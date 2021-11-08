@@ -1,23 +1,20 @@
-import json
-import os
+import yaml
+from loguru import logger
 from MusicBot import Bot
 from bot_utils.Lavalink_run import lavalink_alive
 import time
+from yaml import load
 
-with open("./bot_utils/config.json") as f:
-    config = json.load(f)
+with open("config.yaml") as f:
+    config = load(f, Loader=yaml.FullLoader)
 
 if __name__ == "__main__":
 
     bot = Bot()
-    for filename in os.listdir("./cogs"):
-        if filename.endswith(".py"):
-            bot.load_extension(f"cogs.{filename[:-3]}")
-            print(f'{filename} cog loaded')
-    bot.load_extension("jishaku")
-    print("All cogs have been successfully loaded")
+    bot.load_cogs('cogs')
+    logger.info("All cogs have been successfully loaded", __name="Music Bot")
     lavalink_alive()
-    time.sleep(30)
+    time.sleep(14)  # Wait for lavalink to start
 
-    bot.run(config["TOKEN"],
+    bot.run(config["token"][0],
             reconnect=True)

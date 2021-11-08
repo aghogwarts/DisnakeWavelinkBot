@@ -1,0 +1,4 @@
+.idea
+/poetry.lock
+/pyproject.toml
+/config.yaml
