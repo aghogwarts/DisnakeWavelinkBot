@@ -831,7 +831,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             em.add_field(name="Developers", value=f"""
        {self.bot.icons['arrow']} `KortaPo#5915`""", inline=True)
             em.set_thumbnail(url=self.bot.user.avatar.url)
-        em.set_footer(text=f"Python {version[0]}.{version[1]}.{version[2]} • discord.py {disnake.__version__}")
+        em.set_footer(text=f"Python {version[0]}.{version[1]}.{version[2]} • disnake {disnake.__version__}")
         await ctx.edit_original_message(embed=em)
 
 
