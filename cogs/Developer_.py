@@ -1,6 +1,7 @@
 import os
 import pkgutil
-from difflib import get_close_matches
+import sys
+import traceback
 from io import BytesIO
 import disnake
 from disnake.ext import commands
@@ -26,14 +27,31 @@ class Owner(commands.Cog, name="Developer"):
     def __init__(self, bot):
         self.bot = bot
 
-    async def cog_command_error(self, ctx: disnake.ApplicationCommandInteraction, error: Exception) -> None:
+    async def cog_slash_command_error(self, ctx: disnake.ApplicationCommandInteraction, error: Exception) -> None:
         """Handles errors raised by commands in the cog."""
+        if ctx.response.is_done():
+            safe_send = ctx.followup.send
+        else:
+            safe_send = ctx.response.send_message
+
         if isinstance(error, commands.NotOwner):
-            await ctx.response.send_message(
+            await safe_send(
                 embed=disnake.Embed(description=f"{self.bot.icons['redtick']} You are not the owner of this bot.",
                                     color=disnake.Colour.random()))
+        if isinstance(error, commands.CommandError):
+            await safe_send(embed=disnake.Embed(color=disnake.Colour.random(), description=f"{error}"))
+            return
+
+            # ignore all other exception types, but print them to stderr
         else:
-            raise error
+            error_msg = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+            await safe_send(embed=disnake.Embed(
+                description=f"**Error invoked by: {str(ctx.author)}**\nCommand: {ctx.application_command.name}\nError: "
+                            f"```py\n{error_msg}```",
+                color=disnake.Colour.random()))
+
+            print(f"Ignoring exception in command {ctx.application_command}: ", file=sys.stderr)
+            traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
     @commands.slash_command(description="Commands that handle Bot commands and Cogs")
     @commands.is_owner()
