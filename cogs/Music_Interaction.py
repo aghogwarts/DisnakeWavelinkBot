@@ -1,3 +1,5 @@
+import traceback
+
 from youtubesearchpython.__future__ import ChannelsSearch, VideosSearch
 import pathlib
 import sys
@@ -96,6 +98,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @commands.Cog.listener("on_voice_state_update")
     async def DJ_assign(self, member: disnake.Member, before: disnake.VoiceState,
                         after: disnake.VoiceState):
+        """Assign DJ role to the user who is currently playing music."""
         if member.bot:
             return
 
@@ -118,26 +121,47 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         elif after.channel == channel and player.dj not in channel.members:
             player.dj = member
 
-    async def cog_command_error(self,
-                                ctx: disnake.ApplicationCommandInteraction,
-                                error: Exception):
+    async def cog_slash_command_error(self, ctx: disnake.ApplicationCommandInteraction, error: Exception) -> None:
         """Cog wide error handler."""
+        if ctx.response.is_done():
+            safe_send = ctx.followup.send
+        else:
+            safe_send = ctx.response.send_message
         if isinstance(error, IncorrectChannelError):
             return
 
         if isinstance(error, NoChannelProvided):
-            return await ctx.edit_original_message(embed=disnake.Embed(
-                description=f"{self.bot.icons['redtick']} You must be in a voice channel or provide one to connect to.",
+            return await safe_send(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
                 colour=disnake.Colour.random()))
-        else:
-            raise error
 
-    async def cog_before_invoke(self, ctx: disnake.ApplicationCommandInteraction):
+        if isinstance(error, commands.CommandError):
+            await safe_send(embed=disnake.Embed(color=disnake.Colour.random(), description=f"{error}"))
+            return
+
+        # ignore all other exception types, but print them to stderr
+        else:
+            error_msg = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+            await safe_send(embed=disnake.Embed(
+                description=f"**Error invoked by: {str(ctx.author)}**\nCommand: {ctx.application_command.name}\nError: "
+                            f"```py\n{error_msg}```",
+                color=disnake.Colour.random()))
+
+            print(f"Ignoring exception in command {ctx.application_command}: ", file=sys.stderr)
+            traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+
+    async def cog_slash_before_invoke(self, ctx: disnake.ApplicationCommandInteraction):
+        """Cog wide before slash command invoke handler."""
+        if ctx.response.is_done():
+            safe_send = ctx.followup.send
+        else:
+            safe_send = ctx.response.send_message
+
         music_player: Player = self.bot.wavelink.get_player(ctx.guild.id, cls=Player, context=ctx)
 
         if music_player.context:
             if music_player.context.channel != ctx.channel:
-                await ctx.channel.send(
+                await ctx.response.send_message(
                     f'{ctx.author.mention}, you must be in {music_player.context.channel.mention} for this session.')
                 raise IncorrectChannelError
 
@@ -155,7 +179,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         if music_player.is_connected:
             if ctx.author not in channel.members:
-                await ctx.channel.send(embed=disnake.Embed(
+                await safe_send(embed=disnake.Embed(
                     description=f"{self.bot.icons['info']} You must be in `{channel.name}` to use voice commands."
                     , colour=disnake.Colour.random()))
                 raise IncorrectChannelError
@@ -180,7 +204,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     async def connect(self, ctx: disnake.ApplicationCommandInteraction,
                       channel: typing.Union[disnake.VoiceChannel,
-                                            disnake.StageChannel] = Param(0, description="Channel Query")):
+                                            disnake.StageChannel] = None) -> None:
+        """Connect to a voice channel."""
 
         music_player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
@@ -375,8 +400,15 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def pause(self, ctx: disnake.ApplicationCommandInteraction):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
-        if player.is_paused or not player.is_connected:
-            return
+        if not player.is_connected:
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()), delete_after=10)
+        
+        if player.is_paused:
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `The player is already paused.`",
+                colour=disnake.Colour.random()), delete_after=10)
 
         if self.is_author(ctx):
             await ctx.response.send_message(embed=disnake.Embed(
@@ -404,13 +436,20 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def resume(self, ctx: disnake.ApplicationCommandInteraction):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
-        if not player.is_paused or not player.is_connected:
-            return
+        if not player.is_connected:
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()), delete_after=10)
+
+        if not player.is_paused:
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `The player is not paused.`",
+                colour=disnake.Colour.random()), delete_after=10)
 
         if self.is_author(ctx):
             await ctx.response.send_message(embed=disnake.Embed(
                 description=f"{self.bot.icons['info']} Alright I have resumed this song.",
-                color=disnake.Colour.random()))
+                color=disnake.Colour.random()), delete_after=10)
             player.resume_votes.clear()
 
             return await player.set_pause(False)
@@ -430,7 +469,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
-            return
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()), delete_after=10)
 
         if self.is_author(ctx):
             await ctx.response.send_message(embed=disnake.Embed(
@@ -466,7 +507,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
-            return
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()), delete_after=10)
 
         if self.is_author(ctx):
             await ctx.response.send_message(embed=disnake.Embed(
@@ -487,13 +530,15 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 description=f"{self.bot.icons['info']} `{ctx.author}` has voted to skip the song.",
                 color=disnake.Colour.random()))
 
-    @commands.slash_command(description="Change the players volume, between 1 and 100.", aliases=['v', 'vol'])
+    @commands.slash_command(description="Change the players volume, between 1 and 100.")
     async def volume(self, ctx: disnake.ApplicationCommandInteraction,
                      vol: int = Param(description="The volume to set the player to.", gt=1, lt=100)):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
-            return
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()))
 
         if not self.is_author(ctx):
             return await ctx.response.send_message(embed=disnake.Embed(
@@ -511,7 +556,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
-            return
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()), delete_after=10)
 
         if not self.is_author(ctx):
             return await ctx.response.send_message(embed=disnake.Embed(
@@ -531,12 +578,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             player.loop = False
             return
 
-    @commands.slash_command(description="Shuffle the players queue.", aliases=['mix'])
+    @commands.slash_command(description="Shuffle the players queue.")
     async def shuffle(self, ctx: disnake.ApplicationCommandInteraction):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
-            return
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()), delete_after=10)
 
         if player.queue.qsize() < 3:
             return await ctx.response.send_message(embed=disnake.Embed(
@@ -571,7 +620,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
-            return
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()), delete_after=10)
 
         if player.queue.qsize() == 0:
             return await ctx.response.send_message(embed=disnake.Embed(
@@ -630,7 +681,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
-            return
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()))
 
         if not self.is_author(ctx):
             return await ctx.response.send_message(embed=disnake.Embed(
@@ -659,12 +712,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Create and set your own equalizer.")
     async def customequalizer(self, ctx: disnake.ApplicationCommandInteraction,
-                        equalizer: str = Param(description="Your equalizer name"),
-                        levels: str = Param(description="Your equalizer levels in a list.")):
+                              equalizer: str = Param(description="Your equalizer name"),
+                              levels: str = Param(description="Your equalizer levels in a list.")):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
-            return
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()), delete_after=10)
 
         if not self.is_author(ctx):
             return await ctx.response.send_message(embed=disnake.Embed(
@@ -684,7 +739,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
-            return
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()), delete_after=10)
 
         if player.queue.qsize() == 0:
             return await ctx.response.send_message(
@@ -709,7 +766,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
-            return
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()))
 
         embed = await player.make_song_embed()  # shows the song embed.
         await ctx.response.send_message(embed=embed)
@@ -719,7 +778,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
-            return
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()))
 
         await player.make_song_embed()  # shows the song embed.
         await ctx.response.author.send_message(embed=disnake.Embed)
@@ -750,7 +811,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
-            return
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()))
 
         if not self.is_author(ctx):
             return await ctx.channel.send(embed=disnake.Embed(
