@@ -7,19 +7,13 @@ from disnake.ext import commands
 from disnake.ext.commands import Param
 
 
-async def command_autocomp(inter, user_input):
+async def command_autocomp(inter: disnake.ApplicationCommandInteraction, user_input: str):
     # This func will suggest options to complete the string argument
     all_items = ["enable", "disable", "reload", "remove"]
     return [item for item in all_items if user_input.lower() in item]
 
 
-async def bot_commands_autocomp(inter: disnake.Interaction, user_input: str = "s"):
-    total_commands = [item.name for item in inter.bot.message_commands if user_input.lower() in item]
-    commands_return = get_close_matches(user_input, total_commands)
-    return commands_return
-
-
-async def cog_autocomp(inter, user_input):
+async def cog_autocomp(inter: disnake.ApplicationCommandInteraction, user_input: str):
     cog_names = []
     for pkg in pkgutil.iter_modules(['cogs']):
         cog_names.append(pkg.name)
@@ -35,8 +29,11 @@ class Owner(commands.Cog, name="Developer"):
     async def cog_command_error(self, ctx: disnake.ApplicationCommandInteraction, error: Exception) -> None:
         """Handles errors raised by commands in the cog."""
         if isinstance(error, commands.NotOwner):
-            await ctx.response.send_message(embed=disnake.Embed(description="You are not the owner of this bot.",
-                                                                color=disnake.Colour.random()))
+            await ctx.response.send_message(
+                embed=disnake.Embed(description=f"{self.bot.icons['redtick']} You are not the owner of this bot.",
+                                    color=disnake.Colour.random()))
+        else:
+            raise error
 
     @commands.slash_command(description="Commands that handle Bot commands and Cogs")
     @commands.is_owner()
@@ -95,7 +92,7 @@ class Owner(commands.Cog, name="Developer"):
 
             await ctx.response.send_message(f"Cog **{cog}** has been reloaded.", ephemeral=True)
 
-    @botconfig.sub_command(aliases=["cgi"])
+    @botconfig.sub_command(description="Shows cog information")
     async def coginfo(self, ctx: disnake.ApplicationCommandInteraction):
         loaded_cogs = []
         for cog in self.bot.extensions.keys():
@@ -118,14 +115,11 @@ class Owner(commands.Cog, name="Developer"):
                         value=f"**Total:** `{cogs}`\n**Loaded:** `{len(loaded_cogs)}`"
                               f"\n**Unloaded:** `{', '.join(unloaded) or 'None!'}`")
         enabled, disabled, _commands = 0, 0, []
-        for cmd in self.bot.commands:
-            if not cmd.enabled:
-                disabled += 1
-                _commands.append(cmd.name)
-            else:
-                enabled += 1
+        for command in self.bot.all_slash_commands:
+            cmd = self.bot.get_slash_command(command)
+            _commands.append(cmd.name)
         embed.add_field(name='Commands:',
-                        value=f"**Total:** `{len(self.bot.commands)}`\n**Enabled:** `{enabled}`\n**Disabled:** `{disabled}`",
+                        value=f"**Total commands:** `{len(self.bot.all_slash_commands)}`",
                         inline=False)
 
         await ctx.response.send_message(embed=embed, ephemeral=True)
@@ -134,6 +128,8 @@ class Owner(commands.Cog, name="Developer"):
     @commands.is_owner()
     async def cleanup(self, ctx: disnake.ApplicationCommandInteraction,
                       amount: int = Param(description="Amount of messages", default=10)):
+        await ctx.response.send_message(f"Deleting {amount} messages now...",
+                                        ephemeral=True)
         deleted = []
         messages = []
         async with ctx.channel.typing():
@@ -146,48 +142,6 @@ class Owner(commands.Cog, name="Developer"):
                         pass
                     else:
                         deleted.append(m)
-        await ctx.response.send_message(f"Successfully deleted {len(deleted)}/{len(messages)} messages",
-                                        ephemeral=True)
-
-    @botconfig.sub_command(description="Command config setup.")
-    @commands.is_owner()
-    async def command(self, ctx: disnake.ApplicationCommandInteraction,
-                      action: str = Param(autocomplete=command_autocomp),
-                      command: str = Param(autocomplete=bot_commands_autocomp)):
-        bot_commands = {cmd.name.lower(): cmd for cmd in self.bot.commands}
-        command = bot_commands.get(command.lower())
-        if not command:
-            return await ctx.response.send_message(embed=disnake.Embed(
-                description=f"`{command.name}` does not exist", color=disnake.Colour.random()), ephemeral=True)
-
-        if action.lower() == 'remove':
-            self.bot.remove_command(command.name)
-            return await ctx.response.send_message(embed=disnake.Embed(
-                description=f"Command **{command.name}** has been removed from the bot.",
-                color=disnake.Colour.random()),
-                ephemeral=True)
-
-        elif action.lower() == 'disable':
-            if not command.enabled:
-                return await ctx.response.send_message(embed=disnake.Embed(description=f"Command **{command.name}** "
-                                                                                       f"is already disabled.",
-                                                                           color=disnake.Colour.random()),
-                                                       ephemeral=True)
-            command.enabled = False
-            return await ctx.response.send_message(embed=disnake.Embed(description=f"Command **{command.name}** "
-                                                                                   f"has been disabled.",
-                                                                       color=disnake.Colour.random()), ephemeral=True)
-
-        elif action.lower() == 'enable':
-            if command.enabled:
-                return await ctx.response.send_message(embed=disnake.Embed(description=f"Command **{command.name}** "
-                                                                                       f"is already enabled.",
-                                                                           color=disnake.Colour.random()),
-                                                       ephemeral=True)
-            command.enabled = True
-            return await ctx.response.send_message(embed=disnake.Embed(description=f"Command **{command.name}** "
-                                                                                   f"has been enabled.",
-                                                                       color=disnake.Colour.random()), ephemeral=True)
 
     @commands.slash_command(name="setstatus", description="Sets the bot's status.")
     @commands.is_owner()
@@ -195,8 +149,8 @@ class Owner(commands.Cog, name="Developer"):
         pass
 
     @status.sub_command(description="Set Streaming Status.")
-    async def streaming(self, ctx: disnake.Interaction, url: str = Param(description="Stream url"), 
-                        game: str = Param(description="Game name")):
+    async def streaming(self, ctx: disnake.Interaction, url: str = Param(description="Stream url"),
+                        game: str = Param(description="Your game name here")):
         game = (game
                 .replace("{users}", str(len(self.bot.users)))
                 .replace("{guilds}", str(len(self.bot.guilds))))
@@ -206,7 +160,7 @@ class Owner(commands.Cog, name="Developer"):
                                                             colour=disnake.Colour.random()), ephemeral=True)
 
     @status.sub_command(description="Set Playing Status.")
-    async def playing(self, ctx: disnake.Interaction, game: str = Param(description="Game")):
+    async def playing(self, ctx: disnake.Interaction, game: str = Param(description="Your game name here")):
 
         game = (game
                 .replace("{users}", str(len(self.bot.users)))
@@ -216,7 +170,7 @@ class Owner(commands.Cog, name="Developer"):
                                                             colour=disnake.Colour.random()), ephmeral=True)
 
     @status.sub_command(description="Set Watching Status.")
-    async def watching(self, ctx: disnake.Interaction, game: str):
+    async def watching(self, ctx: disnake.Interaction, game: str = Param(description="Your game name here")):
 
         game = (game
                 .replace("{users}", str(len(self.bot.users)))
@@ -226,7 +180,7 @@ class Owner(commands.Cog, name="Developer"):
                                                             colour=disnake.Colour.random()), ephemeral=True)
 
     @status.sub_command(description="Set Listening Status.")
-    async def listening(self, ctx: disnake.Interaction, game: str):
+    async def listening(self, ctx: disnake.Interaction, game: str = Param(description="Your game name here")):
 
         game = (game
                 .replace("{users}", str(len(self.bot.users)))
@@ -236,7 +190,7 @@ class Owner(commands.Cog, name="Developer"):
                                                             colour=disnake.Colour.random()), ephemeral=True)
 
     @status.sub_command(description="Set Competing Status.")
-    async def competing(self, ctx: disnake.Interaction, game: str):
+    async def competing(self, ctx: disnake.Interaction, game: str = Param(description="Your game name here")):
 
         game = (game
                 .replace("{users}", str(len(self.bot.users)))
