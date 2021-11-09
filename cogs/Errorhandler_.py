@@ -13,7 +13,7 @@ class ErrorHandler(commands.Cog):
     async def on_slash_command_error(self, ctx: disnake.ApplicationCommandInteraction, error: Exception):
         """An event that triggers when an error is raised while responding to an interaction."""
         # if command has local error handler, return
-        if hasattr(ctx.application_command, 'on_slash_error'):
+        if ctx.application_command.cog.has_slash_error_handler():
             return
 
         # get the original exception
@@ -64,7 +64,7 @@ class ErrorHandler(commands.Cog):
             error_msg = "".join(traceback.format_exception(type(error), error, error.__traceback__))
             await ctx.channel.send(embed=disnake.Embed(
                 description=f"**Error invoked by: {str(ctx.author)}**\nCommand: {ctx.application_command.name}\nError: "
-                            f"py\n{error_msg}",
+                            f"```py\n{error_msg}```",
                 color=disnake.Colour.random()), delete_after=10)
 
             print(f"Ignoring exception in command {ctx.application_command}: ", file=sys.stderr)
