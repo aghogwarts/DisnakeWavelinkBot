@@ -1,6 +1,5 @@
-import traceback
-
 from youtubesearchpython.__future__ import ChannelsSearch, VideosSearch
+import traceback
 import pathlib
 import sys
 import psutil
@@ -134,10 +133,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return await safe_send(embed=disnake.Embed(
                 description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
                 colour=disnake.Colour.random()))
-
-        if isinstance(error, commands.CommandError):
-            await safe_send(embed=disnake.Embed(color=disnake.Colour.random(), description=f"{error}"))
-            return
 
         # ignore all other exception types, but print them to stderr
         else:
@@ -404,7 +399,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return await ctx.response.send_message(embed=disnake.Embed(
                 description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
                 colour=disnake.Colour.random()), delete_after=10)
-        
+
         if player.is_paused:
             return await ctx.response.send_message(embed=disnake.Embed(
                 description=f"{self.bot.icons['redtick']} `The player is already paused.`",
@@ -783,7 +778,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 colour=disnake.Colour.random()))
 
         await player.make_song_embed()  # shows the song embed.
-        await ctx.response.author.send_message(embed=disnake.Embed)
+        await ctx.author.response.send_message(embed=disnake.Embed)
 
     @commands.slash_command(description="Seek to a specific time in the song.")
     async def seek(self, ctx: disnake.ApplicationCommandInteraction, position: str = Param(description="The position "
