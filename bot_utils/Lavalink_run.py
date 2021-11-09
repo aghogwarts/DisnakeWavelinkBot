@@ -11,11 +11,12 @@ def run_lavalink_process():
     """A function that runs the Lavalink server"""
     process = subprocess.run(['which', program], capture_output=True, text=True)
     if process.returncode == 0:
-        print(f'The program "{program}" is installed')  # checking if Java is installed on the host system.
-
+        print(
+            f'The program "{program}" is installed. Lavalink can run.')  # checking if Java is installed on the host 
+        # system. 
         print(f'The location of the binary is: {process.stdout}')
 
-        output = subprocess.run(bash_command, shell=True, capture_output=True, text=True) # running the command on
+        output = subprocess.run(bash_command, shell=True, capture_output=True, text=True)  # running the command on
         # shell.
         # and yes this command is dangerous.
         logger.info("Lavalink has started.")
@@ -32,4 +33,3 @@ def run_lavalink_process():
 def lavalink_alive():
     target = threading.Thread(target=run_lavalink_process)
     target.start()
-
