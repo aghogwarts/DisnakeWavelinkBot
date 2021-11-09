@@ -7,7 +7,7 @@ from loguru import logger
 import disnake
 from aiohttp import ClientSession
 from disnake import Intents, AllowedMentions
-from disnake.ext import commands, tasks
+from disnake.ext import commands
 
 with open("./bot_utils/config.json") as f:
     data = json.load(f)
@@ -26,7 +26,6 @@ class Bot(commands.AutoShardedBot):
             allowed_mentions=AllowedMentions(everyone=False, users=False, roles=False),
             case_insensitive=True,
             sync_commands_debug=True,
-            test_guild_id=self.guild_loader,
             enable_debug_events=True,
             reload=True,  # This Kwarg Enables Cog watchdog, Hot reloading of cogs.
             *args,
@@ -89,14 +88,3 @@ class Bot(commands.AutoShardedBot):
         """An event that triggers when the bot is disconnected from the gateway."""
         self.clear()  # clearing bot cache
         await self.session.close()  # closing the ClientSession
-
-    @tasks.loop(count=1)
-    async def guild_loader(self):
-        """A task that returns all the guild's ids from the bot cache."""
-        guild_ids = []
-        await self.wait_until_ready()
-        for guild in self.guilds:
-            guild_ids.append(guild.id)
-
-        return guild_ids
-
