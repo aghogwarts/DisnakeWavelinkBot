@@ -4,7 +4,9 @@ import random
 import typing
 import async_timeout
 import disnake
+import humanize
 from disnake.ext import commands
+import datetime
 
 import wavelink
 
@@ -155,13 +157,19 @@ class Player(wavelink.Player):
 
         channel = self.bot.get_channel(int(self.channel_id))
         qsize = self.queue.qsize()
+        position = divmod(self.position, 60000)
+        length = divmod(self.now.length, 60000)
 
         embed = disnake.Embed(description=f"```css\nNow Playing:\n**{track.title}**```",
                               colour=disnake.Colour.random())
         embed.set_thumbnail(url=track.thumb)
 
-        embed.add_field(name="Duration", value=f"`{str(self.parse_duration(int(track.length)))}`")
+        embed.add_field(name="Duration", value=f"`{humanize.precisedelta(datetime.timedelta(milliseconds=int(track.length)))}`")
         embed.add_field(name="Volume", value=f"**`{self.volume}%`**")
+        embed.add_field(
+            name="Position",
+            value=f"`{int(position[0])}:{round(position[1] / 1000):02}/{int(length[0])}:{round(length[1] / 1000):02}`",
+            inline=False)
         embed.add_field(name="Channel", value=f"**`{channel}`**")
         embed.add_field(name="DJ", value=self.dj.mention)
         embed.add_field(name="Video URL", value=f'[Click Here!]({track.uri})')
@@ -173,7 +181,7 @@ class Player(wavelink.Player):
     async def is_menu_avaliable(self) -> bool:
         """Method which checks whether the player controller should be remade or updated."""
         try:
-            async for message in self.context.channel.history(limit=5):
+            async for message in self.context.channel.history(limit=10):
                 if message.id == self.music_player_message.message.id:
                     return True
         except (disnake.HTTPException, AttributeError):
