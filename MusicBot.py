@@ -2,7 +2,9 @@ import json
 import pkgutil
 import traceback
 import zlib
-from typing import Optional
+from typing import Optional, Any
+
+import loguru
 from loguru import logger
 import disnake
 from aiohttp import ClientSession
@@ -21,11 +23,13 @@ class Bot(commands.AutoShardedBot):
         intents.dm_messages = False  # Disabling this Intent will make the Bot not receive DM message events
 
         super().__init__(
-            command_prefix="?",
+            command_prefix=commands.when_mentioned_or("?"),
             intents=intents,
             allowed_mentions=AllowedMentions(everyone=False, users=False, roles=False),
             case_insensitive=True,
             sync_commands_debug=True,
+            help_command=None,  # type: ignore
+            sync_permissions=True,
             enable_debug_events=True,
             reload=True,  # This Kwarg Enables Cog watchdog, Hot reloading of cogs.
             *args,
@@ -35,6 +39,8 @@ class Bot(commands.AutoShardedBot):
         self.session: Optional[ClientSession] = None
         self.config = data
         self.icons = data["ICONS"]
+        self.logger = logger
+        self.start_time = disnake.utils.utcnow()
 
     def load_cogs(self, exts) -> None:
         """Load a set of extensions."""
@@ -44,10 +50,11 @@ class Bot(commands.AutoShardedBot):
             module = f"cogs.{m.name}"
             try:
                 self.load_extension(module)
-                logger.info(f"Loaded extension '{m.name}'", __name="Music Bot")
+                self.logger.info(f"Loaded extension '{m.name}'", __name="Music Bot")
             except Exception as e:
                 traceback.format_exc(e)
         self.load_extension("jishaku")
+        self.logger.info(f"Loaded extension 'jishaku'", __name="Music Bot")
 
     async def login(self, *args, **kwargs) -> None:
         """Create the ClientSession before logging in."""
@@ -87,4 +94,6 @@ class Bot(commands.AutoShardedBot):
     async def on_disconnect(self):
         """An event that triggers when the bot is disconnected from the gateway."""
         self.clear()  # clearing bot cache
+        self.logger.info(f"Bot disconnected from gateway.", __name="Music Bot")
         await self.session.close()  # closing the ClientSession
+        self.logger.info(f"ClientSession closed.", __name="Music Bot")
