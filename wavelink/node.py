@@ -124,7 +124,8 @@ class Node:
 
         return self.stats.penalty.total
 
-    async def connect(self, bot: Union[commands.Bot, commands.AutoShardedBot]) -> None:
+    async def connect(self, bot: Union[commands.Bot, commands.AutoShardedBot, commands.InteractionBot,
+                                       commands.AutoShardedInteractionBot]) -> None:
         self._websocket = WebSocket(node=self,
                                     host=self.host,
                                     port=self.port,
