@@ -185,7 +185,7 @@ class Owner(commands.Cog, name="Developer"):
                 .replace("{guilds}", str(len(self.bot.guilds))))
         await self.bot.change_presence(activity=disnake.Game(name=game))
         await ctx.response.send_message(embed=disnake.Embed(description=f"Playing status set to **{game}**",
-                                                            colour=disnake.Colour.random()), ephmeral=True)
+                                                            colour=disnake.Colour.random()), ephemeral=True)
 
     @status.sub_command(description="Set Watching Status.")
     async def watching(self, ctx: disnake.Interaction, game: str = Param(description="Your game name here")):
