@@ -142,7 +142,7 @@ class Owner(commands.Cog, name="Developer"):
 
         await ctx.response.send_message(embed=embed, ephemeral=True)
 
-    @commands.slash_command(aliases=["clean"], description="Purges bot messages.")
+    @commands.slash_command(description="Purge bot messages.")
     @commands.is_owner()
     async def cleanup(self, ctx: disnake.ApplicationCommandInteraction,
                       amount: int = Param(description="Amount of messages", default=10)):
@@ -161,13 +161,13 @@ class Owner(commands.Cog, name="Developer"):
                     else:
                         deleted.append(m)
 
-    @commands.slash_command(name="setstatus", description="Sets the bot's status.")
+    @commands.slash_command(name="setstatus", description="Sets the bot status.")
     @commands.is_owner()
-    async def status(self, ctx: disnake.Interaction):
+    async def status(self, ctx: disnake.ApplicationCommandInteraction):
         pass
 
     @status.sub_command(description="Set Streaming Status.")
-    async def streaming(self, ctx: disnake.Interaction, url: str = Param(description="Stream url"),
+    async def streaming(self, ctx: disnake.ApplicationCommandInteraction, url: str = Param(description="Stream url"),
                         game: str = Param(description="Your game name here")):
         game = (game
                 .replace("{users}", str(len(self.bot.users)))
