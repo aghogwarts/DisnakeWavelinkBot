@@ -1,4 +1,5 @@
 from youtubesearchpython.__future__ import ChannelsSearch, VideosSearch
+import difflib
 import traceback
 import pathlib
 import sys
@@ -86,7 +87,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @wavelink.WavelinkMixin.listener()
     async def on_node_ready(self, node: wavelink.Node):
-        logger.info(f'Node {node.identifier} is running!', __name="Music Bot")
+        self.bot.logger.info(f'Node {node.identifier} is running!', __name="Music Bot")
 
     @wavelink.WavelinkMixin.listener('on_track_stuck')
     @wavelink.WavelinkMixin.listener('on_track_end')
@@ -290,73 +291,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
         await pag.start()
 
-    @commands.slash_command(description="Shows you spotify song information of an user's spotify rich presence")
-    async def spotify(self, ctx: disnake.ApplicationCommandInteraction,
-                      user: disnake.Member = Param(description="Member Query")):
-        activities = user.activities
-        try:
-            act = [
-                activity for activity in activities if isinstance(
-                    activity, disnake.Spotify)][0]
-        except IndexError:
-            return await ctx.channel.send('No spotify was detected')
-        start = humanize.naturaltime(disnake.utils.utcnow() - act.created_at)
-        print(start)
-        name = act.title
-        art = " ".join(act.artists)
-        album = act.album
-        duration = round(((act.end - act.start).total_seconds() / 60), 2)
-        min_sec = time.strftime("%M:%S", time.gmtime((act.end - act.start).total_seconds()))
-        current = round(
-            ((disnake.utils.utcnow() - act.start).total_seconds() / 60), 2)
-        min_sec_current = time.strftime("%M:%S", time.gmtime(
-            (disnake.utils.utcnow() - act.start).total_seconds()))
-        embed = disnake.Embed(color=ctx.guild.me.color)
-        embed.set_author(
-            name=user.display_name,
-            icon_url='https://netsbar.com/wp-content/uploads/2018/10/Spotify_Icon.png')
-        embed.description = f"Listening To  [**{name}**] (https://open.spotify.com/track/{act.track_id})"
-        embed.add_field(name="Artist", value=art, inline=True)
-        embed.add_field(name="Album", value=album, inline=True)
-        embed.set_thumbnail(url=act.album_cover_url)
-        embed.add_field(name="Started Listening", value=start, inline=True)
-        percent = int((current / duration) * 25)
-        perbar = f"`{min_sec_current}`| {(percent - 1) * '─'}⚪️{(25 - percent) * '─'} | `{min_sec}`"
-        embed.add_field(name="Progress", value=perbar)
-        await ctx.channel.send(embed=embed)
-
-    @commands.slash_command(description="Shows bot latency.")
-    async def ping(self, ctx: disnake.ApplicationCommandInteraction):
-        await ctx.response.send_message("Gathering Information...")
-        times = []
-        counter = 0
-        embed = disnake.Embed(colour=disnake.Colour.random())
-        for _ in range(3):
-            counter += 1
-            start = time.perf_counter()
-            await ctx.edit_original_message(content=f"Trying Ping{('.' * counter)} {counter}/3")
-            end = time.perf_counter()
-            speed = round((end - start) * 1000)
-            times.append(speed)
-            if speed < 160:
-                embed.add_field(name=f"Ping {counter}:", value=f"🟢 | {speed}ms", inline=True)
-            elif speed > 170:
-                embed.add_field(name=f"Ping {counter}:", value=f"🟡 | {speed}ms", inline=True)
-            else:
-                embed.add_field(name=f"Ping {counter}:", value=f"🔴 | {speed}ms", inline=True)
-
-        embed.add_field(name="Bot Latency", value=f"{round(self.bot.latency * 1000)}ms")
-        embed.add_field(name="Normal Speed",
-                        value=f"{round((round(sum(times)) + round(self.bot.latency * 1000)) / 4)}ms")
-
-        embed.set_footer(text=f"Total estimated elapsed time: {round(sum(times))}ms")
-        embed.set_author(name=ctx.me.display_name, icon_url=ctx.me.avatar.url)
-
-        await ctx.edit_original_message(
-            content=f":ping_pong: **{round((round(sum(times)) + round(self.bot.latency * 1000)) / 4)}ms**",
-            embed=embed)
-
-    @commands.slash_command(description="Play or queue a song with the given query")
+    @commands.slash_command(description="Play or queue a song with the given query.")
     async def play(self, ctx: disnake.ApplicationCommandInteraction, query: str = Param(description="Song search")):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
         await ctx.response.defer()
@@ -390,6 +325,20 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         if not player.is_playing:
             await player.play_next_song()
+
+    @commands.slash_command(description="Switch the channel where the bot was first invoked.")
+    async def switch_channel(self, ctx: disnake.ApplicationCommandInteraction,
+                             channel: disnake.TextChannel = Param(description="Your channel")):
+        player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
+        if not player.is_connected:
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()), delete_after=10)
+        if self.is_author(ctx):
+            await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['info']} Alright I have switched to channel {channel}",
+                color=disnake.Colour.random()), delete_after=10)
+            player.channel_id = channel.id
 
     @commands.slash_command(description="Pause the currently playing song.")
     async def pause(self, ctx: disnake.ApplicationCommandInteraction):
@@ -470,7 +419,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         if self.is_author(ctx):
             await ctx.response.send_message(embed=disnake.Embed(
-                description=f"{self.bot.icons['info']} `{ctx.author}` has paused the player.",
+                description=f"{self.bot.icons['info']} `{ctx.author}` has skipped the song.",
                 color=disnake.Colour.random()), delete_after=10)
             player.skip_votes.clear()
 
@@ -522,7 +471,35 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await player.teardown()
         else:
             await ctx.response.send_message(embed=disnake.Embed(
-                description=f"{self.bot.icons['info']} `{ctx.author}` has voted to skip the song.",
+                description=f"{self.bot.icons['info']} `{ctx.author}` has voted to stop the song.",
+                color=disnake.Colour.random()))
+
+    @commands.slash_command(description="Disconnect the bot and stop the music player.")
+    async def disconnect(self, ctx: disnake.ApplicationCommandInteraction):
+        player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
+
+        if not player.is_connected:
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()), delete_after=10)
+
+        if self.is_author(ctx):
+            await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['info']} `{ctx.author}` has disconnected the player.",
+                color=disnake.Colour.random()), delete_after=10)
+            return await player.teardown()
+
+        required = self.vote_check(ctx)
+        player.stop_votes.add(ctx.author)
+
+        if len(player.stop_votes) >= required:
+            await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['info']} Vote passed, disconnecting the player.",
+                color=disnake.Colour.random()))
+            await player.teardown()
+        else:
+            await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['info']} `{ctx.author}` has voted to disconnect the player.",
                 color=disnake.Colour.random()))
 
     @commands.slash_command(description="Change the players volume, between 1 and 100.")
@@ -544,7 +521,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return await ctx.response.send(f"{self.bot.icons['info']} Please enter a value between 1 and 100.")
 
         await player.set_volume(vol)
-        await ctx.response.send_message(f'Set the volume to **{vol}**%')
+        await ctx.response.send_message(embed=disnake.Embed(description=f"{self.bot.icons['redtick']} Set the volume "
+                                                                        f"to **{vol}**%",
+                                                            colour=disnake.Colour.random()))
 
     @commands.slash_command(description="Loops the current playing track.")
     async def loop(self, ctx: disnake.ApplicationCommandInteraction):
@@ -647,32 +626,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 description=f"{self.bot.icons['info']} `{ctx.author}` has voted to clear the queue.",
                 color=disnake.Colour.random()))
 
-    @commands.slash_command(description="Retrieve various Node/Server/Player information.")
-    async def wavelink_information(self, ctx: disnake.ApplicationCommandInteraction):
-        player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
-        node = player.node
-
-        used = humanize.naturalsize(node.stats.memory_used)
-        total = humanize.naturalsize(node.stats.memory_allocated)
-        free = humanize.naturalsize(node.stats.memory_free)
-        cpu = node.stats.cpu_cores
-
-        fmt = f'**WaveLink:** `{wavelink.__version__}`\n\n' \
-              f'Connected to `{len(self.bot.wavelink.nodes)}` nodes.\n' \
-              f'Best available Node `{self.bot.wavelink.get_best_node().__repr__()}`\n' \
-              f'`{len(self.bot.wavelink.players)}` players are distributed on nodes.\n' \
-              f'`{node.stats.players}` players are distributed on server.\n' \
-              f'`{node.stats.playing_players}` players are playing on server.\n\n' \
-              f'Server Memory: `{used}/{total}` | `({free} free)`\n' \
-              f'Server CPU: `{cpu}`\n\n' \
-              f'Server Uptime: `{datetime.timedelta(milliseconds=node.stats.uptime)}`'
-        await ctx.response.send_message(embed=disnake.Embed(
-            description=fmt, color=disnake.Colour.random()).set_footer(text=f"Requested by {ctx.author}",
-                                                                       icon_url=ctx.author.avatar.url))
-
-    @commands.slash_command(description="Change the players equalizer.")
+    @commands.slash_command(description="Change the player's equalizer.")
     async def equalizer(self, ctx: disnake.ApplicationCommandInteraction,
-                        equalizer: str = Param(description="Your equalizer")):
+                        equalizer: str = Param(description="Your equalizer.")):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
@@ -705,10 +661,21 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                                                       colour=disnake.Colour.random()))
         await player.set_eq(eq)
 
-    @commands.slash_command(description="Create and set your own equalizer.")
+    @equalizer.autocomplete(option_name="equalizer")
+    async def equalizer_autocomplete(self, ctx: disnake.ApplicationCommandInteraction, user_input: str):
+        """Autocomplete for equalizers."""
+        eqs = ['flat', 'boost', 'metal', 'piano']
+        eq = difflib.get_close_matches(user_input, eqs)
+        return eq
+
+    @commands.slash_command()
     async def customequalizer(self, ctx: disnake.ApplicationCommandInteraction,
                               equalizer: str = Param(description="Your equalizer name"),
                               levels: str = Param(description="Your equalizer levels in a list.")):
+        """A command that you can use to create and set a custom equalizer.
+        Example: /customequalizer :param: equalizer my_eq :param: levels [(0, -0.25), (1, -0.25), (2, -0.125), (3, 0.0),
+                  (4, 0.25), (5, 0.25), (6, 0.0), (7, -0.25), (8, -0.25),
+                  (9, 0.0), (10, 0.0), (11, 0.5), (12, 0.25), (13, -0.025)]"""
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if not player.is_connected:
@@ -765,6 +732,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
                 colour=disnake.Colour.random()))
 
+        if not player.is_playing:
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `There is no song playing right now.`",
+                colour=disnake.Colour.random()))
+
         embed = await player.make_song_embed()  # shows the song embed.
         await ctx.response.send_message(embed=embed)
 
@@ -777,20 +749,34 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
                 colour=disnake.Colour.random()))
 
-        await player.make_song_embed()  # shows the song embed.
-        await ctx.author.response.send_message(embed=disnake.Embed)
+        if not player.is_playing:
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `There is no song playing right now.`",
+                colour=disnake.Colour.random()))
+
+        embed = await player.make_song_embed()  # shows the song embed.
+        await ctx.response.send_message(content="Check your dms.", ephemeral=True)
+        await ctx.author.send(embed=embed)
 
     @commands.slash_command(description="Seek to a specific time in the song.")
-    async def seek(self, ctx: disnake.ApplicationCommandInteraction, position: str = Param(description="The position "
-                                                                                                       "to seek to")):
+    async def seek(self, ctx: disnake.ApplicationCommandInteraction,
+                   position: str = Param(description="The time position to seek to. For eg: /seek 3:56")):
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
         time_regex = r"([0-9]{1,2})[:ms](([0-9]{1,2})s?)?"
 
-        if not player.is_paused or not player.is_connected:
-            return
+        if not player.is_connected:
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()))
+
+        if not player.is_playing:
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `There is no song playing right now.`",
+                colour=disnake.Colour.random()))
 
         if not (match := re.match(time_regex, position)):
-            raise commands.BadArgument(f"{position} is not a valid time.")
+            await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['greentick']} `{position} is not a valid time format.`"))
         if match.group(3):
             secs = (int(match.group(1)) * 60) + (int(match.group(3)))
         else:
@@ -798,7 +784,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         await player.seek(secs * 1000)
         await ctx.response.send_message(embed=disnake.Embed(
-            description=f"{self.bot.icons['greentick']} Successfully seeked."))
+            description=f"{self.bot.icons['greentick']} Successfully seeked.",
+            colour=disnake.Colour.random()))
 
     @commands.slash_command(description="Swap the current DJ to another member in the voice channel.", aliases=['swap'])
     async def swap_dj(self, ctx: disnake.ApplicationCommandInteraction,
@@ -844,53 +831,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 player.dj = m
                 return await ctx.channel.send(embed=disnake.Embed(
                     description=f"{self.bot.icons['info']} `{member}` is now a DJ.", colour=0x00ff00))
-
-    @commands.slash_command(description="Shows information about the bot.")
-    async def info(self, ctx: disnake.ApplicationCommandInteraction):
-        await ctx.response.defer()
-        async with ctx.channel.typing():
-            process = psutil.Process()
-            version = sys.version_info
-            em = disnake.Embed(color=disnake.Colour.random())
-
-            # File Stats
-            def line_count():
-                files = classes = funcs = comments = lines = letters = 0
-                p = pathlib.Path('./')
-                for f in p.rglob("*.py"):
-                    files += 1
-                    with f.open() as of:
-                        letters = sum(len(f.open().read()) for f in p.rglob("*.py"))
-                        for line in of.readlines():
-                            line = line.strip()
-                            if line.startswith("class"):
-                                classes += 1
-                            if line.startswith("def"):
-                                funcs += 1
-                            if line.startswith("async def"):
-                                funcs += 1
-                            if "#" in line:
-                                comments += 1
-                            lines += 1
-                return files, classes, funcs, comments, lines, letters
-
-            files, classes, funcs, comments, lines, letters = await self.bot.loop.run_in_executor(None, line_count)
-            #
-            em.add_field(name="Bot", value=f"""
-       {self.bot.icons['arrow']} **Guilds**: `{len(self.bot.guilds)}`
-       {self.bot.icons['arrow']} **Users**: `{len(self.bot.users)}`
-       {self.bot.icons['arrow']} **Commands**: `{len([cmd for cmd in list(self.bot.walk_commands()) if not cmd.hidden])}`""",
-                         inline=True)
-            em.add_field(name="File Statistics", value=f"""
-       {self.bot.icons['arrow']} **Letters**: `{letters}`
-       {self.bot.icons['arrow']} **Files**: `{files}`
-       {self.bot.icons['arrow']} **Lines**: `{lines}`
-       {self.bot.icons['arrow']} **Functions**: `{funcs}`""", inline=True)
-            em.add_field(name="Developers", value=f"""
-       {self.bot.icons['arrow']} `KortaPo#5915`""", inline=True)
-            em.set_thumbnail(url=self.bot.user.avatar.url)
-        em.set_footer(text=f"Python {version[0]}.{version[1]}.{version[2]} • disnake {disnake.__version__}")
-        await ctx.edit_original_message(embed=em)
 
 
 def setup(bot):
