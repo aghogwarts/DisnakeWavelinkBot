@@ -1,484 +1,176 @@
-"""MIT License
+# -*- coding: utf-8 -*-
 
-Copyright (c) 2019-2020 PythonistaGuild
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 """
-import logging
-import time
-import re
-from disnake.ext import commands
-from disnake.gateway import DiscordWebSocket
-from typing import Optional, Union
+jishaku.features.guild
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-from .errors import *
-from .eqs import *
-from .events import *
+The jishaku guild-related commands.
+
+:copyright: (c) 2021 Devon (Gorialis) R
+:license: MIT, see LICENSE for more details.
+
+"""
+
+import typing
+
+import discord
+from discord.ext import commands
+
+from jishaku.features.baseclass import Feature
 
 
-__all__ = ('Track', 'TrackPlaylist', 'Player')
-__log__ = logging.getLogger(__name__)
-
-
-class Track:
-    """Wavelink Track object.
-
-    Attributes
-    ------------
-    id: str
-        The Base64 Track ID.
-    info: dict
-        The raw track info.
-    title: str
-        The track title.
-    identifier: Optional[str]
-        The tracks identifier. could be None depending on track type.
-    ytid: Optional[str]
-        The tracks YouTube ID. Could be None if ytsearch was not used.
-    length: int
-        The duration of the track in milliseconds.
-    duration:
-        Alias to length.
-    uri: Optional[str]
-        The tracks URI. Could be None.
-    author: Optional[str]
-        The author of the track. Could be None
-    is_stream: bool
-        Indicated whether the track is a stream or not.
-    thumb: Optional[str]
-        The thumbnail URL associated with the track. Could be None.
+class GuildFeature(Feature):
+    """
+    Feature containing the guild-related commands
     """
 
-    __slots__ = ('id',
-                 'info',
-                 'query',
-                 'title',
-                 'identifier',
-                 'ytid',
-                 'length',
-                 'duration',
-                 'uri',
-                 'author',
-                 'is_stream',
-                 'dead',
-                 'thumb')
+    @staticmethod
+    def apply_overwrites(permissions: dict, allow: int, deny: int, name: str):
+        """
+        Applies overwrites to the permissions dictionary (see permtrace),
+        based on an allow and deny mask.
+        """
 
-    def __init__(self, id_, info: dict, query: str = None):
-        self.id = id_
-        self.info = info
-        self.query = query
+        allow: discord.Permissions = discord.Permissions(allow)
+        deny: discord.Permissions = discord.Permissions(deny)
 
-        self.title = info.get('title')
-        self.identifier = info.get('identifier', '')
-        self.ytid = self.identifier if re.match(r"^[a-zA-Z0-9_-]{11}$", self.identifier) else None
-        self.length = info.get('length')
-        self.duration = self.length
-        self.uri = info.get('uri')
-        self.author = info.get('author')
+        # Denies first..
+        for key, value in dict(deny).items():
+            # Check that this is denied and it is not already denied
+            # (we want to show the lowest-level reason for the denial)
+            if value and permissions[key][0]:
+                permissions[key] = (False, f"it is the channel's {name} overwrite")
 
-        self.is_stream = info.get('isStream')
-        self.dead = False
+        # Then allows
+        for key, value in dict(allow).items():
+            # Check that this is allowed and it is not already allowed
+            # (we want to show the lowest-level reason for the allowance)
+            if value and not permissions[key][0]:
+                permissions[key] = (True, f"it is the channel's {name} overwrite")
 
-        if self.ytid:
-            self.thumb = f"https://img.youtube.com/vi/{self.ytid}/hqdefault.jpg"
+    @staticmethod
+    def chunks(array: list, chunk_size: int):
+        """
+        Chunks a list into chunks of a given size.
+        Should probably be in utils, honestly.
+        """
+        for i in range(0, len(array), chunk_size):
+            yield array[i:i + chunk_size]
+
+    @Feature.Command(parent="jsk", name="permtrace")
+    async def jsk_permtrace(
+        self, ctx: commands.Context,
+        channel: typing.Union[discord.TextChannel, discord.VoiceChannel],
+        *targets: typing.Union[discord.Member, discord.Role]
+    ):  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
+        """
+        Calculates the source of granted or rejected permissions.
+
+        This accepts a channel, and either a member or a list of roles.
+        It calculates permissions the same way Discord does, while keeping track of the source.
+        """
+
+        member_ids = {target.id: target for target in targets if isinstance(target, discord.Member)}
+        roles = []
+
+        for target in targets:
+            if isinstance(target, discord.Member):
+                roles.extend(list(target.roles))
+            else:
+                roles.append(target)
+
+        # Remove duplicates
+        roles = list(set(roles))
+
+        # Dictionary to store the current permission state and reason
+        # Stores <perm name>: (<perm allowed>, <reason>)
+        permissions: typing.Dict[str, typing.Tuple[bool, str]] = {}
+
+        if member_ids and channel.guild.owner_id in member_ids:
+            # Is owner, has all perms
+            for key in dict(discord.Permissions.all()).keys():
+                permissions[key] = (True, f"<@{channel.guild.owner_id}> owns the server")
         else:
-            self.thumb = None
-
-    def __str__(self):
-        return self.title
-
-    @property
-    def is_dead(self):
-        return self.dead
-
-
-class TrackPlaylist:
-    """Track Playlist object.
-
-    Attributes
-    ------------
-    data: dict
-        The raw playlist info dict.
-    tracks: list
-        A list of individual :class:`Track` objects from the playlist.
-    """
-
-    def __init__(self, data: dict):
-        self.data = data
-        self.tracks = [Track(id_=track['track'], info=track['info']) for track in data['tracks']]
-
-
-class Player:
-    """Wavelink Player class.
-
-    Attributes
-    ------------
-    bot: Union[disnake.ext.commands.Bot, disnake.ext.commands.AutoShardedBot]
-        The disnake Bot instance.
-    guild_id: int
-        The guild ID the player is connected to.
-    node: :class:`wavelink.node.Node`
-        The node the player belongs to.
-    volume: int
-        The players volume.
-    position: int
-        The players seek position in the currently playing track in milliseconds. Returns 0 when there is no current track.
-    channel_id: int
-        The channel the player is connected to. Could be None if the player is not connected.
-    """
-
-    def __init__(self, bot: Union[commands.Bot, commands.AutoShardedBot,
-                                  commands.AutoShardedInteractionBot, commands.Bot], guild_id: int, node, **kwargs):
-        self.bot = bot
-        self.guild_id = guild_id
-        self.node = node
-
-        self.last_update = None
-        self.last_position = None
-        self.position_timestamp = None
-
-        self._voice_state = {}
-
-        self.volume = 100
-        self.paused = False
-        self.current = None
-        self._equalizer = Equalizer.flat()
-        self.channel_id = None
-
-        self._new_track = False
-
-    @property
-    def equalizer(self):
-        """The currently applied Equalizer."""
-        return self._equalizer
-
-    @property
-    def eq(self):
-        """Alias to :func:`equalizer`."""
-        return self.equalizer
-
-    @property
-    def is_connected(self) -> bool:
-        """Returns whether the player is connected to a voicechannel or not."""
-        return self.channel_id is not None
-
-    @property
-    def is_playing(self) -> bool:
-        """Returns whether or not the player is currently playing."""
-        return self.is_connected and self.current is not None
-
-    @property
-    def is_paused(self) -> bool:
-        """Returns whether or not the player is paused."""
-        return self.paused
-
-    @property
-    def position(self):
-        if not self.is_playing:
-            return 0
-
-        if not self.current:
-            return 0
-
-        if self.paused:
-            return min(self.last_position, self.current.duration)
-
-        difference = (time.time() * 1000) - self.last_update
-        position = self.last_position + difference
-
-        if position > self.current.duration:
-            return 0
-
-        return min(position, self.current.duration)
-
-    async def update_state(self, state: dict) -> None:
-        state = state['state']
-
-        self.last_update = time.time() * 1000
-        self.last_position = state.get('position', 0)
-        self.position_timestamp = state.get('time', 0)
-
-    async def _voice_server_update(self, data) -> None:
-        self._voice_state.update({
-            'event': data
-        })
-
-        await self._dispatch_voice_update()
-
-    async def _voice_state_update(self, data) -> None:
-        self._voice_state.update({
-            'sessionId': data['session_id']
-        })
-
-        channel_id = data['channel_id']
-
-        if not channel_id:  # We're disconnecting
-            self.channel_id = None
-            self._voice_state.clear()
-            return
-
-        self.channel_id = int(channel_id)
-        await self._dispatch_voice_update()
-
-    async def _dispatch_voice_update(self) -> None:
-        __log__.debug(f'PLAYER | Dispatching voice update:: {self.channel_id}')
-        if {'sessionId', 'event'} == self._voice_state.keys():
-            await self.node._send(op='voiceUpdate', guildId=str(self.guild_id), **self._voice_state)
-
-    async def hook(self, event) -> None:
-        if isinstance(event, TrackEnd) and not self._new_track:
-            self.current = None
-        self._new_track = False
-
-    def _get_shard_socket(self, shard_id: int) -> Optional[DiscordWebSocket]:
-        if isinstance(self.bot, commands.AutoShardedBot):
-            try:
-                return self.bot.shards[shard_id].ws
-            except AttributeError:
-                return self.bot.shards[shard_id]._parent.ws
-
-        if self.bot.shard_id is None or self.bot.shard_id == shard_id:
-            return self.bot.ws
-
-    async def connect(self, channel_id: int, self_deaf: bool = False):
-        """|coro|
-
-        Connect to a disnake Voice Channel.
-
-        Parameters
-        ------------
-        channel_id: int
-            The channel ID to connect to.
-        self_deaf: bool
-            Whether to self deafen or not.
-        """
-        guild = self.bot.get_guild(self.guild_id)
-        if not guild:
-            raise InvalidIDProvided(f'No guild found for id <{self.guild_id}>')
-
-        self.channel_id = channel_id
-        await self._get_shard_socket(guild.shard_id).voice_state(self.guild_id, str(channel_id), self_deaf=self_deaf)
-        __log__.info(f'PLAYER | Connected to voice channel:: {self.channel_id}')
-
-    async def disconnect(self, *, force: bool = False) -> None:
-        """|coro|
-
-        Disconnect from a disnake Voice Channel.
-        """
-        guild = self.bot.get_guild(self.guild_id)
-        if not guild and force is True:
-            self.channel_id = None
-            return
-
-        if not guild:
-            raise InvalidIDProvided(f'No guild found for id <{self.guild_id}>')
-
-        __log__.info(f'PLAYER | Disconnected from voice channel:: {self.channel_id}')
-        self.channel_id = None
-        await self._get_shard_socket(guild.shard_id).voice_state(self.guild_id, None)
-
-    async def play(self, track: Track, *, replace: bool = True, start: int = 0, end: int = 0) -> None:
-        """|coro|
-
-        Play a WaveLink Track.
-
-        Parameters
-        ------------
-        track: :class:`Track`
-            The :class:`Track` to initiate playing.
-        replace: bool
-            Whether or not the current track, if there is one, should be replaced or not. Defaults to True.
-        start: int
-            The position to start the player from in milliseconds. Defaults to 0.
-        end: int
-            The position to end the track on in milliseconds. By default this always allows the current
-            song to finish playing.
-        """
-        if replace or not self.is_playing:
-            self.last_update = 0
-            self.last_position = 0
-            self.position_timestamp = 0
-            self.paused = False
-        else:
-            return
-
-        no_replace = not replace
-
-        if self.current:
-            self._new_track = True
-
-        self.current = track
-
-        payload = {'op': 'play',
-                   'guildId': str(self.guild_id),
-                   'track': track.id,
-                   'noReplace': no_replace,
-                   'startTime': str(start)
-                   }
-        if end > 0:
-            payload['endTime'] = str(end)
-
-        await self.node._send(**payload)
-
-        __log__.debug(f'PLAYER | Started playing track:: {str(track)} ({self.channel_id})')
-
-    async def stop(self) -> None:
-        """|coro|
-
-        Stop the Player's currently playing song.
-        """
-        await self.node._send(op='stop', guildId=str(self.guild_id))
-        __log__.debug(f'PLAYER | Current track stopped:: {str(self.current)} ({self.channel_id})')
-        self.current = None
-
-    async def destroy(self, *, force: bool = False) -> None:
-        """|coro|
-
-        Stop the player, and remove any internal references to it.
-        """
-        await self.stop()
-        await self.disconnect(force=force)
-
-        await self.node._send(op='destroy', guildId=str(self.guild_id))
-
-        try:
-            del self.node.players[self.guild_id]
-        except KeyError:
-            pass
-
-    async def set_eq(self, equalizer: Equalizer) -> None:
-        """|coro|
-
-        Set the Players Equalizer.
-
-        .. versionchanged:: 0.5.0
-            set_eq now accepts an :class:`Equalizer` instead of raw band/gain pairs.
-
-        Parameters
-        ------------
-        equalizer: :class:`Equalizer`
-            The Equalizer to set.
-        """
-        await self.node._send(op='equalizer', guildId=str(self.guild_id), bands=equalizer.eq)
-        self._equalizer = equalizer
-
-    async def set_equalizer(self, equalizer: Equalizer) -> None:
-        """|coro|
-
-        An alias to :func:`set_eq`.
-        """
-        await self.set_eq(equalizer)
-
-    async def set_pause(self, pause: bool) -> None:
-        """|coro|
-
-        Set the players paused state.
-
-        Parameters
-        ------------
-        pause: bool
-            A bool indicating if the player's paused state should be set to True or False.
-        """
-        await self.node._send(op='pause', guildId=str(self.guild_id), pause=pause)
-        self.paused = pause
-        __log__.debug(f'PLAYER | Set pause:: {self.paused} ({self.channel_id})')
-
-    async def set_volume(self, vol: int) -> None:
-        """|coro|
-
-        Set the player's volume, between 0 and 1000.
-
-        Parameters
-        ------------
-        vol: int
-            The volume to set the player to.
-        """
-        self.volume = max(min(vol, 1000), 0)
-        await self.node._send(op='volume', guildId=str(self.guild_id), volume=self.volume)
-        __log__.debug(f'PLAYER | Set volume:: {self.volume} ({self.channel_id})')
-
-    async def seek(self, position: int = 0) -> None:
-        """Seek to the given position in the song.
-
-        Parameters
-        ------------
-        position: int
-            The position as an int in milliseconds to seek to. Could be None to seek to beginning.
-        """
-
-        await self.node._send(op='seek', guildId=str(self.guild_id), position=position)
-
-    async def change_node(self, identifier: str = None) -> None:
-        """|coro|
-
-        Change the players current :class:`wavelink.node.Node`. Useful when a Node fails or when changing regions.
-        The change Node behaviour allows for near seamless fallbacks and changeovers to occur.
-
-        Parameters
-        ------------
-        Optional[identifier: str]
-            An optional Node identifier to change to. If None, the next best available Node will be found.
-        """
-        client = self.node._client
-
-        if identifier:
-            node = client.get_node(identifier)
-
-            if not node:
-                raise WavelinkException(f'No Nodes matching identifier:: {identifier}')
-            elif node == self.node:
-                raise WavelinkException('Node identifiers must not be the same while changing.')
-        else:
-            self.node.close()
-            node = None
-
-            if self.node.region:
-                node = client.get_node_by_region(self.node.region)
-
-            if not node and self.node.shard_id:
-                node = client.get_node_by_shard(self.node.shard_id)
-
-            if not node:
-                node = client.get_best_node()
-
-            if not node:
-                self.node.open()
-                raise WavelinkException('No Nodes available for changeover.')
-
-        self.node.open()
-
-        old = self.node
-        del old.players[self.guild_id]
-        await old._send(op='destroy', guildId=str(self.guild_id))
-
-        self.node = node
-        self.node.players[int(self.guild_id)] = self
-
-        if self._voice_state:
-            await self._dispatch_voice_update()
-
-        if self.current:
-            await self.node._send(op='play', guildId=str(self.guild_id), track=self.current.id, startTime=int(self.position))
-            self.last_update = time.time() * 1000
-
-            if self.paused:
-                await self.node._send(op='pause', guildId=str(self.guild_id), pause=self.paused)
-
-        if self.volume != 100:
-            await self.node._send(op='volume', guildId=str(self.guild_id), volume=self.volume)
+            # Otherwise, either not a member or not the guild owner, calculate perms manually
+            is_administrator = False
+
+            # Handle guild-level perms first
+            for key, value in dict(channel.guild.default_role.permissions).items():
+                permissions[key] = (value, "it is the server-wide @everyone permission")
+
+            for role in roles:
+                for key, value in dict(role.permissions).items():
+                    # Roles can only ever allow permissions
+                    # Denying a permission does nothing if a lower role allows it
+                    if value and not permissions[key][0]:
+                        permissions[key] = (value, f"it is the server-wide {role.name} permission")
+
+                # Then administrator handling
+                if role.permissions.administrator:
+                    is_administrator = True
+
+                    for key in dict(discord.Permissions.all()).keys():
+                        if not permissions[key][0]:
+                            permissions[key] = (True, f"it is granted by Administrator on the server-wide {role.name} permission")
+
+            # If Administrator was granted, there is no reason to even do channel permissions
+            if not is_administrator:
+                # Now channel-level permissions
+
+                # Special case for @everyone
+                # pylint: disable=protected-access
+                try:
+                    maybe_everyone = channel._overwrites[0]
+                    if maybe_everyone.id == channel.guild.default_role.id:
+                        self.apply_overwrites(permissions, allow=maybe_everyone.allow, deny=maybe_everyone.deny, name="@everyone")
+                        remaining_overwrites = channel._overwrites[1:]
+                    else:
+                        remaining_overwrites = channel._overwrites
+                except IndexError:
+                    remaining_overwrites = channel._overwrites
+                # pylint: enable=protected-access
+
+                role_lookup = {r.id: r for r in roles}
+
+                # Denies are applied BEFORE allows, always
+                # Handle denies
+                for overwrite in remaining_overwrites:
+                    if overwrite.is_role() and overwrite.id in role_lookup:
+                        self.apply_overwrites(permissions, allow=0, deny=overwrite.deny, name=role_lookup[overwrite.id].name)
+
+                # Handle allows
+                for overwrite in remaining_overwrites:
+                    if overwrite.is_role() and overwrite.id in role_lookup:
+                        self.apply_overwrites(permissions, allow=overwrite.allow, deny=0, name=role_lookup[overwrite.id].name)
+
+                if member_ids:
+                    # Handle member-specific overwrites
+                    for overwrite in remaining_overwrites:
+                        if overwrite.is_member() and overwrite.id in member_ids:
+                            self.apply_overwrites(permissions, allow=overwrite.allow, deny=overwrite.deny, name=f"{member_ids[overwrite.id].mention}")
+                            break
+
+        # Construct embed
+        description = f"This is the permissions calculation for the following targets in {channel.mention}:\n"
+        description += "\n".join(f"- {target.mention}" for target in targets)
+
+        description += (
+            "\nPlease note the reasons shown are the **most fundamental** reason why a permission is as it is. "
+            "There may be other reasons that persist these permissions even if you change the things displayed."
+        )
+
+        embed = discord.Embed(color=0x00FF00, description=description)
+
+        allows = []
+        denies = []
+
+        for key, value in permissions.items():
+            if value[0]:
+                allows.append(f"\N{WHITE HEAVY CHECK MARK} {key} (because {value[1]})")
+            else:
+                denies.append(f"\N{CROSS MARK} {key} (because {value[1]})")
+
+        for chunk in self.chunks(sorted(allows) + sorted(denies), 8):
+            embed.add_field(name="...", value="\n".join(chunk), inline=False)
+
+        await ctx.send(embed=embed)
