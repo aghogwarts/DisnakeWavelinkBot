@@ -13,8 +13,8 @@ The jishaku guild-related commands.
 
 import typing
 
-import discord
-from discord.ext import commands
+import disnake
+from disnake.ext import commands
 
 from jishaku.features.baseclass import Feature
 
@@ -31,8 +31,8 @@ class GuildFeature(Feature):
         based on an allow and deny mask.
         """
 
-        allow: discord.Permissions = discord.Permissions(allow)
-        deny: discord.Permissions = discord.Permissions(deny)
+        allow: disnake.Permissions = disnake.Permissions(allow)
+        deny: disnake.Permissions = disnake.Permissions(deny)
 
         # Denies first..
         for key, value in dict(deny).items():
@@ -60,21 +60,21 @@ class GuildFeature(Feature):
     @Feature.Command(parent="jsk", name="permtrace")
     async def jsk_permtrace(
         self, ctx: commands.Context,
-        channel: typing.Union[discord.TextChannel, discord.VoiceChannel],
-        *targets: typing.Union[discord.Member, discord.Role]
+        channel: typing.Union[disnake.TextChannel, disnake.VoiceChannel],
+        *targets: typing.Union[disnake.Member, disnake.Role]
     ):  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
         """
         Calculates the source of granted or rejected permissions.
 
         This accepts a channel, and either a member or a list of roles.
-        It calculates permissions the same way Discord does, while keeping track of the source.
+        It calculates permissions the same way disnake does, while keeping track of the source.
         """
 
-        member_ids = {target.id: target for target in targets if isinstance(target, discord.Member)}
+        member_ids = {target.id: target for target in targets if isinstance(target, disnake.Member)}
         roles = []
 
         for target in targets:
-            if isinstance(target, discord.Member):
+            if isinstance(target, disnake.Member):
                 roles.extend(list(target.roles))
             else:
                 roles.append(target)
@@ -88,8 +88,8 @@ class GuildFeature(Feature):
 
         if member_ids and channel.guild.owner_id in member_ids:
             # Is owner, has all perms
-            for key in dict(discord.Permissions.all()).keys():
-                permissions[key] = (True, f"<@{channel.guild.owner_id}> owns the server")
+            for key in dict(disnake.Permissions.all()).keys():
+                permissions[key] = (True, f"{channel.guild.owner.mention} owns the server")
         else:
             # Otherwise, either not a member or not the guild owner, calculate perms manually
             is_administrator = False
@@ -109,7 +109,7 @@ class GuildFeature(Feature):
                 if role.permissions.administrator:
                     is_administrator = True
 
-                    for key in dict(discord.Permissions.all()).keys():
+                    for key in dict(disnake.Permissions.all()).keys():
                         if not permissions[key][0]:
                             permissions[key] = (True, f"it is granted by Administrator on the server-wide {role.name} permission")
 
@@ -135,18 +135,18 @@ class GuildFeature(Feature):
                 # Denies are applied BEFORE allows, always
                 # Handle denies
                 for overwrite in remaining_overwrites:
-                    if overwrite.is_role() and overwrite.id in role_lookup:
+                    if overwrite.type == 'role' and overwrite.id in role_lookup:
                         self.apply_overwrites(permissions, allow=0, deny=overwrite.deny, name=role_lookup[overwrite.id].name)
 
                 # Handle allows
                 for overwrite in remaining_overwrites:
-                    if overwrite.is_role() and overwrite.id in role_lookup:
+                    if overwrite.type == 'role' and overwrite.id in role_lookup:
                         self.apply_overwrites(permissions, allow=overwrite.allow, deny=0, name=role_lookup[overwrite.id].name)
 
                 if member_ids:
                     # Handle member-specific overwrites
                     for overwrite in remaining_overwrites:
-                        if overwrite.is_member() and overwrite.id in member_ids:
+                        if overwrite.type == 'member' and overwrite.id in member_ids:
                             self.apply_overwrites(permissions, allow=overwrite.allow, deny=overwrite.deny, name=f"{member_ids[overwrite.id].mention}")
                             break
 
@@ -159,7 +159,7 @@ class GuildFeature(Feature):
             "There may be other reasons that persist these permissions even if you change the things displayed."
         )
 
-        embed = discord.Embed(color=0x00FF00, description=description)
+        embed = disnake.Embed(color=0x00FF00, description=description)
 
         allows = []
         denies = []
