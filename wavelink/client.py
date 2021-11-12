@@ -14,7 +14,7 @@ copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
@@ -48,8 +48,10 @@ class Client:
             msg = 'wavelink.Client: bot is a required keyword only argument which is missing.'
             raise WavelinkException(msg)
 
-        if not isinstance(bot, (commands.Bot, commands.AutoShardedBot)):
-            msg = f'wavelink.Client expected type <commands.Bot or commands.AutoShardedBot> not {type(bot)}'
+        if not isinstance(bot, (commands.InteractionBot, commands.AutoShardedInteractionBot, commands.Bot,
+                                commands.AutoShardedBot)):
+            msg = f'wavelink.Client expected type <commands.InteractionBot or commands.AutoShardedInteractionBot> or <commands.Bot or ' \
+                  f'commands.AutoShardedBot> not {type(bot)}'
             raise TypeError(msg)
 
         try:
@@ -63,7 +65,8 @@ class Client:
 
         return super().__new__(cls)
 
-    def __init__(self, bot: Union[commands.Bot, commands.AutoShardedBot], *, session: aiohttp.ClientSession = None):
+    def __init__(self, bot: Union[commands.InteractionBot, commands.AutoShardedInteractionBot, commands.Bot,
+                                  commands.AutoShardedBot], *, session: aiohttp.ClientSession = None):
         self.bot = bot
         self.loop = bot.loop or asyncio.get_event_loop()
         self.session = session or aiohttp.ClientSession()
