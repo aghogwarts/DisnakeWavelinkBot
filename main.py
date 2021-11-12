@@ -6,7 +6,7 @@ import time
 from yaml import load
 
 with open("config.yaml") as f:
-    config = load(f, Loader=yaml.FullLoader)
+    config = load(f, Loader=yaml.Loader)
 
 if __name__ == "__main__":
 
@@ -14,7 +14,10 @@ if __name__ == "__main__":
     bot.load_cogs('cogs')
     logger.info("All cogs have been successfully loaded", __name="Music Bot")
     lavalink_alive()
-    time.sleep(14)  # Wait for lavalink to start
+    try:
+        time.sleep(14)  # Wait for lavalink to start
 
-    bot.run(config["token"][0],
-            reconnect=True)
+        bot.run(config["token"][0],
+                reconnect=True)
+    except KeyboardInterrupt:
+        logger.info("Shutting down...", __name="Music Bot")
