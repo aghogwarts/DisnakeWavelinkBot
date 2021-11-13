@@ -193,7 +193,7 @@ class Misc(commands.Cog):
             embed = disnake.Embed(colour=disnake.Colour.random(),
                                   title=f"Help for {slash_command}",
                                   description=f"Usage: `/{command.name} "
-                                              f"params:{', '.join([option.name for option in command.options])}`\n"
+                                              f"{', '.join([option.name for option in command.options])}`\n"
                                               f"Description:\n`{command.docstring['description']}`",
                                   timestamp=disnake.utils.utcnow()).set_footer(
                 text=f"Requested by {ctx.author.display_name}",
