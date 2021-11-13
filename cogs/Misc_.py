@@ -9,7 +9,7 @@ import disnake
 import humanize
 from disnake.ext import commands
 import psutil
-from disnake.ext.commands import Param
+from disnake.ext.commands import Param, InvokableSlashCommand
 import wavelink
 from wavelink import Player
 
@@ -189,14 +189,15 @@ class Misc(commands.Cog):
         if slash_command in slash_commands:
             await ctx.response.send_message("Gathering Information...")
 
-            command = self.bot.get_slash_command(slash_command)
+            command: InvokableSlashCommand = self.bot.get_slash_command(slash_command)
             embed = disnake.Embed(colour=disnake.Colour.random(),
                                   title=f"Help for {slash_command}",
-                                  description=f"Usage: **/{command.name}{command.kwargs}**\n"
-                                              f"Description:\n`{command.description}`",
+                                  description=f"Usage: `/{command.name} "
+                                              f"params:{', '.join([option.name for option in command.options])}`\n"
+                                              f"Description:\n`{command.docstring['description']}`",
                                   timestamp=disnake.utils.utcnow()).set_footer(
                 text=f"Requested by {ctx.author.display_name}",
-                icon_url=ctx.author.avatar.url)
+                icon_url=ctx.author.display_avatar.url)
             return await ctx.edit_original_message(content=f":question: **{slash_command}**", embed=embed)
         else:
             return await ctx.response.send_message(f"{self.bot.icons['redtick']} This command does not exists.",
