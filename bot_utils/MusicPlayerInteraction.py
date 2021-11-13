@@ -5,7 +5,6 @@ import typing
 import async_timeout
 import disnake
 import humanize
-from disnake.ext import commands
 import datetime
 
 import wavelink
@@ -53,7 +52,7 @@ class Player(wavelink.Player):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.context: typing.Union[disnake.Interaction, commands.Context] = kwargs.get('context', None)
+        self.context: typing.Union[disnake.ApplicationCommandInteraction] = kwargs.get('context', None)
         if self.context:
             self.dj: disnake.Member = self.context.author
 
