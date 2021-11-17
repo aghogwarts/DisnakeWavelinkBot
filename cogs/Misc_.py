@@ -198,6 +198,8 @@ class Misc(commands.Cog):
                                   timestamp=disnake.utils.utcnow()).set_footer(
                 text=f"Requested by {ctx.author.display_name}",
                 icon_url=ctx.author.display_avatar.url)
+            embed.add_field(name="Usage", value=f"`/{command.name} {', '.join([option.name for option in command.options])}")
+            embed.add_field(name="Description", value=f"`{command.docstring['description']}`", inline=False)
             return await ctx.edit_original_message(content=f":question: **{slash_command}**", embed=embed)
         else:
             return await ctx.response.send_message(f"{self.bot.icons['redtick']} This command does not exists.",
