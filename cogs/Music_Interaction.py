@@ -18,7 +18,7 @@ from disnake.ext import commands
 import wavelink
 from MusicBot import Bot
 from bot_utils.MusicPlayerInteraction import Player, Track
-from bot_utils.paginator import SimpleEmbedPages
+from bot_utils.paginator import SimpleEmbedPages, WrapText
 from jishaku.functools import executor_function
 
 youtube_url_regex = re.compile(r'https?://(?:www\.)?.+')
@@ -293,7 +293,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Play or queue a song with the given query.")
     async def play(self, ctx: disnake.ApplicationCommandInteraction, query: str = Param(description="Song search")):
-        """A command that will play your favorite song and if a song is already playing, it will add the song in queue."""
+        """A command that will play your favorite song and if a song is already playing, it will add the song in
+        queue. """
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
         await ctx.response.defer()
 
@@ -625,6 +626,56 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return await ctx.response.send_message(embed=disnake.Embed(
                 description=f"{self.bot.icons['info']} `{ctx.author}` has voted to clear the queue.",
                 color=disnake.Colour.random()))
+
+    @commands.slash_command(description="Show lyrics of the current playing song.")
+    async def lyrics(self, ctx: disnake.ApplicationCommandInteraction, *,
+                     name: str = Param(description="The name of "
+                                                   "the song to "
+                                                   "search for "
+                                                   "lyrics.", default=None)):
+        """A command that will show the lyrics of the current playing song or the name of the song you want lyrics
+        for. """
+        player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
+        if name is None:
+            name = player.now.title
+
+        if not player.is_connected:
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                colour=disnake.Colour.random()))
+
+        resp = await self.bot.session.get(f"https://some-random-api.ml/lyrics?title={name}")
+
+        if not 200 <= resp.status <= 299:
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `Lyrics for this song is not found.`",
+                colour=disnake.Colour.random()), delete_after=10)
+
+        if not player.is_playing:
+            return await ctx.response.send_message(embed=disnake.Embed(
+                description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                colour=disnake.Colour.random()))
+
+        data = await resp.json()
+
+        lyrics = data["lyrics"]
+        content = WrapText(lyrics, length=1000)
+        await ctx.response.send_message(content="Generating lyrics....")
+
+        embeds = []
+        for text in content:
+            embed = disnake.Embed(
+                title=data["title"],
+                description=text,
+                colour=ctx.author.colour,
+                timestamp=disnake.utils.utcnow(),
+            )
+            embed.set_thumbnail(url=data["thumbnail"]["genius"])
+            embed.set_author(name=data["author"])
+
+            embeds.append(embed)
+        pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
+        await pag.start()
 
     @commands.slash_command(description="Change the player's equalizer.")
     async def equalizer(self, ctx: disnake.ApplicationCommandInteraction,
