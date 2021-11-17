@@ -24,3 +24,4 @@ win32-setctime==1.0.3; sys_platform == "win32" and python_version >= "3.5"
 yarl==1.7.2; python_version >= "3.6" and python_full_version >= "3.8.0"
 youtube-dl==2021.6.6
 youtube-search-python==1.5.1; python_version >= "3.6"
+import-expression==1.1.4; python_version >= "3.6"
