@@ -1,20 +1,16 @@
 from youtubesearchpython.__future__ import ChannelsSearch, VideosSearch
+
 import difflib
-import traceback
-import pathlib
-import sys
-import psutil
-from loguru import logger
-from disnake.ext.commands.params import Param
-import datetime
 import math
 import re
-import time
+import sys
+import traceback
 import typing
 import disnake
 import humanize
 import youtube_dl as ydl
 from disnake.ext import commands
+from disnake.ext.commands.params import Param
 import wavelink
 from MusicBot import Bot
 from bot_utils.MusicPlayerInteraction import Player, Track
@@ -51,13 +47,19 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     def __init__(self, bot: Bot):
         self.bot = bot
 
-        if not hasattr(bot, 'wavelink'):
-            bot.wavelink = wavelink.Client(bot=bot)
+    async def cog_load(self) -> None:
+        # Better way to run code when a cog is loaded.
+        """
+        Fires when the cog is loaded.
+        :return:
+        """
+        if not hasattr(self.bot, 'wavelink'):
+            self.bot.wavelink = wavelink.Client(bot=self.bot)
 
-        bot.loop.create_task(self.start_nodes())
+        self.bot.loop.create_task(self.start_nodes())
 
     async def start_nodes(self) -> None:
-        """Connect and intiate nodes."""
+        """Connect and initiate nodes."""
         await self.bot.wait_until_ready()
 
         if self.bot.wavelink.nodes:
@@ -87,12 +89,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @wavelink.WavelinkMixin.listener()
     async def on_node_ready(self, node: wavelink.Node):
+        """
+        Fires when a node is ready.
+        """
         self.bot.logger.info(f'Node {node.identifier} is running!', __name="Music Bot")
 
     @wavelink.WavelinkMixin.listener('on_track_stuck')
     @wavelink.WavelinkMixin.listener('on_track_end')
     @wavelink.WavelinkMixin.listener('on_track_exception')
     async def on_player_stop(self, node: wavelink.Node, payload):
+        """
+        Fires when a player stops.
+        """
         await payload.player.play_next_song()
 
     @commands.Cog.listener("on_voice_state_update")
