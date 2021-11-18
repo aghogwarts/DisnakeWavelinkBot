@@ -104,7 +104,10 @@ class Player(wavelink.Player):
         await self.songmenucontroller()
 
     async def songmenucontroller(self) -> None:
-        """Method which handles the song menu."""
+        """
+        Method which handles the song menu.
+        :return:
+        """
         if self.updating:
             return
 
@@ -113,7 +116,7 @@ class Player(wavelink.Player):
         if not self.music_player:
             self.music_player_message = await self.context.channel.send(embed=await self.make_song_embed())
 
-        elif not await self.is_menu_avaliable():
+        elif not await self.is_menu_available():
             try:
                 await self.music_player_message.delete()
             except disnake.HTTPException:
@@ -129,7 +132,9 @@ class Player(wavelink.Player):
 
     @staticmethod
     def parse_duration(duration: int):
-        """Parse a duration into a human readable string."""
+        """
+        Parse a duration into a human readable string.
+        """
         minutes, seconds = divmod(duration, 60)
         hours, minutes = divmod(minutes, 60)
         days, hours = divmod(hours, 24)
@@ -149,7 +154,10 @@ class Player(wavelink.Player):
         return ', '.join(duration)
 
     async def make_song_embed(self) -> typing.Optional[disnake.Embed]:
-        """Creates an embed containing information about the track """
+        """
+        Method which creates the song embed containing the information about the song.
+        :return: The song embed.
+        """
         track: Track = self.current
         if not track:
             return
@@ -177,8 +185,11 @@ class Player(wavelink.Player):
 
         return embed
 
-    async def is_menu_avaliable(self) -> bool:
-        """Method which checks whether the player controller should be remade or updated."""
+    async def is_menu_available(self) -> bool:
+        """
+        Method which checks whether the player controller should be remade or updated.
+        :return: bool
+        """
         try:
             async for message in self.context.channel.history(limit=10):
                 if message.id == self.music_player_message.message.id:
@@ -189,7 +200,10 @@ class Player(wavelink.Player):
         return False
 
     async def teardown(self):
-        """Clear internal states, remove player controller and disconnect."""
+        """
+        Method which handles the teardown(clearing and disconnection) of the player.
+        :return:
+        """
         try:
             await self.music_player_message.delete()
         except disnake.HTTPException:
@@ -202,8 +216,17 @@ class Player(wavelink.Player):
 
     @property
     def loop(self):
+        """
+        Property which returns the loop of the player.
+        :return:
+        """
         return self._loop
 
     @loop.setter
     def loop(self, value: bool = False):
+        """
+        Property which sets the loop of the player.
+        :param value:
+        :return:
+        """
         self._loop = value
