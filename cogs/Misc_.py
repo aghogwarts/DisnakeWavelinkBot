@@ -14,6 +14,15 @@ import wavelink
 from wavelink import Player
 
 
+class InviteButton(disnake.ui.View):
+    def __init__(self, bot):
+        super().__init__(timeout=None)
+        permissions = disnake.Permissions(294410120513)
+        url = disnake.utils.oauth_url(client_id=bot.user.id, scopes=['bot', 'applications.commands'], permissions=permissions)
+
+        self.add_item(disnake.ui.Button(label="Click Here To Invite", url=url))
+
+
 class Misc(commands.Cog):
     """Miscellaneous commands."""
 
@@ -21,7 +30,12 @@ class Misc(commands.Cog):
         self.bot = bot
 
     async def cog_slash_command_error(self, ctx: disnake.ApplicationCommandInteraction, error: Exception) -> None:
-        """Cog wide error handler."""
+        """
+        Cog wide error handler.
+        :param ctx: 
+        :param error: 
+        :return: 
+        """
         if ctx.response.is_done():
             safe_send = ctx.followup.send
         else:
@@ -83,7 +97,7 @@ class Misc(commands.Cog):
            {self.bot.icons['arrow']} `KortaPo#5915`""", inline=True)
             em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_footer(text=f"Python {version[0]}.{version[1]}.{version[2]} • disnake {disnake.__version__}")
-        await ctx.edit_original_message(embed=em)
+        await ctx.edit_original_message(embed=em, view=InviteButton(self.bot))
 
     @commands.slash_command(description="Retrieve various Node/Server/Player information.")
     async def wavelink_information(self, ctx: disnake.ApplicationCommandInteraction):
@@ -198,7 +212,8 @@ class Misc(commands.Cog):
                                   timestamp=disnake.utils.utcnow()).set_footer(
                 text=f"Requested by {ctx.author.display_name}",
                 icon_url=ctx.author.display_avatar.url)
-            embed.add_field(name="Usage", value=f"`/{command.name} {', '.join([option.name for option in command.options])}")
+            embed.add_field(name="Usage",
+                            value=f"`/{command.name} {', '.join([option.name for option in command.options])}")
             embed.add_field(name="Description", value=f"`{command.docstring['description']}`", inline=False)
             return await ctx.edit_original_message(content=f":question: **{slash_command}**", embed=embed)
         else:
@@ -210,6 +225,19 @@ class Misc(commands.Cog):
         commands = [command for command in self.bot.all_slash_commands]
         selected_commands = difflib.get_close_matches(user_input, commands, n=5)
         return selected_commands
+
+    @commands.slash_command(name="invite", description="Invite the bot to your server.")
+    async def invite(self, ctx: disnake.ApplicationCommandInteraction):
+        permissions = disnake.Permissions(294410120513)
+        await ctx.response.send_message("Gathering Information...")
+        embed = disnake.Embed(colour=disnake.Colour.random(),
+                              title=f"Invite {self.bot.user.display_name}",
+                              timestamp=disnake.utils.utcnow()).set_footer(
+            text=f"Requested by {ctx.author.display_name}",
+            icon_url=ctx.author.display_avatar.url)
+        embed.add_field(name="Invite Link",
+                        value=f"[Click here]({disnake.utils.oauth_url(client_id=self.bot.user.id, scopes='application/command', permissions=permissions)})")
+        return await ctx.edit_original_message(content=f":question: **Invite**", embed=embed)
 
 
 def setup(bot):
