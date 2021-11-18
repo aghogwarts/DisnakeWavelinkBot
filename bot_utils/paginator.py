@@ -9,6 +9,9 @@ from bot_utils.menus import ListPageSource
 
 
 class EmbedPaginator(disnake.ui.View):
+    """
+    A paginator that displays a list of items in an embed.
+    """
     def __init__(
             self,
             ctx,
@@ -25,6 +28,11 @@ class EmbedPaginator(disnake.ui.View):
         self.compact: bool = compact
 
     def _update_labels(self, page_number: int) -> None:
+        """
+        Update the labels of the buttons to reflect the current page.
+        :param page_number:
+        :return:
+        """
         self.go_to_first_page.disabled = page_number == 0
         if self.compact:
             max_pages = len(self.embeds)
@@ -51,6 +59,12 @@ class EmbedPaginator(disnake.ui.View):
                 self.go_to_previous_page.label = '…'
 
     async def show_checked_page(self, interaction: disnake.Interaction, page_number: int) -> None:
+        """
+        Show a page, but only if the interaction is valid.
+        :param interaction:
+        :param page_number:
+        :return:
+        """
         max_pages = len(self.embeds)
         try:
             if max_pages is None:
@@ -63,6 +77,11 @@ class EmbedPaginator(disnake.ui.View):
             pass
 
     async def interaction_check(self, interaction: disnake.Interaction) -> bool:
+        """
+        Check if the interaction author is the author of the message.
+        :param interaction:
+        :return:
+        """
         if interaction.user and interaction.user.id in (self.ctx.bot.owner_id, self.ctx.author.id):
             return True
         await interaction.response.send_message('This pagination menu cannot be controlled by you, sorry!',
@@ -70,10 +89,19 @@ class EmbedPaginator(disnake.ui.View):
         return False
 
     async def on_timeout(self) -> None:
+        """
+        Called when the paginator times out.
+        :return:
+        """
         if self.message:
             await self.message.edit(view=None)
 
     async def show_page(self, page_number: int):
+        """
+        Show a page.
+        :param page_number:
+        :return:
+        """
         if (
                 (page_number < 0) or
                 (page_number > len(self.embeds) - 1)
@@ -128,6 +156,12 @@ class SimpleEmbedPages(EmbedPaginator):
 
 class Paginator(ListPageSource):
     async def format_page(self, menu, embed: disnake.Embed):
+        """
+        Format the page.
+        :param menu:
+        :param embed:
+        :return:
+        """
         if len(menu.source.entries) != 1:
             em = embed.to_dict()
             if em.get("footer") is not None:
@@ -150,16 +184,34 @@ class Paginator(ListPageSource):
 
 class TextPaginator(ListPageSource):
     async def format_page(self, menu, text):
+        """
+        A paginator for text.
+        :param menu:
+        :param text:
+        :return:
+        """
         return text
 
 
 def WrapText(text: str, length: int):
+    """
+    A function that wraps text.
+    :param text:
+    :param length:
+    :return:
+    """
     wrapper = textwrap.TextWrapper(width=length)
     words = wrapper.wrap(text=text)
     return words
 
 
 def WrapList(list_: list, length: int):
+    """
+    A function that wraps a list.
+    :param list_:
+    :param length:
+    :return:
+    """
     def chunks(seq, size):
         for i in range(0, len(seq), size):
             yield seq[i:i + size]
