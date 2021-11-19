@@ -11,13 +11,12 @@ with open("config.yaml") as f:
 if __name__ == "__main__":
 
     bot = Bot()
-    bot.load_cogs('cogs')
+    bot.load_cogs("cogs")
     logger.info("All cogs have been successfully loaded", __name="Music Bot")
     lavalink_alive()
     try:
         time.sleep(14)  # Wait for lavalink to start
 
-        bot.run(config["token"][0],
-                reconnect=True)
+        bot.run(config["token"][0], reconnect=True)
     except KeyboardInterrupt:
         logger.info("Shutting down...", __name="Music Bot")
