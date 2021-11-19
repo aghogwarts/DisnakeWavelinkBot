@@ -12,13 +12,14 @@ class EmbedPaginator(disnake.ui.View):
     """
     A paginator that displays a list of items in an embed.
     """
+
     def __init__(
             self,
             ctx,
             embeds: List[disnake.Embed],
             *,
             timeout: float = 180.0,
-            compact: bool = False
+            compact: bool = False,
     ):
         super().__init__(timeout=timeout)
         self.ctx = ctx
@@ -36,8 +37,12 @@ class EmbedPaginator(disnake.ui.View):
         self.go_to_first_page.disabled = page_number == 0
         if self.compact:
             max_pages = len(self.embeds)
-            self.go_to_last_page.disabled = max_pages is None or (page_number + 1) >= max_pages
-            self.go_to_next_page.disabled = max_pages is not None and (page_number + 1) >= max_pages
+            self.go_to_last_page.disabled = (
+                    max_pages is None or (page_number + 1) >= max_pages
+            )
+            self.go_to_next_page.disabled = (
+                    max_pages is not None and (page_number + 1) >= max_pages
+            )
             self.go_to_previous_page.disabled = page_number == 0
             return
 
@@ -53,12 +58,14 @@ class EmbedPaginator(disnake.ui.View):
             self.go_to_last_page.disabled = (page_number + 1) >= max_pages
             if (page_number + 1) >= max_pages:
                 self.go_to_next_page.disabled = True
-                self.go_to_next_page.label = '…'
+                self.go_to_next_page.label = "…"
             if page_number == 0:
                 self.go_to_previous_page.disabled = True
-                self.go_to_previous_page.label = '…'
+                self.go_to_previous_page.label = "…"
 
-    async def show_checked_page(self, interaction: disnake.Interaction, page_number: int) -> None:
+    async def show_checked_page(
+            self, interaction: disnake.Interaction, page_number: int
+    ) -> None:
         """
         Show a page, but only if the interaction is valid.
         :param interaction:
@@ -82,10 +89,14 @@ class EmbedPaginator(disnake.ui.View):
         :param interaction:
         :return:
         """
-        if interaction.user and interaction.user.id in (self.ctx.bot.owner_id, self.ctx.author.id):
+        if interaction.user and interaction.user.id in (
+                self.ctx.bot.owner_id,
+                self.ctx.author.id,
+        ):
             return True
-        await interaction.response.send_message('This pagination menu cannot be controlled by you, sorry!',
-                                                ephemeral=True)
+        await interaction.response.send_message(
+            "This pagination menu cannot be controlled by you, sorry!", ephemeral=True
+        )
         return False
 
     async def on_timeout(self) -> None:
@@ -102,38 +113,45 @@ class EmbedPaginator(disnake.ui.View):
         :param page_number:
         :return:
         """
-        if (
-                (page_number < 0) or
-                (page_number > len(self.embeds) - 1)
-        ):
+        if (page_number < 0) or (page_number > len(self.embeds) - 1):
             return
         self.current_page = page_number
         embed = self.embeds[page_number]
-        embed.set_footer(text=f'Page {self.current_page + 1}/{len(self.embeds)}')
+        embed.set_footer(text=f"Page {self.current_page + 1}/{len(self.embeds)}")
         await self.message.edit(embed=embed)
 
-    @disnake.ui.button(label='≪', style=disnake.ButtonStyle.grey)
-    async def go_to_first_page(self, button: disnake.ui.Button, interaction: disnake.Interaction):
+    @disnake.ui.button(label="≪", style=disnake.ButtonStyle.grey)
+    async def go_to_first_page(
+            self, button: disnake.ui.Button, interaction: disnake.Interaction
+    ):
         """Go to the first page."""
         await self.show_page(0)
 
-    @disnake.ui.button(label='Back', style=disnake.ButtonStyle.blurple)
-    async def go_to_previous_page(self, button: disnake.ui.Button, interaction: disnake.Interaction):
+    @disnake.ui.button(label="Back", style=disnake.ButtonStyle.blurple)
+    async def go_to_previous_page(
+            self, button: disnake.ui.Button, interaction: disnake.Interaction
+    ):
         """Go to the previous page."""
         await self.show_page(self.current_page - 1)
 
-    @disnake.ui.button(label='Next', style=disnake.ButtonStyle.blurple)
-    async def go_to_next_page(self, button: disnake.ui.Button, interaction: disnake.Interaction):
+    @disnake.ui.button(label="Next", style=disnake.ButtonStyle.blurple)
+    async def go_to_next_page(
+            self, button: disnake.ui.Button, interaction: disnake.Interaction
+    ):
         """Go to the next page."""
         await self.show_page(self.current_page + 1)
 
-    @disnake.ui.button(label='≫', style=disnake.ButtonStyle.grey)
-    async def go_to_last_page(self, button: disnake.ui.Button, interaction: disnake.Interaction):
+    @disnake.ui.button(label="≫", style=disnake.ButtonStyle.grey)
+    async def go_to_last_page(
+            self, button: disnake.ui.Button, interaction: disnake.Interaction
+    ):
         """Go to the last page."""
         await self.show_page(len(self.embeds) - 1)
 
-    @disnake.ui.button(label='Quit', style=disnake.ButtonStyle.red)
-    async def stop_pages(self, button: disnake.ui.Button, interaction: disnake.Interaction):
+    @disnake.ui.button(label="Quit", style=disnake.ButtonStyle.red)
+    async def stop_pages(
+            self, button: disnake.ui.Button, interaction: disnake.Interaction
+    ):
         """stops the pagination session."""
         await interaction.response.defer()
         await interaction.delete_original_message()
@@ -142,7 +160,7 @@ class EmbedPaginator(disnake.ui.View):
     async def start(self):
         """Start paginating over the embeds."""
         embed = self.embeds[0]
-        embed.set_footer(text=f'Page 1/{len(self.embeds)}')
+        embed.set_footer(text=f"Page 1/{len(self.embeds)}")
         self.message = await self.ctx.channel.send(embed=embed, view=self)
 
 
@@ -168,15 +186,20 @@ class Paginator(ListPageSource):
                 if em.get("footer").get("text") is not None:
                     if not "Page: " in em.get("footer").get("text"):
                         em["footer"]["text"] = "".join(
-                            f"{em['footer']['text']} • Page: {menu.current_page + 1}/{menu.source.get_max_pages()}" if
-                            em['footer'][
-                                "text"] is not None else f"Page: {menu.current_page + 1}/{menu.source.get_max_pages()}")
+                            f"{em['footer']['text']} • Page: {menu.current_page + 1}/{menu.source.get_max_pages()}"
+                            if em["footer"]["text"] is not None
+                            else f"Page: {menu.current_page + 1}/{menu.source.get_max_pages()}"
+                        )
                     else:
-                        em["footer"]["text"].replace(f"Page: {menu.current_page}/{menu.source.get_max_pages()}",
-                                                     f"Page: {menu.current_page + 1}/{menu.source.get_max_pages()}")
+                        em["footer"]["text"].replace(
+                            f"Page: {menu.current_page}/{menu.source.get_max_pages()}",
+                            f"Page: {menu.current_page + 1}/{menu.source.get_max_pages()}",
+                        )
             else:
                 em["footer"] = {}
-                em["footer"]["text"] = f"Page: {menu.current_page + 1}/{menu.source.get_max_pages()}"
+                em["footer"][
+                    "text"
+                ] = f"Page: {menu.current_page + 1}/{menu.source.get_max_pages()}"
             em = disnake.Embed().from_dict(em)
             return em
         return embed
@@ -212,8 +235,9 @@ def WrapList(list_: list, length: int):
     :param length:
     :return:
     """
+
     def chunks(seq, size):
         for i in range(0, len(seq), size):
-            yield seq[i:i + size]
+            yield seq[i: i + size]
 
     return list(chunks(list_, length))
