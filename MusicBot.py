@@ -43,7 +43,11 @@ class Bot(commands.AutoShardedBot):
         self.start_time = disnake.utils.utcnow()
 
     def load_cogs(self, exts) -> None:
-        """Load a set of extensions."""
+        """
+        A method that loads all the cogs in the cogs folder.
+        :param exts:
+        :return:
+        """
 
         for m in pkgutil.iter_modules([exts]):
             # a much better way to load cogs
@@ -57,42 +61,61 @@ class Bot(commands.AutoShardedBot):
         self.logger.info(f"Loaded extension 'jishaku'", __name="Music Bot")
 
     async def login(self, *args, **kwargs) -> None:
-        """Create the ClientSession before logging in."""
+        """
+        A method that logs the bot into Discord.
+        Create the ClientSession before logging in.
+        :param args:
+        :param kwargs:
+        :return:
+        """
 
         self.session = ClientSession()
 
         await super().login(*args, **kwargs)
 
     async def on_ready(self):
-        """An event that triggers when the bot is connected properly to gateway and bot cache is completely loaded."""
-        print(f"----------Bot Initialization.-------------\n"
-              f"Bot name: {self.user.name}\n"
-              f"Bot ID: {self.user.id}\n"
-              f"Total Guilds: {len(self.guilds)}\n"
-              f"Total Users: {len(self.users)}\n"
-              f"------------------------------------------")
+        """
+        An event that triggers when the bot is connected properly to gateway and bot cache is completely loaded.
+        :return:
+        """
+        print(
+            f"----------Bot Initialization.-------------\n"
+            f"Bot name: {self.user.name}\n"
+            f"Bot ID: {self.user.id}\n"
+            f"Total Guilds: {len(self.guilds)}\n"
+            f"Total Users: {len(self.users)}\n"
+            f"------------------------------------------"
+        )
 
     async def on_socket_raw_receive(self, msg):
-        """This event replicates discord.py's 'on_socket_response' event that was removed for dpy v2.0 in disnake."""
+        """
+        An event that triggers when the bot receives a raw message from the gateway.
+        This event replicates discord.py's 'on_socket_response' event that was removed for dpy v2.0 in disnake.
+        :param msg:
+        :return:
+        """
         self._zlib = zlib.decompressobj()
         self._buffer = bytearray()
         if type(msg) is bytes:
             self._buffer.extend(msg)
 
-            if len(msg) < 4 or msg[:-4] != b'\x00\x00\xff\xff':
+            if len(msg) < 4 or msg[:-4] != b"\x00\x00\xff\xff":
                 return
             try:
                 msg = self._zlib.decompress(self._buffer)
             except Exception:
                 self._buffer = bytearray()
                 return
-            msg = msg.decode('utf-8')
+            msg = msg.decode("utf-8")
             self._buffer = bytearray()
         msg = disnake.utils._from_json(msg)
         self.dispatch("socket_response", msg)
 
     async def on_disconnect(self):
-        """An event that triggers when the bot is disconnected from the gateway."""
+        """
+        An event that triggers when the bot is disconnected from the gateway.
+        :return:
+        """
         self.clear()  # clearing bot cache
         self.logger.info(f"Bot disconnected from gateway.", __name="Music Bot")
         await self.session.close()  # closing the ClientSession
