@@ -13,12 +13,12 @@ import wavelink
 class Track(wavelink.Track):
     """Wavelink Track object with a requester attribute."""
 
-    __slots__ = ('requester',)
+    __slots__ = ("requester",)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args)
 
-        self.requester = kwargs.get('requester')
+        self.requester = kwargs.get("requester")
 
 
 class Queue(asyncio.Queue):
@@ -52,7 +52,9 @@ class Player(wavelink.Player):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.context: typing.Union[disnake.ApplicationCommandInteraction] = kwargs.get('context', None)
+        self.context: typing.Union[disnake.ApplicationCommandInteraction] = kwargs.get(
+            "context", None
+        )
         if self.context:
             self.dj: disnake.Member = self.context.author
 
@@ -114,7 +116,9 @@ class Player(wavelink.Player):
         self.updating = True
 
         if not self.music_player:
-            self.music_player_message = await self.context.channel.send(embed=await self.make_song_embed())
+            self.music_player_message = await self.context.channel.send(
+                embed=await self.make_song_embed()
+            )
 
         elif not await self.is_menu_available():
             try:
@@ -151,7 +155,7 @@ class Player(wavelink.Player):
         else:
             duration.append("Live Stream")
 
-        return ', '.join(duration)
+        return ", ".join(duration)
 
     async def make_song_embed(self) -> typing.Optional[disnake.Embed]:
         """
@@ -167,21 +171,29 @@ class Player(wavelink.Player):
         position = divmod(self.position, 60000)
         length = divmod(self.now.length, 60000)
 
-        embed = disnake.Embed(description=f"```css\nNow Playing:\n**{track.title}**```",
-                              colour=disnake.Colour.random())
+        embed = disnake.Embed(
+            description=f"```css\nNow Playing:\n**{track.title}**```",
+            colour=disnake.Colour.random(),
+        )
         embed.set_thumbnail(url=track.thumb)
 
-        embed.add_field(name="Duration", value=f"`{humanize.precisedelta(datetime.timedelta(milliseconds=int(track.length)))}`")
+        embed.add_field(
+            name="Duration",
+            value=f"`{humanize.precisedelta(datetime.timedelta(milliseconds=int(track.length)))}`",
+        )
         embed.add_field(name="Volume", value=f"**`{self.volume}%`**")
         embed.add_field(
             name="Position",
             value=f"`{int(position[0])}:{round(position[1] / 1000):02}/{int(length[0])}:{round(length[1] / 1000):02}`",
-            inline=False)
+            inline=False,
+        )
         embed.add_field(name="Channel", value=f"**`{channel}`**")
         embed.add_field(name="DJ", value=self.dj.mention)
-        embed.add_field(name="Video URL", value=f'[Click Here!]({track.uri})')
-        embed.add_field(name="Author", value=f'{track.author}')
-        embed.set_footer(text=f"Requested By {track.requester}", icon_url=track.requester.avatar.url)
+        embed.add_field(name="Video URL", value=f"[Click Here!]({track.uri})")
+        embed.add_field(name="Author", value=f"{track.author}")
+        embed.set_footer(
+            text=f"Requested By {track.requester}", icon_url=track.requester.avatar.url
+        )
 
         return embed
 
