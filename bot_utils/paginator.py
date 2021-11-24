@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import textwrap
+import typing
 from typing import List
 
 import disnake
@@ -14,12 +15,12 @@ class EmbedPaginator(disnake.ui.View):
     """
 
     def __init__(
-            self,
-            ctx,
-            embeds: List[disnake.Embed],
-            *,
-            timeout: float = 180.0,
-            compact: bool = False,
+        self,
+        ctx,
+        embeds: List[disnake.Embed],
+        *,
+        timeout: float = 180.0,
+        compact: bool = False,
     ):
         super().__init__(timeout=timeout)
         self.ctx = ctx
@@ -38,10 +39,10 @@ class EmbedPaginator(disnake.ui.View):
         if self.compact:
             max_pages = len(self.embeds)
             self.go_to_last_page.disabled = (
-                    max_pages is None or (page_number + 1) >= max_pages
+                max_pages is None or (page_number + 1) >= max_pages
             )
             self.go_to_next_page.disabled = (
-                    max_pages is not None and (page_number + 1) >= max_pages
+                max_pages is not None and (page_number + 1) >= max_pages
             )
             self.go_to_previous_page.disabled = page_number == 0
             return
@@ -64,7 +65,7 @@ class EmbedPaginator(disnake.ui.View):
                 self.go_to_previous_page.label = "…"
 
     async def show_checked_page(
-            self, interaction: disnake.Interaction, page_number: int
+        self, interaction: disnake.Interaction, page_number: int
     ) -> None:
         """
         Show a page, but only if the interaction is valid.
@@ -90,8 +91,8 @@ class EmbedPaginator(disnake.ui.View):
         :return:
         """
         if interaction.user and interaction.user.id in (
-                self.ctx.bot.owner_id,
-                self.ctx.author.id,
+            self.ctx.bot.owner_id,
+            self.ctx.author.id,
         ):
             return True
         await interaction.response.send_message(
@@ -122,35 +123,35 @@ class EmbedPaginator(disnake.ui.View):
 
     @disnake.ui.button(label="≪", style=disnake.ButtonStyle.grey)
     async def go_to_first_page(
-            self, button: disnake.ui.Button, interaction: disnake.Interaction
+        self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
         """Go to the first page."""
         await self.show_page(0)
 
     @disnake.ui.button(label="Back", style=disnake.ButtonStyle.blurple)
     async def go_to_previous_page(
-            self, button: disnake.ui.Button, interaction: disnake.Interaction
+        self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
         """Go to the previous page."""
         await self.show_page(self.current_page - 1)
 
     @disnake.ui.button(label="Next", style=disnake.ButtonStyle.blurple)
     async def go_to_next_page(
-            self, button: disnake.ui.Button, interaction: disnake.Interaction
+        self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
         """Go to the next page."""
         await self.show_page(self.current_page + 1)
 
     @disnake.ui.button(label="≫", style=disnake.ButtonStyle.grey)
     async def go_to_last_page(
-            self, button: disnake.ui.Button, interaction: disnake.Interaction
+        self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
         """Go to the last page."""
         await self.show_page(len(self.embeds) - 1)
 
     @disnake.ui.button(label="Quit", style=disnake.ButtonStyle.red)
     async def stop_pages(
-            self, button: disnake.ui.Button, interaction: disnake.Interaction
+        self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
         """stops the pagination session."""
         await interaction.response.defer()
@@ -206,7 +207,7 @@ class Paginator(ListPageSource):
 
 
 class TextPaginator(ListPageSource):
-    async def format_page(self, menu, text):
+    async def format_page(self, menu, text: str) -> str:
         """
         A paginator for text.
         :param menu:
@@ -216,7 +217,7 @@ class TextPaginator(ListPageSource):
         return text
 
 
-def WrapText(text: str, length: int):
+def WrapText(text: str, length: int) -> typing.List[str]:
     """
     A function that wraps text.
     :param text:
@@ -228,7 +229,7 @@ def WrapText(text: str, length: int):
     return words
 
 
-def WrapList(list_: list, length: int):
+def WrapList(list_: list, length: int) -> typing.List[list]:
     """
     A function that wraps a list.
     :param list_:
@@ -236,8 +237,13 @@ def WrapList(list_: list, length: int):
     :return:
     """
 
-    def chunks(seq, size):
+    def chunks(seq: list, size: int) -> list:
+        """
+        A function that splits a list into chunks.
+        :param seq:
+        :param size:
+        """
         for i in range(0, len(seq), size):
-            yield seq[i: i + size]
+            yield seq[i : i + size]
 
     return list(chunks(list_, length))
