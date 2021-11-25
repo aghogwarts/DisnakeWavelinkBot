@@ -22,6 +22,12 @@ youtube_url_regex = re.compile(r"https?://(?:www\.)?.+")
 
 @executor_function
 def youtube(query, download=False):
+    """
+    Searches YouTube for a video and returns the results.
+    :param query:
+    :param download:
+    :return:
+    """
     ytdl = ydl.YoutubeDL(
         {
             "format": "bestaudio/best",
@@ -106,6 +112,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def on_node_ready(self, node: wavelink.Node):
         """
         Fires when a node is ready.
+        :param node: :class:`wavelink.Node`
+        :return:
         """
         self.bot.logger.info(f"Node {node.identifier} is running!", __name="Music Bot")
 
@@ -151,7 +159,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def cog_slash_command_error(
         self, ctx: disnake.ApplicationCommandInteraction, error: Exception
     ) -> None:
-        """Cog wide error handler."""
+        """
+        Cog wide error handler.
+        :param ctx: :class:`disnake.ApplicationCommandInteraction`
+        :param error: :class:`Exception`
+        :return: None
+        """
         if ctx.response.is_done():
             safe_send = ctx.followup.send
         else:
@@ -189,7 +202,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             )
 
     async def cog_slash_before_invoke(self, ctx: disnake.ApplicationCommandInteraction):
-        """Cog wide before slash command invoke handler."""
+        """
+        Cog wide before slash command invoke handler.
+        :param ctx:
+        :return:
+        """
         if ctx.response.is_done():
             safe_send = ctx.followup.send
         else:
@@ -285,7 +302,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ctx: disnake.ApplicationCommandInteraction,
         query: str = Param(description="Video Query"),
     ):
-        await ctx.response.defer()
+        await ctx.response.send_message("Searching...")
         if re.search(r"^(https?\:\/\/)?((www\.)?youtube\.com|youtu\.?be)\/.+$", query):
             async with ctx.channel.typing():
                 query = (await youtube(query))["title"]
@@ -347,8 +364,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 )
             )
 
-        await ctx.response.defer()
-
+        await ctx.response.send_message("Searching...")
         embeds = []
 
         for channel in channels:
@@ -794,7 +810,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @commands.slash_command(description="Shuffle the players queue.")
     async def shuffle(self, ctx: disnake.ApplicationCommandInteraction):
         """A command that will shuffle the entire queue of the current music player instance.
-        You need atleast 3 songs queued in order to shuffle."""
+        You need at least 3 songs queued in order to shuffle."""
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
