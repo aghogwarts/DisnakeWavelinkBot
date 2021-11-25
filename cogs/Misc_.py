@@ -15,6 +15,10 @@ from wavelink import Player
 
 
 class InviteButton(disnake.ui.View):
+    """
+    A button that opens an invite link.
+    """
+
     def __init__(self, bot):
         super().__init__(timeout=None)
         permissions = disnake.Permissions(294410120513)
@@ -77,7 +81,11 @@ class Misc(commands.Cog):
             em = disnake.Embed(color=disnake.Colour.random())
 
             # File Stats
-            def line_count():
+            def line_count() -> tuple[int, int, int, int, int, int]:
+                """
+                Counts the number of lines in the codebase.
+                :return: tuple(files, classes, functions, comments, lines, letters)
+                """
                 files = classes = funcs = comments = lines = letters = 0
                 p = pathlib.Path("./")
                 for f in p.rglob("*.py"):
@@ -280,17 +288,14 @@ class Misc(commands.Cog):
             embed = disnake.Embed(
                 colour=disnake.Colour.random(),
                 title=f"Help for {slash_command}",
-                description=f"Usage: `/{command.name} "
-                f"{', '.join([option.name for option in command.options])}`\n"
-                f"Description:\n`{command.docstring['description']}`",
-                timestamp=disnake.utils.utcnow(),
+                timestamp=disnake.utils.utcnow()
             ).set_footer(
                 text=f"Requested by {ctx.author.display_name}",
                 icon_url=ctx.author.display_avatar.url,
             )
             embed.add_field(
                 name="Usage",
-                value=f"`/{command.name} {', '.join([option.name for option in command.options])}",
+                value=f"`/{command.name} {', '.join([option.name for option in command.options])}`",
             )
             embed.add_field(
                 name="Description",
@@ -313,26 +318,6 @@ class Misc(commands.Cog):
         commands = [command for command in self.bot.all_slash_commands]
         selected_commands = difflib.get_close_matches(user_input, commands, n=5)
         return selected_commands
-
-    @commands.slash_command(name="invite", description="Invite the bot to your server.")
-    async def invite(self, ctx: disnake.ApplicationCommandInteraction):
-        permissions = disnake.Permissions(294410120513)
-        await ctx.response.send_message("Gathering Information...")
-        embed = disnake.Embed(
-            colour=disnake.Colour.random(),
-            title=f"Invite {self.bot.user.display_name}",
-            timestamp=disnake.utils.utcnow(),
-        ).set_footer(
-            text=f"Requested by {ctx.author.display_name}",
-            icon_url=ctx.author.display_avatar.url,
-        )
-        embed.add_field(
-            name="Invite Link",
-            value=f"[Click here]({disnake.utils.oauth_url(client_id=self.bot.user.id, scopes='application/command', permissions=permissions)})",
-        )
-        return await ctx.edit_original_message(
-            content=f":question: **Invite**", embed=embed
-        )
 
 
 def setup(bot):
