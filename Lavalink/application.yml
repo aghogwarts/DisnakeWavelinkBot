@@ -6,13 +6,13 @@ lavalink:
     password: "youshallnotpass"
     sources:
       youtube: true
-      bandcamp: false
-      soundcloud: false
+      bandcamp: true
+      soundcloud: true
       twitch: false
-      vimeo: false
+      vimeo: true
       mixer: false
       http: true
-      local: false
+      local:  true
     bufferDurationMs: 400
     youtubePlaylistLoadLimit: 6 # Number of pages at 100 each
     youtubeSearchEnabled: true
