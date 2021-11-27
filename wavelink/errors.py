@@ -23,19 +23,27 @@ SOFTWARE.
 
 
 class WavelinkException(Exception):
-    """Base Wavelink Exception."""
+    """
+    Base Wavelink Exception.
+    """
 
 
 class NodeOccupied(WavelinkException):
-    """Exception raised when node identifiers conflict."""
+    """
+    Exception raised when node identifiers conflict.
+    """
 
 
 class InvalidIDProvided(WavelinkException):
-    """Exception raised when an invalid ID is passed somewhere in Wavelink."""
+    """
+    Exception raised when an invalid ID is passed somewhere in Wavelink.
+    """
 
 
 class ZeroConnectedNodes(WavelinkException):
-    """Exception raised when an operation is attempted with nodes, when there are None connected."""
+    """
+    Exception raised when an operation is attempted with nodes, when there are None connected.
+    """
 
 
 class AuthorizationFailure(WavelinkException):
@@ -43,4 +51,19 @@ class AuthorizationFailure(WavelinkException):
 
 
 class BuildTrackError(WavelinkException):
-    """Exception raised when a track is failed to be decoded and re-built."""
+    """
+    Exception raised when a track is failed to be decoded and re-built.
+    """
+
+
+class FilterInvalidArgument(WavelinkException):
+    """
+    Raised when an invalid argument is passed to a filter.
+    """
+
+
+class InvalidFilter(WavelinkException):
+    """
+    Raised when an invalid filter is passed to a filter.
+    """
+
