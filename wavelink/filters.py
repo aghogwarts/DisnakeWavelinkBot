@@ -1,5 +1,5 @@
 """
-This code is taken from pomice, another Lavalink Client and has be modified to fit the needs of Wavelink.
+This code is inspired from pomice (the filters and its configurations) another Lavalink Client and has be modified to fit the needs of Wavelink.
 This is just a prototype, and its subject to change entirely, in the future.
 """
 from wavelink.errors import FilterInvalidArgument
