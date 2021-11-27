@@ -32,8 +32,16 @@ class EmbedPaginator(disnake.ui.View):
     def _update_labels(self, page_number: int) -> None:
         """
         Update the labels of the buttons to reflect the current page.
-        :param page_number:
-        :return:
+
+        Parameters
+        ----------
+        page_number : int
+            The current page number.
+
+        Returns
+        -------
+        None
+
         """
         self.go_to_first_page.disabled = page_number == 0
         if self.compact:
@@ -69,9 +77,18 @@ class EmbedPaginator(disnake.ui.View):
     ) -> None:
         """
         Show a page, but only if the interaction is valid.
-        :param interaction:
-        :param page_number:
-        :return:
+
+        Parameters
+        ----------
+        interaction : disnake.Interaction
+            The interaction to check.
+
+        page_number : int
+            The page number to show.
+
+        Returns
+        -------
+        None
         """
         max_pages = len(self.embeds)
         try:
@@ -87,8 +104,17 @@ class EmbedPaginator(disnake.ui.View):
     async def interaction_check(self, interaction: disnake.Interaction) -> bool:
         """
         Check if the interaction author is the author of the message.
-        :param interaction:
-        :return:
+
+        Parameters
+        ----------
+        interaction : disnake.Interaction
+            The interaction to check.
+
+        Returns
+        -------
+        bool
+            Whether the interaction author is the author of the message.
+
         """
         if interaction.user and interaction.user.id in (
             self.ctx.bot.owner_id,
@@ -103,7 +129,10 @@ class EmbedPaginator(disnake.ui.View):
     async def on_timeout(self) -> None:
         """
         Called when the paginator times out.
-        :return:
+
+        Returns
+        -------
+
         """
         if self.message:
             await self.message.edit(view=None)
@@ -111,8 +140,15 @@ class EmbedPaginator(disnake.ui.View):
     async def show_page(self, page_number: int):
         """
         Show a page.
-        :param page_number:
-        :return:
+
+        Parameters
+        ----------
+        page_number : int
+            The page number to show.
+
+        Returns
+        -------
+        None
         """
         if (page_number < 0) or (page_number > len(self.embeds) - 1):
             return
@@ -125,48 +161,124 @@ class EmbedPaginator(disnake.ui.View):
     async def go_to_first_page(
         self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
-        """Go to the first page."""
+        """
+        Go to the first page.
+
+        Parameters
+        ----------
+        button : disnake.ui.Button
+            The button that was pressed.
+
+        interaction : disnake.Interaction
+            The interaction that was performed.
+
+        Returns
+        -------
+
+        """
         await self.show_page(0)
 
     @disnake.ui.button(label="Back", style=disnake.ButtonStyle.blurple)
     async def go_to_previous_page(
         self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
-        """Go to the previous page."""
+        """
+        Go to the previous page.
+
+        Parameters
+        ----------
+        button : disnake.ui.Button
+            The button that was pressed.
+
+        interaction : disnake.Interaction
+            The interaction that was performed.
+
+        """
         await self.show_page(self.current_page - 1)
 
     @disnake.ui.button(label="Next", style=disnake.ButtonStyle.blurple)
     async def go_to_next_page(
         self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
-        """Go to the next page."""
+        """
+        Go to the next page.
+
+        Parameters
+        ----------
+        button : disnake.ui.Button
+            The button that was pressed.
+
+        interaction : disnake.Interaction
+            The interaction that was performed.
+
+        """
         await self.show_page(self.current_page + 1)
 
     @disnake.ui.button(label="≫", style=disnake.ButtonStyle.grey)
     async def go_to_last_page(
         self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
-        """Go to the last page."""
+        """
+        Go to the last page.
+
+        Parameters
+        ----------
+        button : disnake.ui.Button
+            The button that was pressed.
+
+        interaction : disnake.Interaction
+            The interaction that was performed.
+
+        """
         await self.show_page(len(self.embeds) - 1)
 
     @disnake.ui.button(label="Quit", style=disnake.ButtonStyle.red)
     async def stop_pages(
         self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
-        """stops the pagination session."""
+        """
+        Stops the pagination session.
+
+        Parameters
+        ----------
+        button : disnake.ui.Button
+            The button that was pressed.
+
+        interaction : disnake.Interaction
+            The interaction that was performed.
+
+        """
         await interaction.response.defer()
         await interaction.delete_original_message()
         self.stop()
 
     async def start(self):
-        """Start paginating over the embeds."""
+        """
+        Start paginating over the embeds.
+
+        Returns
+        -------
+
+        """
         embed = self.embeds[0]
         embed.set_footer(text=f"Page 1/{len(self.embeds)}")
         self.message = await self.ctx.channel.send(embed=embed, view=self)
 
 
 class SimpleEmbedPages(EmbedPaginator):
-    """A simple pagination session."""
+    """
+    A simple pagination session.
+
+    Parameters
+    ----------
+    ctx : disnake.ApplicationCommandInteraction
+        The context of the message.
+
+    entries : list
+        A list of embeds to paginate over.
+
+
+    """
 
     def __init__(self, entries, *, ctx):
         super().__init__(embeds=entries, ctx=ctx)
@@ -174,12 +286,23 @@ class SimpleEmbedPages(EmbedPaginator):
 
 
 class Paginator(ListPageSource):
+    """A paginator for a list of entries."""
+
     async def format_page(self, menu, embed: disnake.Embed):
         """
-        Format the page.
-        :param menu:
-        :param embed:
-        :return:
+        A method that formats the page.
+
+        Parameters
+        ----------
+        menu : menus.Menu
+            The menu that is being paginated.
+        embed : disnake.Embed
+            The embed that is being paginated.
+
+        Returns
+        -------
+        disnake.Embed
+            The formatted embed.
         """
         if len(menu.source.entries) != 1:
             em = embed.to_dict()
@@ -207,12 +330,26 @@ class Paginator(ListPageSource):
 
 
 class TextPaginator(ListPageSource):
+    """
+    A paginator for text.
+    """
+
     async def format_page(self, menu, text: str) -> str:
         """
-        A paginator for text.
-        :param menu:
-        :param text:
-        :return:
+        Format the page.
+
+        Parameters
+        ----------
+        menu : disnake.ui.Menu
+            The menu.
+        text : str
+            The text.
+
+        Returns
+        -------
+        str
+            The formatted text.
+
         """
         return text
 
@@ -220,9 +357,19 @@ class TextPaginator(ListPageSource):
 def WrapText(text: str, length: int) -> typing.List[str]:
     """
     A function that wraps text.
-    :param text:
-    :param length:
-    :return:
+
+    Parameters
+    ----------
+    text : str
+        The text to wrap.
+    length : int
+        The length to wrap the text at.
+
+    Returns
+    -------
+    typing.List[str]
+        A list of strings.
+
     """
     wrapper = textwrap.TextWrapper(width=length)
     words = wrapper.wrap(text=text)
@@ -232,18 +379,40 @@ def WrapText(text: str, length: int) -> typing.List[str]:
 def WrapList(list_: list, length: int) -> typing.List[list]:
     """
     A function that wraps a list.
-    :param list_:
-    :param length:
-    :return:
+
+    Parameters
+    ----------
+    list_ : list
+        The list to be wrapped.
+    length : int
+        The length of the list.
+
+    Returns
+    -------
+    list
+        The wrapped list.
+
     """
 
     def chunks(seq: list, size: int) -> list:
         """
         A function that splits a list into chunks.
-        :param seq:
-        :param size:
+
+        Parameters
+        ----------
+        seq : list
+            The list to split.
+
+        size : int
+            The size of the chunks.
+
+        Returns
+        -------
+        list
+            The list of chunks.
+
         """
         for i in range(0, len(seq), size):
-            yield seq[i : i + size]
+            yield seq[i: i + size]
 
     return list(chunks(list_, length))
