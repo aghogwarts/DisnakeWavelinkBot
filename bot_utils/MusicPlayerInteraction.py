@@ -22,7 +22,9 @@ class Track(wavelink.Track):
 
 
 class Queue(asyncio.Queue):
-    """Custom Queue Class"""
+    """
+    Custom Queue Class.
+    """
 
     def __getitem__(self, item):
         if isinstance(item, slice):
@@ -47,7 +49,9 @@ class Queue(asyncio.Queue):
 
 
 class Player(wavelink.Player):
-    """Wavelink music player class."""
+    """
+    Wavelink music player class.
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -75,7 +79,9 @@ class Player(wavelink.Player):
         self.clear_votes = set()
 
     async def play_next_song(self) -> None:
-        """Method which plays the next song in the queue."""
+        """
+        Method which plays the next song in the queue.
+        """
         if self.is_playing or self.waiting:
             return
 
@@ -108,7 +114,6 @@ class Player(wavelink.Player):
     async def songmenucontroller(self) -> None:
         """
         Method which handles the song menu.
-        :return:
         """
         if self.updating:
             return
@@ -138,6 +143,16 @@ class Player(wavelink.Player):
     def parse_duration(duration: int):
         """
         Parse a duration into a human readable string.
+
+        Parameters
+        ----------
+        duration : int
+            The duration to parse.
+
+        Returns
+        -------
+        str
+            The parsed duration.
         """
         minutes, seconds = divmod(duration, 60)
         hours, minutes = divmod(minutes, 60)
@@ -160,7 +175,11 @@ class Player(wavelink.Player):
     async def make_song_embed(self) -> typing.Optional[disnake.Embed]:
         """
         Method which creates the song embed containing the information about the song.
-        :return: The song embed.
+
+        Returns
+        -------
+        typing.Optional[disnake.Embed]
+            The song embed.
         """
         track: Track = self.current
         if not track:
@@ -200,7 +219,12 @@ class Player(wavelink.Player):
     async def is_menu_available(self) -> bool:
         """
         Method which checks whether the player controller should be remade or updated.
-        :return: bool
+
+        Returns
+        -------
+        bool
+            Whether the player controller should be remade or updated.
+
         """
         try:
             async for message in self.context.channel.history(limit=10):
@@ -214,7 +238,6 @@ class Player(wavelink.Player):
     async def teardown(self):
         """
         Method which handles the teardown(clearing and disconnection) of the player.
-        :return:
         """
         try:
             await self.music_player_message.delete()
@@ -230,7 +253,6 @@ class Player(wavelink.Player):
     def loop(self):
         """
         Property which returns the loop of the player.
-        :return:
         """
         return self._loop
 
@@ -238,7 +260,14 @@ class Player(wavelink.Player):
     def loop(self, value: bool = False):
         """
         Property which sets the loop of the player.
-        :param value:
-        :return:
+
+        Parameters
+        ----------
+        value : bool
+            The value to set the loop to.
+
+        Returns
+        -------
+
         """
         self._loop = value
