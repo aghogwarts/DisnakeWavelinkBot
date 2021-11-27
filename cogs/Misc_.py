@@ -4,12 +4,15 @@ import pathlib
 import sys
 import time
 import traceback
+from pydoc import getdoc
+from typing import Callable, Dict, Any
 
 import disnake
 import humanize
 from disnake.ext import commands
 import psutil
 from disnake.ext.commands import Param, InvokableSlashCommand
+
 import wavelink
 from wavelink import Player
 
@@ -32,7 +35,9 @@ class InviteButton(disnake.ui.View):
 
 
 class Misc(commands.Cog):
-    """Miscellaneous commands."""
+    """
+    Miscellaneous commands.
+    """
 
     def __init__(self, bot):
         self.bot = bot
@@ -42,9 +47,17 @@ class Misc(commands.Cog):
     ) -> None:
         """
         Cog wide error handler.
-        :param ctx:
-        :param error:
-        :return:
+
+        This is called when a command fails to execute.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        error : Exception
+            The error that was raised.
+
         """
         if ctx.response.is_done():
             safe_send = ctx.followup.send
@@ -74,6 +87,18 @@ class Misc(commands.Cog):
 
     @commands.slash_command(description="Shows information about the bot.")
     async def info(self, ctx: disnake.ApplicationCommandInteraction):
+        """
+        This command shows information about the bot.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+        `/info`
+        """
         await ctx.response.defer()
         async with ctx.channel.typing():
             process = psutil.Process()
@@ -147,6 +172,18 @@ class Misc(commands.Cog):
         description="Retrieve various Node/Server/Player information."
     )
     async def wavelink_information(self, ctx: disnake.ApplicationCommandInteraction):
+        """
+        This command shows information about the WaveLink.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+        `/wavelink_information`
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -184,6 +221,22 @@ class Misc(commands.Cog):
         ctx: disnake.ApplicationCommandInteraction,
         user: disnake.Member = Param(description="Member Query"),
     ):
+        """
+        This command shows you spotify song information of an user's spotify rich presence,
+        if the user is playing a song.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        user : disnake.Member
+            The member to query.
+
+        Examples
+        --------
+        `/spotify @KortaPo`
+        """
         activities = user.activities
         try:
             act = [
@@ -223,6 +276,18 @@ class Misc(commands.Cog):
 
     @commands.slash_command(description="Shows bot latency.")
     async def ping(self, ctx: disnake.ApplicationCommandInteraction):
+        """
+        This command shows bot latency.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+        `/ping`
+        """
         await ctx.response.send_message("Gathering Information...")
         times = []
         counter = 0
@@ -265,6 +330,18 @@ class Misc(commands.Cog):
 
     @commands.slash_command(description="Shows you the bot's uptime.")
     async def uptime(self, ctx: disnake.ApplicationCommandInteraction):
+        """
+        This command shows you the bot's uptime.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+        `/uptime`
+        """
         await ctx.response.send_message("Gathering Information...")
         embed = disnake.Embed(colour=disnake.Colour.random())
         embed.set_author(name=ctx.me.display_name, icon_url=ctx.me.avatar.url)
@@ -280,6 +357,20 @@ class Misc(commands.Cog):
         ctx: disnake.ApplicationCommandInteraction,
         slash_command: str = Param(description="Command to get help for."),
     ):
+        """
+        This command shows help about bot commands.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+        slash_command : str
+            The command to get help for.
+
+        Examples
+        --------
+        `/help info`
+        """
         slash_commands = [command for command in self.bot.all_slash_commands]
         if slash_command in slash_commands:
             await ctx.response.send_message("Gathering Information...")
@@ -288,7 +379,7 @@ class Misc(commands.Cog):
             embed = disnake.Embed(
                 colour=disnake.Colour.random(),
                 title=f"Help for {slash_command}",
-                timestamp=disnake.utils.utcnow()
+                timestamp=disnake.utils.utcnow(),
             ).set_footer(
                 text=f"Requested by {ctx.author.display_name}",
                 icon_url=ctx.author.display_avatar.url,
@@ -302,6 +393,7 @@ class Misc(commands.Cog):
                 value=f"`{command.docstring['description']}`",
                 inline=False,
             )
+
             return await ctx.edit_original_message(
                 content=f":question: **{slash_command}**", embed=embed
             )
@@ -315,8 +407,8 @@ class Misc(commands.Cog):
     async def command_auto(
         self, ctx: disnake.ApplicationCommandInteraction, user_input: str
     ):
-        commands = [command for command in self.bot.all_slash_commands]
-        selected_commands = difflib.get_close_matches(user_input, commands, n=5)
+        commands = [command.lower() for command in self.bot.all_slash_commands]
+        selected_commands = difflib.get_close_matches(user_input.lower(), commands, n=5)
         return selected_commands
 
 
