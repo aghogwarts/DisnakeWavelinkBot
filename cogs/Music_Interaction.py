@@ -1,5 +1,6 @@
 from youtubesearchpython.__future__ import ChannelsSearch, VideosSearch
 
+from typing import List
 import difflib
 import math
 import re
@@ -24,9 +25,20 @@ youtube_url_regex = re.compile(r"https?://(?:www\.)?.+")
 def youtube(query, download=False):
     """
     Searches YouTube for a video and returns the results.
-    :param query:
-    :param download:
-    :return:
+
+    Parameters
+    ----------
+    query : str
+        The query to search YouTube for.
+    download : bool
+        Whether to download the video.
+
+
+    Returns
+    -------
+    list[dict]
+        A list of YouTube search results.
+
     """
     ytdl = ydl.YoutubeDL(
         {
@@ -59,6 +71,10 @@ class IncorrectChannelError(commands.CommandError):
     pass
 
 
+class EqualizerView(disnake.ui.View):
+    pass
+
+
 class Music(commands.Cog, wavelink.WavelinkMixin):
     """Your friendly music bot"""
 
@@ -69,7 +85,10 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         # Better way to run code when a cog is loaded.
         """
         Fires when the cog is loaded.
-        :return:
+
+        Returns
+        -------
+        None
         """
         if not hasattr(self.bot, "wavelink"):
             self.bot.wavelink = wavelink.Client(bot=self.bot)
@@ -77,7 +96,13 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         self.bot.loop.create_task(self.start_nodes())
 
     async def start_nodes(self) -> None:
-        """Connect and initiate nodes."""
+        """
+        Connect and initiate nodes.
+
+        Returns
+        -------
+        None
+        """
         await self.bot.wait_until_ready()
 
         if self.bot.wavelink.nodes:
@@ -103,7 +128,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 "identifier": "Lavalink",
                 "region": "us_central",
             },
-        }  # Lava.link is a public Lavalink node that you can connect to.
+        }
 
         for n in nodes.values():
             await self.bot.wavelink.initiate_node(**n)
@@ -112,8 +137,15 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def on_node_ready(self, node: wavelink.Node):
         """
         Fires when a node is ready.
-        :param node: :class:`wavelink.Node`
-        :return:
+
+        Parameters
+        ----------
+        node : wavelink.Node
+            The node that is ready.
+
+        Returns
+        -------
+
         """
         self.bot.logger.info(f"Node {node.identifier} is running!", __name="Music Bot")
 
@@ -123,6 +155,17 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def on_player_stop(self, node: wavelink.Node, payload):
         """
         Fires when a player stops.
+
+        Parameters
+        ----------
+        node : wavelink.Node
+            The node that is ready.
+        payload : wavelink.Payload
+            The payload of the event.
+
+        Returns
+        -------
+        None
         """
         await payload.player.play_next_song()
 
@@ -133,7 +176,24 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         before: disnake.VoiceState,
         after: disnake.VoiceState,
     ):
-        """Assign DJ role to the user who is currently playing music."""
+        """
+        Assign DJ role to the user who is currently playing music.
+
+        Parameters
+        ----------
+        member : disnake.Member
+            The member who is currently playing music.
+
+        before : disnake.VoiceState
+            The voice state before the update.
+
+        after : disnake.VoiceState
+            The voice state after the update.
+
+        Returns
+        -------
+        None
+        """
         if member.bot:
             return
 
@@ -161,9 +221,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     ) -> None:
         """
         Cog wide error handler.
-        :param ctx: :class:`disnake.ApplicationCommandInteraction`
-        :param error: :class:`Exception`
-        :return: None
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        error : Exception
+            The error that was raised.
+
+        Returns
+        -------
+        None
         """
         if ctx.response.is_done():
             safe_send = ctx.followup.send
@@ -204,8 +273,15 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def cog_slash_before_invoke(self, ctx: disnake.ApplicationCommandInteraction):
         """
         Cog wide before slash command invoke handler.
-        :param ctx:
-        :return:
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Returns
+        -------
+        None
         """
         if ctx.response.is_done():
             safe_send = ctx.followup.send
@@ -246,7 +322,20 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 raise IncorrectChannelError
 
     def vote_check(self, ctx: disnake.ApplicationCommandInteraction):
-        """Returns required votes based on amount of members in a channel."""
+        """
+        Returns required votes based on amount of members in a channel.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Returns
+        -------
+        int
+            The required votes.
+
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -260,7 +349,20 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         return required
 
     def is_author(self, ctx: disnake.ApplicationCommandInteraction):
-        """Check whether the user is the command invoker / ctx.author`."""
+        """
+        Check whether the user is the command invoker / ctx.author`.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Returns
+        -------
+        bool
+            Whether the user is the command invoker / ctx.author`.
+
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -272,7 +374,21 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ctx: disnake.ApplicationCommandInteraction,
         channel: typing.Union[disnake.VoiceChannel, disnake.StageChannel] = None,
     ) -> None:
-        """Connect to a voice channel."""
+        """
+        Connect to a voice channel.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        channel : disnake.VoiceChannel, Optional
+            The voice channel to connect to.
+
+        Returns
+        -------
+        None
+        """
 
         music_player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -302,6 +418,22 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ctx: disnake.ApplicationCommandInteraction,
         query: str = Param(description="Video Query"),
     ):
+        """
+        A command that searches youtube videos.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        query : str
+            The query to search for.
+
+        Examples
+        --------
+        `/youtube video query: dank memes`
+
+        """
         await ctx.response.send_message("Searching...")
         if re.search(r"^(https?\:\/\/)?((www\.)?youtube\.com|youtu\.?be)\/.+$", query):
             async with ctx.channel.typing():
@@ -349,6 +481,21 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ctx: disnake.ApplicationCommandInteraction,
         query: str = Param(description="Channel Query"),
     ):
+        """
+        A command that searches youtube channels.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        query : str
+            The query to search for.
+
+        Examples
+        --------
+        `/youtube channel query: one vilage`
+        """
 
         async with ctx.channel.typing():
             channels = (await (ChannelsSearch(query, limit=15, region="US")).next())[
@@ -414,8 +561,22 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ctx: disnake.ApplicationCommandInteraction,
         query: str = Param(description="Song search"),
     ):
-        """A command that will play your favorite song and if a song is already playing, it will add the song in
-        queue."""
+        """
+        A command that will play your favorite song and if a song is already playing, it will add the song in
+        queue.
+
+        Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The context of the command.
+
+        query: str
+            The query to search for.
+
+        Examples
+        --------
+        `/play query: "song name"`
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -462,7 +623,24 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ctx: disnake.ApplicationCommandInteraction,
         channel: disnake.TextChannel = Param(description="Your channel"),
     ):
-        """A command that will switch to a different channel and set it as the channel where the bot was invoked."""
+        """
+        A command that will switch to a different channel and set it as the channel where the bot was invoked.
+
+        This command is useful when you want to play music in a different channel than the one where the bot was
+        invoked before.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The context of the command.
+
+        channel : disnake.TextChannel
+            The channel where the bot will be invoked.
+
+        Examples
+        --------
+        `/switch_channel channel: #general`
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -486,7 +664,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Pause the currently playing song.")
     async def pause(self, ctx: disnake.ApplicationCommandInteraction):
-        """A command that will pause the music player."""
+        """
+        A command that will pause the music player, if it is playing a track.
+
+        Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The context of the command.
+
+        Examples
+        --------
+        `/pause`
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -544,7 +733,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Resumes a currently paused song.")
     async def resume(self, ctx: disnake.ApplicationCommandInteraction):
-        """A command that will resume a paused player music player."""
+        """
+        A command that will resume the music player if it is paused.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The context of the command.
+
+        Examples
+        --------
+        `/resume`
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -595,7 +795,19 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Skip the currently playing song.")
     async def skip(self, ctx: disnake.ApplicationCommandInteraction):
-        """A command that will skip to the next song in queue."""
+        """
+        A command that will skip to the next song in queue. You need to have songs in queue to skip.
+        The DJ of the song, can skip it without voting, else the members listening to the track, need to vote to skip.
+
+        Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The context of the command.
+
+        Examples
+        --------
+        `/skip`
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -653,7 +865,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         description="Stop the currently playing song and the music player."
     )
     async def stop(self, ctx: disnake.ApplicationCommandInteraction):
-        """A command that will stop the music player."""
+        """
+        A command that will stop the music player.
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -698,7 +912,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Disconnect the bot and stop the music player.")
     async def disconnect(self, ctx: disnake.ApplicationCommandInteraction):
-        """A command that will stop and clear the music player and disconnect the bot."""
+        """
+        A command that will stop and clear the music player and disconnect the bot.
+
+        Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The context of the command.
+
+        Examples
+        --------
+        `/disconnect`
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -728,7 +953,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ctx: disnake.ApplicationCommandInteraction,
         vol: int = Param(description="The volume to set the player to.", gt=1, lt=100),
     ):
-        """A command that will alter the volume of the music player, between 1 and 100."""
+        """
+        A command that will alter the volume of the music player, between 1 and 100.
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -765,8 +992,21 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Loops the current playing track.")
     async def loop(self, ctx: disnake.ApplicationCommandInteraction):
-        """A command that will loop your specific music track and keep playing it repeatedly.
-        Use the loop command again to unloop your music track."""
+        """
+        A command that will loop your specific music track and keep playing it repeatedly.
+        Use the loop command again to unloop your music track.
+
+        Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The context of the command.
+
+        Examples
+        --------
+        `/loop` - Loops the current track.
+
+        `/loop` - unloops the current track.
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -809,8 +1049,19 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Shuffle the players queue.")
     async def shuffle(self, ctx: disnake.ApplicationCommandInteraction):
-        """A command that will shuffle the entire queue of the current music player instance.
-        You need at least 3 songs queued in order to shuffle."""
+        """
+        A command that will shuffle the entire queue of the current music player instance.
+        You need at least 3 songs or more in queue in order to shuffle properly.
+
+         Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The context of the command.
+
+        Examples
+        --------
+        `/shuffle`
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -866,7 +1117,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Clears the entire queue.")
     async def clearqueue(self, ctx: disnake.ApplicationCommandInteraction):
-        """A command that will clear the entire queue of the current music player instance."""
+        """
+        A command that will clear the entire queue of the current music player instance.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+        `/clearqueue`
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -926,12 +1188,28 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ctx: disnake.ApplicationCommandInteraction,
         *,
         name: str = Param(
-            description="The name of " "the song to " "search for " "lyrics.",
+            description="The name of the song to search  the lyrics of.",
             default=None,
         ),
     ):
-        """A command that will show the lyrics of the current playing song or the name of the song you want lyrics
-        for."""
+        """
+        A command that will show the lyrics of the current playing song or the name of the song you want lyrics
+        for, if you explicitly specify it.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        name : typing.Optional[str]
+            The name of the song to search the lyrics of.
+
+        Examples
+        --------
+        `/lyrics`
+
+        `/lyrics "The Chainsmokers - Closer"`
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -994,12 +1272,26 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ctx: disnake.ApplicationCommandInteraction,
         equalizer: str = Param(description="Your equalizer."),
     ):
-        """A command that can change music player's equalizer to your choice. There are four inbuilt equalizers:
+        """
+        A command that can change music player's equalizer to your choice. There are four inbuilt equalizers:
 
         Piano -> A piano-like equalizer.
         Flat -> A flat equalizer.
         Metal -> A metal equalizer.
         Boost -> A bass boost equalizer.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The context of the command.
+
+        equalizer : str
+            The name of the equalizer you want to change to.
+
+        Examples
+        --------
+        `/equalizer equalizer: piano`
+
         """
 
         player: Player = self.bot.wavelink.get_player(
@@ -1019,6 +1311,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['info']} Only the `{ctx.author}` can change the equalizer.",
                     color=disnake.Colour.random(),
+                )
+            )
+
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
                 )
             )
 
@@ -1047,16 +1347,139 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 colour=disnake.Colour.random(),
             )
         )
-        await player.set_eq(eq)
+        await player.set_equalizer(eq)
 
     @equalizer.autocomplete(option_name="equalizer")
     async def equalizer_autocomplete(
         self, ctx: disnake.ApplicationCommandInteraction, user_input: str
     ):
-        """Autocomplete for equalizers."""
+        """
+        Autocomplete for equalizers.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        user_input : str
+            The user input.
+
+        Returns
+        -------
+        list
+            A list of valid options based on the user input.
+
+        """
         eqs = ["flat", "boost", "metal", "piano"]
         eq = difflib.get_close_matches(user_input, eqs)
         return eq
+
+    @commands.slash_command(name="filter", description="Add a filter to the player.")
+    async def track_filter(
+        self,
+        ctx: disnake.ApplicationCommandInteraction,
+        filter_: str = Param(description="Your filter."),
+    ):
+        """
+        A command that can add a filter to the player. This can adversely affect the quality of the audio.
+        There are four inbuilt filters:
+
+        Tremolo -> A tremolo filter.
+        Vibrato -> A vibrato filter.
+        8D -> A 8D filter.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        filter_ : str
+            The filter you want to add.
+
+        Examples
+        --------
+        `/filter filter_: tremolo`
+
+        """
+
+        player: Player = self.bot.wavelink.get_player(
+            guild_id=ctx.guild.id, cls=Player, context=ctx
+        )
+
+        if not player.is_connected:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        if not self.is_author(ctx):
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['info']} Only the `{ctx.author}` can set the filter.",
+                    color=disnake.Colour.random(),
+                )
+            )
+
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+        filters = {
+            "Tremolo": wavelink.BaseFilter.tremolo(),
+            "Karaoke": wavelink.BaseFilter.karaoke(),
+            "Vibrato": wavelink.BaseFilter.vibrato(),
+            "8D": wavelink.BaseFilter.Eight_D_Audio(),
+        }
+
+        try:
+            filter__ = filters[filter_]
+        except KeyError:
+            joined = "\n".join(filters.keys())
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} Invalid Filter provided. Valid Filters:\n\n`{joined}`",
+                    color=disnake.Colour.random(),
+                )
+            )
+
+        await ctx.response.send_message(
+            embed=disnake.Embed(
+                description=f"{self.bot.icons['greentick']} Successfully "
+                f"set filter to `{filter_}`",
+                colour=disnake.Colour.random(),
+            )
+        )
+        await player.set_filter(filter__)
+
+    @track_filter.autocomplete(option_name="filter_")
+    async def filter_autocomplete(
+        self, ctx: disnake.ApplicationCommandInteraction, user_input: str
+    ) -> List[str]:
+        """
+        Autocomplete for filters.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        user_input : str
+            The user input.
+
+        Returns
+        -------
+        list
+            A list of valid filters matching the user input.
+
+        """
+        filters = ["Tremolo", "Karaoke", "Vibrato", "8D"]
+        fil = difflib.get_close_matches(user_input.lower(), filters)
+        return fil
 
     @commands.slash_command(description="Create and set a custom player equalizer.")
     async def customequalizer(
@@ -1065,12 +1488,27 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         equalizer: str = Param(description="Your equalizer name"),
         levels: str = Param(description="Your equalizer levels in a list."),
     ):
-        """A command that you can use to create and set a custom equalizer. This is only for people who know
+        """
+        A command that you can use to create and set a custom equalizer. This is only for people who know
         what they are doing. You do not need to use this command to set your equalizer.
 
-        Example: /customequalizer equalizer: my_eq levels: [(0, -0.25), (1, -0.25), (2, -0.125), (3, 0.0),
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        equalizer : str
+            The name of the equalizer.
+
+        levels : str
+            The levels of the equalizer.
+
+        Examples
+        --------
+         `/customequalizer equalizer: my_eq levels: [(0, -0.25), (1, -0.25), (2, -0.125), (3, 0.0),
                   (4, 0.25), (5, 0.25), (6, 0.0), (7, -0.25), (8, -0.25),
-                  (9, 0.0), (10, 0.0), (11, 0.5), (12, 0.25), (13, -0.025)]"""
+                  (9, 0.0), (10, 0.0), (11, 0.5), (12, 0.25), (13, -0.025)]`
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -1105,8 +1543,19 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Display the player's queued songs.")
     async def queue(self, ctx: disnake.ApplicationCommandInteraction):
-        """A command that will show all the songs that queued in the music player. It has pagination,
-        so its easy for you to browse."""
+        """
+        A command that will show all the songs that queued in the music player. It has pagination,
+        so its easy for you to browse.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+         `/queue`
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -1128,7 +1577,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                     colour=disnake.Colour.random(),
                 ),
             )
-        await ctx.response.defer()
+        await ctx.response.send_message("Loading...")
 
         entries = []
         for track in player.queue._queue:
@@ -1145,7 +1594,22 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Show the current playing song")
     async def nowplaying(self, ctx: disnake.ApplicationCommandInteraction):
-        """A command that will show the information about the track that has been playing."""
+        """
+        A command that will show the information about the track that has been playing.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+         `/nowplaying`
+
+        Returns
+        -------
+        None
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -1171,8 +1635,19 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Save the current playing song in your dms.")
     async def save(self, ctx: disnake.ApplicationCommandInteraction):
-        """A command that will show the information about the track that has been playing and send it in your dms,
-        if possible, so make sure that you have kept your dms open."""
+        """
+        A command that will show the information about the track that has been playing and send it in your dms,
+        if possible, so make sure that you have kept your dms open.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+         `/save`
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -1205,8 +1680,21 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             description="The time position to seek to. For eg: /seek 3:56"
         ),
     ):
-        """A command that will seek aka skip to a specific part of a track in a song that has been playing.
-        Example: /seek 3:56 -> This will skip to 3 minutes and 56 seconds in the playing track."""
+        """
+        A command that will seek aka skip to a specific part of a track in a song that has been playing.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        position : str
+            The time position to seek to. For eg: /seek 3:56
+
+        Examples
+        --------
+        `/seek position: 3:56` -> This will skip to 3 minutes and 56 seconds in the playing track.
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -1263,7 +1751,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ctx: disnake.ApplicationCommandInteraction,
         member: disnake.Member = Param(description="The member to swap to"),
     ):
-        """A command that will switch the player's DJ to another member in the same voice channel."""
+        """
+        A command that will switch the player's DJ to another member in the same voice channel.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The context of the command.
+
+        member: disnake.Member
+            The member to swap to.
+
+        """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
