@@ -24,7 +24,9 @@ async def cog_autocomp(inter: disnake.ApplicationCommandInteraction, user_input:
 
 
 class Owner(commands.Cog, name="Developer"):
-    """Commands specifically developer for Bot developers."""
+    """
+    Commands specifically developer for Bot developers.
+    """
 
     def __init__(self, bot):
         self.bot = bot
@@ -32,7 +34,17 @@ class Owner(commands.Cog, name="Developer"):
     async def cog_slash_command_error(
         self, ctx: disnake.ApplicationCommandInteraction, error: Exception
     ) -> None:
-        """Handles errors raised by commands in the cog."""
+        """
+        Handles errors raised by commands in the cog.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        error : Exception
+            The error that was raised.
+        """
         if ctx.response.is_done():
             safe_send = ctx.followup.send
         else:
@@ -87,6 +99,21 @@ class Owner(commands.Cog, name="Developer"):
         action: str = Param(autocomplete=command_autocomp),
         cog: str = Param(autocomplete=cog_autocomp),
     ):
+        """
+        This command manages the cogs of the bot. It can enable, disable, reload, and remove cogs.
+        Only Bot owners can use this command.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        action : str
+            The action to perform on the cog.
+
+        cog : str
+            The name of the cog to perform the action on.
+        """
 
         if action.lower() == "disable":
 
@@ -159,6 +186,14 @@ class Owner(commands.Cog, name="Developer"):
 
     @botconfig.sub_command(description="Shows cog information")
     async def coginfo(self, ctx: disnake.ApplicationCommandInteraction):
+        """
+        This command shows information about the cogs of the bot.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+        """
         loaded_cogs = []
         for cog in self.bot.extensions.keys():
             cog_name = cog.split(".")
@@ -202,6 +237,20 @@ class Owner(commands.Cog, name="Developer"):
         ctx: disnake.ApplicationCommandInteraction,
         amount: int = Param(description="Amount of messages", default=10),
     ):
+        """
+        This command purges messages from the channel.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+        amount : int
+            The amount of messages to purge.
+
+        Examples
+        --------
+        `/cleanup amount: 15`
+        """
         await ctx.response.send_message(
             f"Deleting {amount} messages now...", ephemeral=True
         )
@@ -221,6 +270,18 @@ class Owner(commands.Cog, name="Developer"):
     @commands.slash_command(name="setstatus", description="Sets the bot status.")
     @commands.is_owner()
     async def status(self, ctx: disnake.ApplicationCommandInteraction):
+        """
+        This command sets the bot status. Only Bot Owner can use this command.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+        `/setstatus watching: disnake`
+        """
         pass
 
     @status.sub_command(description="Set Streaming Status.")
@@ -230,6 +291,22 @@ class Owner(commands.Cog, name="Developer"):
         url: str = Param(description="Stream url"),
         game: str = Param(description="Your game name here"),
     ):
+        """
+        This subcommand sets the bot status to streaming.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+        url : str
+            The url of the stream.
+        game : str
+            The game you are playing.
+
+        Examples
+        --------
+        `/setstatus streaming: https://www.twitch.tv/disnake game: disnake`
+        """
         game = game.replace("{users}", str(len(self.bot.users))).replace(
             "{guilds}", str(len(self.bot.guilds))
         )
@@ -249,9 +326,23 @@ class Owner(commands.Cog, name="Developer"):
     @status.sub_command(description="Set Playing Status.")
     async def playing(
         self,
-        ctx: disnake.Interaction,
+        ctx: disnake.ApplicationCommandInteraction,
         game: str = Param(description="Your game name here"),
     ):
+        """
+        This subcommand sets the bot status to playing.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+        game : str
+            The game you are playing.
+
+        Examples
+        --------
+        `/setstatus playing: disnake`
+        """
 
         game = game.replace("{users}", str(len(self.bot.users))).replace(
             "{guilds}", str(len(self.bot.guilds))
@@ -268,9 +359,25 @@ class Owner(commands.Cog, name="Developer"):
     @status.sub_command(description="Set Watching Status.")
     async def watching(
         self,
-        ctx: disnake.Interaction,
+        ctx: disnake.ApplicationCommandInteraction,
         game: str = Param(description="Your game name here"),
     ):
+        """
+        This subcommand sets the bot status to watching.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        game : str
+            The game you are watching.
+
+        Examples
+        --------
+        `/setstatus watching: disnake`
+
+        """
 
         game = game.replace("{users}", str(len(self.bot.users))).replace(
             "{guilds}", str(len(self.bot.guilds))
@@ -289,9 +396,25 @@ class Owner(commands.Cog, name="Developer"):
     @status.sub_command(description="Set Listening Status.")
     async def listening(
         self,
-        ctx: disnake.Interaction,
+        ctx: disnake.ApplicationCommandInteraction,
         game: str = Param(description="Your game name here"),
     ):
+        """
+        This subcommand sets the bot status to listening.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        game : str
+            The game you are listening to.
+
+        Examples
+        --------
+        `/setstatus listening: disnake`
+
+        """
 
         game = game.replace("{users}", str(len(self.bot.users))).replace(
             "{guilds}", str(len(self.bot.guilds))
@@ -310,9 +433,25 @@ class Owner(commands.Cog, name="Developer"):
     @status.sub_command(description="Set Competing Status.")
     async def competing(
         self,
-        ctx: disnake.Interaction,
+        ctx: disnake.ApplicationCommandInteraction,
         game: str = Param(description="Your game name here"),
     ):
+        """
+        This subcommand sets the bot status to competing.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        game : str
+            The game you are competing in.
+
+        Examples
+        --------
+        `/setstatus competing: disnake`
+
+        """
 
         game = game.replace("{users}", str(len(self.bot.users))).replace(
             "{guilds}", str(len(self.bot.guilds))
@@ -329,7 +468,19 @@ class Owner(commands.Cog, name="Developer"):
         )
 
     @status.sub_command(description="Set Original Bot Status.")
-    async def reset(self, ctx: disnake.Interaction):
+    async def reset(self, ctx: disnake.ApplicationCommandInteraction):
+        """
+        This subcommand resets the bot status to the original status.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+        `/setstatus reset`
+        """
 
         await self.bot.change_presence(
             activity=disnake.Game(
