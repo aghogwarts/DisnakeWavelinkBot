@@ -16,7 +16,9 @@ with open("./bot_utils/config.json") as f:
 
 
 class Bot(commands.AutoShardedBot):
-    """A subclass of `commands.AutoShardedBot` with additional features."""
+    """
+    A subclass of `commands.AutoShardedBot` with additional features.
+    """
 
     def __init__(self, *args, **kwargs):
         intents = Intents.all()
@@ -45,8 +47,15 @@ class Bot(commands.AutoShardedBot):
     def load_cogs(self, exts) -> None:
         """
         A method that loads all the cogs in the cogs folder.
-        :param exts:
-        :return:
+
+        Parameters
+        ----------
+        exts: `Iterable[list]`
+            A list of extensions to load.
+
+        Returns
+        -------
+         None
         """
 
         for m in pkgutil.iter_modules([exts]):
@@ -64,9 +73,17 @@ class Bot(commands.AutoShardedBot):
         """
         A method that logs the bot into Discord.
         Create the ClientSession before logging in.
-        :param args:
-        :param kwargs:
-        :return:
+
+        Parameters
+        ----------
+        *args
+            Positional arguments.
+        **kwargs
+            Keyword arguments.
+
+        Returns
+        -------
+        None
         """
 
         self.session = ClientSession()
@@ -76,7 +93,10 @@ class Bot(commands.AutoShardedBot):
     async def on_ready(self):
         """
         An event that triggers when the bot is connected properly to gateway and bot cache is completely loaded.
-        :return:
+
+        Returns
+        -------
+        None
         """
         print(
             f"----------Bot Initialization.-------------\n"
@@ -91,8 +111,15 @@ class Bot(commands.AutoShardedBot):
         """
         An event that triggers when the bot receives a raw message from the gateway.
         This event replicates discord.py's 'on_socket_response' event that was removed for dpy v2.0 in disnake.
-        :param msg:
-        :return:
+
+        Parameters
+        ----------
+        msg: `bytes`
+            The raw message received from the gateway.
+
+        Returns
+        -------
+        None
         """
         self._zlib = zlib.decompressobj()
         self._buffer = bytearray()
@@ -114,7 +141,10 @@ class Bot(commands.AutoShardedBot):
     async def on_disconnect(self):
         """
         An event that triggers when the bot is disconnected from the gateway.
-        :return:
+
+        Returns
+        -------
+        None
         """
         self.clear()  # clearing bot cache
         self.logger.info(f"Bot disconnected from gateway.", __name="Music Bot")
