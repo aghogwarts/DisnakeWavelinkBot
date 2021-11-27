@@ -1,20 +1,32 @@
 import datetime
 import difflib
 import pathlib
+import pydoc
 import sys
 import time
 import traceback
-from pydoc import getdoc
-from typing import Callable, Dict, Any
-
+import asyncio
 import disnake
 import humanize
-from disnake.ext import commands
 import psutil
+from disnake.ext import commands
 from disnake.ext.commands import Param, InvokableSlashCommand
 
 import wavelink
 from wavelink import Player
+
+
+def get_docs(string):
+    def _get_docs(obj, args):
+        if len(args) == 1:
+            return getattr(obj, args[0])
+        else:
+            return _get_docs(getattr(obj, args[0]), args[1:])
+
+    if len(args := string.split(".")) > 1:
+        return _get_docs(globals()[args[0]], args[1:]).__doc__
+    else:
+        return globals()[args[0]].__doc__
 
 
 class InviteButton(disnake.ui.View):
@@ -376,6 +388,11 @@ class Misc(commands.Cog):
             await ctx.response.send_message("Gathering Information...")
 
             command: InvokableSlashCommand = self.bot.get_slash_command(slash_command)
+            examples = (
+                command.callback.__doc__.replace("\n", "")
+                .split("Examples")[1]
+                .replace("--------", "")
+            )
             embed = disnake.Embed(
                 colour=disnake.Colour.random(),
                 title=f"Help for {slash_command}",
@@ -393,6 +410,7 @@ class Misc(commands.Cog):
                 value=f"`{command.docstring['description']}`",
                 inline=False,
             )
+            embed.add_field(name="Examples", value=f"{examples}", inline=False)
 
             return await ctx.edit_original_message(
                 content=f":question: **{slash_command}**", embed=embed
