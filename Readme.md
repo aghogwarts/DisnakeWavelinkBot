@@ -23,6 +23,13 @@ Wavelink has been rewritten to support disnake.
 You will need `python 3.8` or above to run this program.
 The entire music bot operates on slash commands and global slash commands take up to an hour to get registered.
 
+Lavalink.jar file is too big to be included in the repository, so you have to install it yourself in the directory 
+``lavalink``.
+
+Visit [Lavalink 3.4](https://github.com/freyacodes/Lavalink/releases/tag/3.4) to download the latest version. 
+Make sure you have JDK 8 or JDK 13 installed.
+
+Install Lavalink.jar in the directory ``lavalink`` and that's it.
 ## What is Lavalink and how this music bot works??
 
 Lavalink is a standalone audio streaming node written in Java that is based on `Lavaplayer`(An audio player written in Java).
