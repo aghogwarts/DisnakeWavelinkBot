@@ -12,7 +12,10 @@ program = "java"  # checking that if Java is installed on the host system or not
 def run_lavalink_process():
     """
     A function that runs the Lavalink server.
-    :return: 
+
+    Returns
+    -------
+    None.
     """
     process = subprocess.run(["which", program], capture_output=True, text=True)
     if process.returncode == 0:
@@ -45,7 +48,10 @@ def run_lavalink_process():
 def lavalink_alive():
     """
     A function that creates a thread that runs the Lavalink server.
-    :return: 
+
+    Returns
+    -------
+    None.
     """
     target = threading.Thread(target=run_lavalink_process)
     target.start()
