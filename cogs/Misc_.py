@@ -1,11 +1,9 @@
 import datetime
 import difflib
 import pathlib
-import pydoc
 import sys
 import time
 import traceback
-import asyncio
 import disnake
 import humanize
 import psutil
@@ -14,19 +12,6 @@ from disnake.ext.commands import Param, InvokableSlashCommand
 
 import wavelink
 from wavelink import Player
-
-
-def get_docs(string):
-    def _get_docs(obj, args):
-        if len(args) == 1:
-            return getattr(obj, args[0])
-        else:
-            return _get_docs(getattr(obj, args[0]), args[1:])
-
-    if len(args := string.split(".")) > 1:
-        return _get_docs(globals()[args[0]], args[1:]).__doc__
-    else:
-        return globals()[args[0]].__doc__
 
 
 class InviteButton(disnake.ui.View):
@@ -121,7 +106,11 @@ class Misc(commands.Cog):
             def line_count() -> tuple[int, int, int, int, int, int]:
                 """
                 Counts the number of lines in the codebase.
-                :return: tuple(files, classes, functions, comments, lines, letters)
+
+                Returns
+                -------
+                tuple[int, int, int, int, int, int]
+                    The number of lines in the codebase.
                 """
                 files = classes = funcs = comments = lines = letters = 0
                 p = pathlib.Path("./")
@@ -215,7 +204,7 @@ class Misc(commands.Cog):
             f"`{node.stats.playing_players}` players are playing on server.\n\n"
             f"Server Memory: `{used}/{total}` | `({free} free)`\n"
             f"Server CPU: `{cpu}`\n\n"
-            f"Server Uptime: `{datetime.timedelta(milliseconds=node.stats.uptime)}`"
+            f"Server Uptime: `{humanize.precisedelta(datetime.timedelta(milliseconds=node.stats.uptime))}`"
         )
         await ctx.response.send_message(
             embed=disnake.Embed(
@@ -388,6 +377,7 @@ class Misc(commands.Cog):
             await ctx.response.send_message("Gathering Information...")
 
             command: InvokableSlashCommand = self.bot.get_slash_command(slash_command)
+            sub_commands = command.children if command.children else []
             examples = (
                 command.callback.__doc__.replace("\n", "")
                 .split("Examples")[1]
