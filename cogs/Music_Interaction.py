@@ -1,20 +1,21 @@
 from youtubesearchpython.__future__ import ChannelsSearch, VideosSearch
 
-from typing import List
-import difflib
 import math
 import re
 import sys
 import traceback
 import typing
+
 import disnake
 import humanize
 import youtube_dl as ydl
 from disnake.ext import commands
 from disnake.ext.commands.params import Param
+
 import wavelink
 from MusicBot import Bot
 from bot_utils.MusicPlayerInteraction import Player, Track
+from bot_utils.MusicPlayerViews import EqualizerView, FilterView
 from bot_utils.paginator import SimpleEmbedPages, WrapText
 from jishaku.functools import executor_function
 
@@ -60,18 +61,18 @@ def youtube(query, download=False):
 
 
 class NoChannelProvided(commands.CommandError):
-    """Error raised when no suitable voice channel was supplied."""
+    """
+    Error raised when no suitable voice channel was supplied.
+    """
 
     pass
 
 
 class IncorrectChannelError(commands.CommandError):
-    """Error raised when commands are issued outside of the players session channel."""
+    """
+    Error raised when commands are issued outside of the players session channel.
+    """
 
-    pass
-
-
-class EqualizerView(disnake.ui.View):
     pass
 
 
@@ -408,7 +409,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             ).set_footer(text=f"Requested by {ctx.author.name}")
         )
 
-    @commands.slash_command()
+    @commands.slash_command(invoke_without_command=True)
     async def youtube(self, ctx: disnake.ApplicationCommandInteraction):
         pass
 
@@ -1267,13 +1268,10 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await pag.start()
 
     @commands.slash_command(description="Change the player's equalizer.")
-    async def equalizer(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        equalizer: str = Param(description="Your equalizer."),
-    ):
+    async def equalizer(self, ctx: disnake.ApplicationCommandInteraction):
         """
-        A command that can change music player's equalizer to your choice. There are four inbuilt equalizers:
+        A command that can change music player's equalizer to your choice. You will be asked to select between equalizers.
+        There are four inbuilt equalizers:
 
         Piano -> A piano-like equalizer.
         Flat -> A flat equalizer.
@@ -1285,12 +1283,10 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ctx : disnake.ApplicationCommandInteraction
             The context of the command.
 
-        equalizer : str
-            The name of the equalizer you want to change to.
 
         Examples
         --------
-        `/equalizer equalizer: piano`
+        `/equalizer`
 
         """
 
@@ -1322,64 +1318,13 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 )
             )
 
-        eqs = {
-            "flat": wavelink.Equalizer.flat(),
-            "boost": wavelink.Equalizer.boost(),
-            "metal": wavelink.Equalizer.metal(),
-            "piano": wavelink.Equalizer.piano(),
-        }  # you can make your own custom equalizers and pass it here.
-
-        eq = eqs.get(equalizer.lower(), None)
-
-        if not eq:
-            joined = "\n".join(eqs.keys())
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} Invalid EQ provided. Valid EQs:\n\n`{joined}`",
-                    color=disnake.Colour.random(),
-                )
-            )
-
         await ctx.response.send_message(
-            embed=disnake.Embed(
-                description=f"{self.bot.icons['greentick']} Successfully "
-                f"changed equalizer to `{equalizer}`",
-                colour=disnake.Colour.random(),
-            )
+            content="Select an equalizer:",
+            view=EqualizerView(interaction=ctx, player=player),
         )
-        await player.set_equalizer(eq)
-
-    @equalizer.autocomplete(option_name="equalizer")
-    async def equalizer_autocomplete(
-        self, ctx: disnake.ApplicationCommandInteraction, user_input: str
-    ):
-        """
-        Autocomplete for equalizers.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        user_input : str
-            The user input.
-
-        Returns
-        -------
-        list
-            A list of valid options based on the user input.
-
-        """
-        eqs = ["flat", "boost", "metal", "piano"]
-        eq = difflib.get_close_matches(user_input, eqs)
-        return eq
 
     @commands.slash_command(name="filter", description="Add a filter to the player.")
-    async def track_filter(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        filter_: str = Param(description="Your filter."),
-    ):
+    async def track_filter(self, ctx: disnake.ApplicationCommandInteraction):
         """
         A command that can add a filter to the player. This can adversely affect the quality of the audio.
         There are four inbuilt filters:
@@ -1392,9 +1337,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ----------
         ctx : disnake.ApplicationCommandInteraction
             The Interaction of the command.
-
-        filter_ : str
-            The filter you want to add.
 
         Examples
         --------
@@ -1429,57 +1371,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                     colour=disnake.Colour.random(),
                 )
             )
-        filters = {
-            "Tremolo": wavelink.BaseFilter.tremolo(),
-            "Karaoke": wavelink.BaseFilter.karaoke(),
-            "Vibrato": wavelink.BaseFilter.vibrato(),
-            "8D": wavelink.BaseFilter.Eight_D_Audio(),
-        }
-
-        try:
-            filter__ = filters[filter_]
-        except KeyError:
-            joined = "\n".join(filters.keys())
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} Invalid Filter provided. Valid Filters:\n\n`{joined}`",
-                    color=disnake.Colour.random(),
-                )
-            )
 
         await ctx.response.send_message(
-            embed=disnake.Embed(
-                description=f"{self.bot.icons['greentick']} Successfully "
-                f"set filter to `{filter_}`",
-                colour=disnake.Colour.random(),
-            )
+            content="Please select a filter.",
+            view=FilterView(interaction=ctx, player=player),
         )
-        await player.set_filter(filter__)
-
-    @track_filter.autocomplete(option_name="filter_")
-    async def filter_autocomplete(
-        self, ctx: disnake.ApplicationCommandInteraction, user_input: str
-    ) -> List[str]:
-        """
-        Autocomplete for filters.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        user_input : str
-            The user input.
-
-        Returns
-        -------
-        list
-            A list of valid filters matching the user input.
-
-        """
-        filters = ["Tremolo", "Karaoke", "Vibrato", "8D"]
-        fil = difflib.get_close_matches(user_input.lower(), filters)
-        return fil
 
     @commands.slash_command(description="Create and set a custom player equalizer.")
     async def customequalizer(
