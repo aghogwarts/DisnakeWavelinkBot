@@ -1,5 +1,6 @@
 """
-This code is inspired from pomice (the filters and its configurations) another Lavalink Client and has be modified to fit the needs of Wavelink.
+The filter configurations are taken from Lavalink and pomice (Another Lavalink client), but rewritten entirely for
+wavelink.
 """
 from wavelink.errors import FilterInvalidArgument
 
@@ -32,11 +33,11 @@ class BaseFilter:
 
     @classmethod
     def build_from_channel_mix(
-        cls,
-        left_to_right: float = 0.0,
-        right_to_left: float = 0.0,
-        right_to_right: float = 0.0,
-        left_to_left: float = 0.0,
+            cls,
+            left_to_right: float = 0.0,
+            right_to_left: float = 0.0,
+            right_to_right: float = 0.0,
+            left_to_left: float = 0.0,
     ):
         """
         Filter which manually adjusts the panning of the audio, which can make
@@ -89,21 +90,23 @@ class BaseFilter:
 
     @classmethod
     def build_from_distortion(
-        cls,
-        sin_offset: float = 0.0,
-        sin_scale: float = 1.0,
-        cos_offset: float = 0.0,
-        cos_scale: float = 1.0,
-        tan_offset: float = 0.0,
-        tan_scale: float = 1.0,
-        offset: float = 0.0,
-        scale: float = 1.0,
+            cls,
+            sin_offset: float = 0.0,
+            sin_scale: float = 1.0,
+            cos_offset: float = 0.0,
+            cos_scale: float = 1.0,
+            tan_offset: float = 0.0,
+            tan_scale: float = 1.0,
+            offset: float = 0.0,
+            scale: float = 1.0,
     ):
         """
         Filter which produces a distortion effect.
 
         Parameters
         ----------
+            The name of the filter.
+
         sin_offset : float
             The sin offset.
 
@@ -148,13 +151,52 @@ class BaseFilter:
         return cls(filter_name="Distortion", payload=payload)
 
     @classmethod
+    def build_from_timescale(
+            cls,
+            speed: float = 1.0,
+            pitch: float = 1.0,
+            rate: float = 1.0
+    ):
+        """
+       Filter which changes the speed and pitch of a track.
+       You can make some very nice effects with this filter,
+
+        Parameters
+        ----------
+        speed : float
+            The speed.
+
+        pitch : float
+            The pitch.
+
+        rate : float
+            The rate.
+
+        Returns
+        -------
+            The timescale filter.
+
+        """
+        if speed < 0:
+            raise FilterInvalidArgument("Timescale speed must be more than 0.")
+        if pitch < 0:
+            raise FilterInvalidArgument("Timescale pitch must be more than 0.")
+        if rate < 0:
+            raise FilterInvalidArgument("Timescale rate must be more than 0.")
+
+        payload = {"timescale": {"speed": speed,
+                                 "pitch": pitch,
+                                 "rate": rate}}
+        return cls(filter_name="Timescale", payload=payload)
+
+    @classmethod
     def karaoke(
-        cls,
-        *,
-        level: float = 1.0,
-        mono_level: float = 1.0,
-        filter_band: float = 225.0,
-        filter_width=100.0,
+            cls,
+            *,
+            level: float = 1.0,
+            mono_level: float = 1.0,
+            filter_band: float = 225.0,
+            filter_width=100.0,
     ):
         """
         Build a karaoke filter.
@@ -244,7 +286,7 @@ class BaseFilter:
         return cls(filter_name="Vibrato", payload=payload)
 
     @classmethod
-    def Eight_D_Audio(cls, *, rotation_hertz: float = 0.1):
+    def Eight_D_Audio(cls, *, rotation_hertz: float = 1.2):
         """
         Filter which produces a stereo-like panning effect, which sounds like
         the audio is being rotated around the listener's head.
