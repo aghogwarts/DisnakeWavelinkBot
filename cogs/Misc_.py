@@ -103,7 +103,7 @@ class Misc(commands.Cog):
             em = disnake.Embed(color=disnake.Colour.random())
 
             # File Stats
-            def line_count() -> tuple[int, int, int, int, int, int]:
+            def line_count():
                 """
                 Counts the number of lines in the codebase.
 
