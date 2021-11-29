@@ -50,13 +50,21 @@ For example, if we want to play a song, we need to send the following through we
     "pause": false
 }
 ```
+
 `op` - This is the opcode that Lavalink requires. What we are sending is the `play` opcode, which tells Lavalink to play a song.
+
 `guildId` - This is the guild id of the guild that the song is being played in.
+
 `track` - This is the track that is being played.
+
 `startTime` - This is the start time of the song. Useful when you only want to start from a certain point in the song.
+
 `endTime` - This is the end time of the song.
+
 `volume` - This is the volume of the song.
+
 `noReplace` - This is a boolean value that tells Lavalink whether to replace the current song.
+
 `pause` - This is a boolean value that tells Lavalink whether to pause the current song.
 
 Keep in mind, that this is just for illustration purposes.
@@ -116,10 +124,15 @@ logging:
 ```
 This is an example of a configuration file, as you can see you have loads of different options, you can play with.
 The most notable ones are:
+
 `server` - This is where you configure the REST and websocket ports and address.
+
 `lavalink` - This is where you configure the Lavalink server itself.
+
 `metrics` - This is the metrics server.
+
 `sentry` - This is the sentry server.
+
 `logging` - This is where you configure the logging, Lavalink uses logging to log errors, warnings and information. It is very useful and you should keep it enabled.
 
 ## Wavelink
