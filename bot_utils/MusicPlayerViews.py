@@ -106,16 +106,16 @@ class Filter(disnake.ui.Select["FilterView"]):
         options = [
             disnake.SelectOption(
                 label="Tremolo",
-                description="No filter.",
+                description="Tremolo filter.",
                 emoji="🟥",
             ),
             disnake.SelectOption(
-                label="Karaoke", description="Highpass filter.", emoji="🟩"
+                label="Karaoke", description="Karaoke filter.", emoji="🟩"
             ),
             disnake.SelectOption(
-                label="Vibrato", description="Lowpass filter.", emoji="🟦"
+                label="Vibrato", description="Vibrato filter.", emoji="🟦"
             ),
-            disnake.SelectOption(label="8D", description="Bandpass filter.", emoji="🟨"),
+            disnake.SelectOption(label="8D", description="8D audio filter.", emoji="🟨"),
         ]
 
         super().__init__(
