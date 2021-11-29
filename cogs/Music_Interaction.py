@@ -146,7 +146,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         Returns
         -------
-
+        None
         """
         self.bot.logger.info(f"Node {node.identifier} is running!", __name="Music Bot")
 
@@ -335,7 +335,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         -------
         int
             The required votes.
-
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -362,7 +361,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         -------
         bool
             Whether the user is the command invoker / ctx.author`.
-
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -433,7 +431,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Examples
         --------
         `/youtube video query: dank memes`
-
         """
         await ctx.response.send_message("Searching...")
         if re.search(r"^(https?\:\/\/)?((www\.)?youtube\.com|youtu\.?be)\/.+$", query):
@@ -867,7 +864,16 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     )
     async def stop(self, ctx: disnake.ApplicationCommandInteraction):
         """
-        A command that will stop the music player.
+        A command that will stop the currently playing song and the music player and only the DJ can use this command.
+        
+        Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+        
+        Examples
+        --------
+        `/stop`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -956,6 +962,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     ):
         """
         A command that will alter the volume of the music player, between 1 and 100.
+        
+        Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The context of the command.
+        
+        vol: int
+            The volume to set the player to.
+        
+        Examples
+        --------
+        `/volume vol: 50`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -1287,7 +1305,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Examples
         --------
         `/equalizer`
-
         """
 
         player: Player = self.bot.wavelink.get_player(
@@ -1341,7 +1358,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Examples
         --------
         `/filter filter_: tremolo`
-
         """
 
         player: Player = self.bot.wavelink.get_player(
@@ -1501,10 +1517,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Examples
         --------
          `/nowplaying`
-
-        Returns
-        -------
-        None
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -1657,7 +1669,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         member: disnake.Member
             The member to swap to.
-
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
