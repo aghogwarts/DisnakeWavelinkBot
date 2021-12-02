@@ -242,7 +242,13 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         else:
             safe_send = ctx.response.send_message
         if isinstance(error, IncorrectChannelError):
-            return
+            return await safe_send(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must run this command in "
+                                f"{ctx.data['channel']}`",
+                    colour=disnake.Colour.random(),
+                )
+            )
 
         if isinstance(error, NoChannelProvided):
             return await safe_send(
@@ -653,15 +659,23 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 ),
                 delete_after=10,
             )
-        if self.is_author(ctx):
+        if not self.is_author(ctx):
             await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Alright I have switched to channel {channel}",
+                    description=f"{self.bot.icons['info']} Only `{player.dj} can switch channels.`",
                     color=disnake.Colour.random(),
                 ),
                 delete_after=10,
             )
-            player.channel_id = channel.id
+
+        player.channel_id = channel.id
+        await ctx.response.send_message(
+            embed=disnake.Embed(
+                description=f"{self.bot.icons['greentick']} `Switched to {channel.name}`",
+                colour=disnake.Colour.random(),
+            ),
+            delete_after=10,
+        )
 
     @commands.slash_command(description="Pause the currently playing song.")
     async def pause(self, ctx: disnake.ApplicationCommandInteraction):
@@ -690,6 +704,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 delete_after=10,
             )
 
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
         if player.is_paused:
             return await ctx.response.send_message(
                 embed=disnake.Embed(
@@ -702,7 +724,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if self.is_author(ctx):
             await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Alright I have paused the player.",
+                    description=f"{self.bot.icons['info']} `{player.dj} has paused the player.",
                     color=disnake.Colour.random(),
                 ),
                 delete_after=10,
@@ -727,7 +749,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         else:
             await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} {ctx.author.mention} has voted to pause the player.",
+                    description=f"{self.bot.icons['info']} {ctx.author} has voted to pause the player.",
                     color=disnake.Colour.random(),
                 ),
             )
@@ -759,6 +781,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 delete_after=10,
             )
 
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
         if not player.is_paused:
             return await ctx.response.send_message(
                 embed=disnake.Embed(
@@ -771,7 +801,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if self.is_author(ctx):
             await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Alright I have resumed this song.",
+                    description=f"{self.bot.icons['info']} `{player.dj}` has resumed the player.",
                     color=disnake.Colour.random(),
                 ),
                 delete_after=10,
@@ -825,21 +855,10 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if self.is_author(ctx):
             await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} `{ctx.author}` has skipped the song.",
+                    description=f"{self.bot.icons['info']} `{player.dj}` has skipped the song.",
                     color=disnake.Colour.random(),
                 ),
                 delete_after=10,
-            )
-            player.skip_votes.clear()
-
-            return await player.stop()
-
-        if ctx.author == player.current.requester:
-            await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} `{ctx.author}` has skipped the song.",
-                    color=disnake.Colour.random(),
-                )
             )
             player.skip_votes.clear()
 
@@ -891,10 +910,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 delete_after=10,
             )
 
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
         if self.is_author(ctx):
             await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} `{ctx.author}` has stopped the player.",
+                    description=f"{self.bot.icons['info']} `{player.dj}` has stopped the player.",
                     color=disnake.Colour.random(),
                 ),
                 delete_after=10,
@@ -947,15 +974,21 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 delete_after=10,
             )
 
-        if self.is_author(ctx):
-            await ctx.response.send_message(
+        if not self.is_author(ctx):
+            return await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} `{ctx.author}` has disconnected the player.",
+                    description=f"{self.bot.icons['info']} Only `{player.dj}` can disconnect the player.",
                     color=disnake.Colour.random(),
                 ),
                 delete_after=10,
             )
-            return await player.teardown()
+        await ctx.response.send_message(
+            embed=disnake.Embed(
+                description=f"{self.bot.icons['info']} `{player.dj}` has disconnected the player.",
+                color=disnake.Colour.random(),
+            )
+        )
+        await player.teardown()
 
     @commands.slash_command(description="Change the players volume, between 1 and 100.")
     async def volume(
@@ -990,10 +1023,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 )
             )
 
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
         if not self.is_author(ctx):
             return await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Only the `{ctx.author}` can change the volume of this song.",
+                    description=f"{self.bot.icons['info']} Only the `{player.dj}` can change the volume of this song.",
                     color=disnake.Colour.random(),
                 )
             )
@@ -1042,10 +1083,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 delete_after=10,
             )
 
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
         if not self.is_author(ctx):
             return await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Only the `{ctx.author}` can loop this song.",
+                    description=f"{self.bot.icons['info']} Only the `{player.dj}` can loop this song.",
                     color=disnake.Colour.random(),
                 )
             )
@@ -1108,7 +1157,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if self.is_author(ctx):
             await ctx.channel.send(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} `{ctx.author}` has shuffled the queue.",
+                    description=f"{self.bot.icons['info']} `{player.dj}` has shuffled the queue.",
                     color=disnake.Colour.random(),
                 )
             )
@@ -1175,7 +1224,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if self.is_author(ctx):
             await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} `{ctx.author}` has cleared the queue.",
+                    description=f"{self.bot.icons['info']} `{player.dj}` has cleared the queue.",
                     color=disnake.Colour.random(),
                 )
             )
@@ -1326,7 +1375,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if not self.is_author(ctx):
             return await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Only the `{ctx.author}` can change the equalizer.",
+                    description=f"{self.bot.icons['info']} Only the `{player.dj}` can change the equalizer.",
                     color=disnake.Colour.random(),
                 )
             )
@@ -1348,11 +1397,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def track_filter(self, ctx: disnake.ApplicationCommandInteraction):
         """
         A command that can add a filter to the player. This can adversely affect the quality of the audio.
-        There are three inbuilt filters:
+        There are four inbuilt filters:
 
         Tremolo -> A tremolo filter.
         Vibrato -> A vibrato filter.
         8D -> A 8D filter.
+        Karaoke -> A karaoke filter.
 
         Parameters
         ----------
@@ -1379,7 +1429,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if not self.is_author(ctx):
             return await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Only the `{ctx.author}` can set the filter.",
+                    description=f"{self.bot.icons['info']} Only the `{player.dj}` can set the filter.",
                     color=disnake.Colour.random(),
                 )
             )
@@ -1438,10 +1488,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 delete_after=10,
             )
 
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
         if not self.is_author(ctx):
             return await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Only the `{ctx.author}` can change the equalizer.",
+                    description=f"{self.bot.icons['info']} Only the `{player.dj}` can change the equalizer.",
                     color=disnake.Colour.random(),
                 )
             )
