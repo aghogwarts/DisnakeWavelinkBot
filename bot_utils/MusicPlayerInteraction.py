@@ -11,7 +11,9 @@ import wavelink
 
 
 class Track(wavelink.Track):
-    """Wavelink Track object with a requester attribute."""
+    """
+    Wavelink Track object with a requester attribute.
+    """
 
     __slots__ = ("requester",)
 
@@ -142,7 +144,7 @@ class Player(wavelink.Player):
     @staticmethod
     def parse_duration(duration: int):
         """
-        Parse a duration into a human readable string.
+        Parse a duration into a human-readable string.
 
         Parameters
         ----------
@@ -211,7 +213,7 @@ class Player(wavelink.Player):
         embed.add_field(name="Video URL", value=f"[Click Here!]({track.uri})")
         embed.add_field(name="Author", value=f"{track.author}")
         embed.set_footer(
-            text=f"Requested By {track.requester}", icon_url=track.requester.avatar.url
+            text=f"Requested By {track.requester}", icon_url=track.requester.display_avatar
         )
 
         return embed
