@@ -1693,14 +1693,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         members = self.bot.get_channel(int(player.channel_id)).members
 
         if member and member not in members:
-            return await ctx.channel.send(
+            return await ctx.response.send_message(
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['info']} `{member}` is not currently in voice, so they cannot be a DJ."
                 ),
             )
 
         if member and member == player.dj:
-            return await ctx.channel.send(
+            return await ctx.response.send_message(
                 "Cannot swap DJ to the current DJ... :)",
             )
 
@@ -1714,7 +1714,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         if member:
             player.dj = member
-            return await ctx.channel.send(
+            return await ctx.response.send_message(
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['info']} `{member}` is now a DJ."
                 ),
@@ -1725,7 +1725,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 continue
             else:
                 player.dj = m
-                return await ctx.channel.send(
+                return await ctx.response.send_message(
                     embed=disnake.Embed(
                         description=f"{self.bot.icons['info']} `{member}` is now a DJ.",
                         colour=0x00FF00,
