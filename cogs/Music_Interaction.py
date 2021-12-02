@@ -1,5 +1,8 @@
 from youtubesearchpython.__future__ import ChannelsSearch, VideosSearch
 
+import ast
+import asyncio
+
 import math
 import re
 import sys
@@ -242,13 +245,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         else:
             safe_send = ctx.response.send_message
         if isinstance(error, IncorrectChannelError):
-            return await safe_send(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} `You must run this command in "
-                                f"{ctx.data['channel']}`",
-                    colour=disnake.Colour.random(),
-                )
-            )
+            return
 
         if isinstance(error, NoChannelProvided):
             return await safe_send(
@@ -279,9 +276,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 type(error), error, error.__traceback__, file=sys.stderr
             )
 
-    async def cog_slash_before_invoke(self, ctx: disnake.ApplicationCommandInteraction):
+    async def cog_before_slash_command_invoke(self, ctx: disnake.ApplicationCommandInteraction) -> None:
         """
-        Cog wide before slash command invoke handler.
+        Checks if the slash command is invoked in the correct channel.
 
         Parameters
         ----------
@@ -308,7 +305,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 )
                 raise IncorrectChannelError
 
-        if ctx.application_command.name == "connect" and not music_player.context:
+        if ctx.application_command.name == "play" and not music_player.context:
             return
         elif self.is_author(ctx):
             return
@@ -1471,10 +1468,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         Examples
         --------
-         `/customequalizer equalizer: my_eq levels: [(0, -0.25), (1, -0.25), (2, -0.125), (3, 0.0),
-                  (4, 0.25), (5, 0.25), (6, 0.0), (7, -0.25), (8, -0.25),
-                  (9, 0.0), (10, 0.0), (11, 0.5), (12, 0.25), (13, -0.025)]`
-        """
+         `/customequalizer equalizer: Friend levels: [
+         (0, -0.25), (1, -0.25), (2, -0.125), (3, 0.0),
+         (4, 0.25), (5, 0.25), (6, 0.0), (7, -0.25), (8, -0.25),
+         (9, 0.0), (10, 0.0), (11, 0.5), (12, 0.25), (13, -0.025)
+         ]` -> The above command will create a custom equalizer with the name `Friend` and the levels,
+         and the levels need to be in a list [].
+         """
+
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
@@ -1504,7 +1505,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 )
             )
 
-        eq = wavelink.Equalizer.build(levels=list(levels), name=equalizer)
+        eq = wavelink.Equalizer.build(levels=list(ast.literal_eval(levels)), name=equalizer)
 
         await ctx.response.send_message(
             embed=disnake.Embed(
