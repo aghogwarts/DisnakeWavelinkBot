@@ -33,11 +33,11 @@ class BaseFilter:
 
     @classmethod
     def build_from_channel_mix(
-            cls,
-            left_to_right: float = 0.0,
-            right_to_left: float = 0.0,
-            right_to_right: float = 0.0,
-            left_to_left: float = 0.0,
+        cls,
+        left_to_right: float = 0.0,
+        right_to_left: float = 0.0,
+        right_to_right: float = 0.0,
+        left_to_left: float = 0.0,
     ):
         """
         Filter which manually adjusts the panning of the audio, which can make
@@ -90,15 +90,15 @@ class BaseFilter:
 
     @classmethod
     def build_from_distortion(
-            cls,
-            sin_offset: float = 0.0,
-            sin_scale: float = 1.0,
-            cos_offset: float = 0.0,
-            cos_scale: float = 1.0,
-            tan_offset: float = 0.0,
-            tan_scale: float = 1.0,
-            offset: float = 0.0,
-            scale: float = 1.0,
+        cls,
+        sin_offset: float = 0.0,
+        sin_scale: float = 1.0,
+        cos_offset: float = 0.0,
+        cos_scale: float = 1.0,
+        tan_offset: float = 0.0,
+        tan_scale: float = 1.0,
+        offset: float = 0.0,
+        scale: float = 1.0,
     ):
         """
         Filter which produces a distortion effect.
@@ -152,30 +152,26 @@ class BaseFilter:
 
     @classmethod
     def build_from_timescale(
-            cls,
-            speed: float = 1.0,
-            pitch: float = 1.0,
-            rate: float = 1.0
+        cls, speed: float = 1.0, pitch: float = 1.0, rate: float = 1.0
     ):
         """
-       Filter which changes the speed and pitch of a track.
-       You can make some very nice effects with this filter,
+        Filter which changes the speed and pitch of a track.
+        You can make some very nice effects with this filter,
 
-        Parameters
-        ----------
-        speed : float
-            The speed.
+         Parameters
+         ----------
+         speed : float
+             The speed.
 
-        pitch : float
-            The pitch.
+         pitch : float
+             The pitch.
 
-        rate : float
-            The rate.
+         rate : float
+             The rate.
 
-        Returns
-        -------
-            The timescale filter.
-
+         Returns
+         -------
+             The timescale filter.
         """
         if speed < 0:
             raise FilterInvalidArgument("Timescale speed must be more than 0.")
@@ -184,19 +180,17 @@ class BaseFilter:
         if rate < 0:
             raise FilterInvalidArgument("Timescale rate must be more than 0.")
 
-        payload = {"timescale": {"speed": speed,
-                                 "pitch": pitch,
-                                 "rate": rate}}
+        payload = {"timescale": {"speed": speed, "pitch": pitch, "rate": rate}}
         return cls(filter_name="Timescale", payload=payload)
 
     @classmethod
     def karaoke(
-            cls,
-            *,
-            level: float = 1.0,
-            mono_level: float = 1.0,
-            filter_band: float = 225.0,
-            filter_width=100.0,
+        cls,
+        *,
+        level: float = 1.0,
+        mono_level: float = 1.0,
+        filter_band: float = 225.0,
+        filter_width=100.0,
     ):
         """
         Build a karaoke filter.
@@ -218,7 +212,6 @@ class BaseFilter:
         Returns
         -------
             The karaoke filter.
-
         """
 
         payload = {
@@ -247,8 +240,7 @@ class BaseFilter:
 
         Returns
         -------
-            The vibrato filter.
-
+            The tremolo filter.
         """
 
         if frequency < 0:
@@ -299,8 +291,6 @@ class BaseFilter:
         Returns
         -------
             The 8D audio filter.
-
-
         """
         payload = {"8dAudio": {"rotationHertz": rotation_hertz}}
         return cls(filter_name="8D Audio", payload=payload)
