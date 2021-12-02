@@ -1669,6 +1669,10 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         member: disnake.Member
             The member to swap to.
+        
+        Examples
+        --------
+        `/swap_dj member: @KortaPo`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -1728,7 +1732,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 return await ctx.response.send_message(
                     embed=disnake.Embed(
                         description=f"{self.bot.icons['info']} `{member}` is now a DJ.",
-                        colour=0x00FF00,
+                        colour=disnake.Colour.random(),
                     )
                 )
 
