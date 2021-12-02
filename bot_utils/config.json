@@ -1,5 +1,6 @@
-{"ICONS": {
-    "greentick": "✅",
+{
+    "ICONS": {
+        "greentick": "✅", 
         "redtick": "❌",
         "arrow": "▶",
         "loading": "🔁",
