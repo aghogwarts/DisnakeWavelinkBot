@@ -86,7 +86,10 @@ class Owner(commands.Cog, name="Developer"):
                 type(error), error, error.__traceback__, file=sys.stderr
             )
 
-    @commands.slash_command(description="Commands that handle Bot commands and Cogs", invoke_without_command=True)
+    @commands.slash_command(
+        description="Commands that handle Bot commands and Cogs",
+        invoke_without_command=True,
+    )
     @commands.is_owner()
     async def botconfig(self, ctx: disnake.ApplicationCommandInteraction):
         pass
@@ -116,7 +119,7 @@ class Owner(commands.Cog, name="Developer"):
 
         Examples
         --------
-        `/cog action: enable cog: Developer_`
+        `/botconfig cog action: enable cog: Developer_`
         """
 
         if action.lower() == "disable":
@@ -275,7 +278,11 @@ class Owner(commands.Cog, name="Developer"):
                     else:
                         deleted.append(m)
 
-    @commands.slash_command(name="setstatus", description="Sets the bot status.", invoke_without_command=True)
+    @commands.slash_command(
+        name="setstatus",
+        description="Sets the bot status.",
+        invoke_without_command=True,
+    )
     @commands.is_owner()
     async def status(self, ctx: disnake.ApplicationCommandInteraction):
         """
