@@ -11,6 +11,7 @@ from disnake.ext import commands
 from disnake.ext.commands import Param, InvokableSlashCommand
 
 import wavelink
+from bot_utils.paginator import SimpleEmbedPages
 from wavelink import Player
 
 
@@ -43,7 +44,7 @@ class Misc(commands.Cog):
         self.bot = bot
 
     async def cog_slash_command_error(
-            self, ctx: disnake.ApplicationCommandInteraction, error: Exception
+        self, ctx: disnake.ApplicationCommandInteraction, error: Exception
     ) -> None:
         """
         Cog wide error handler.
@@ -71,7 +72,7 @@ class Misc(commands.Cog):
         await safe_send(
             embed=disnake.Embed(
                 description=f"**Error invoked by: {str(ctx.author)}**\nCommand: {ctx.application_command.name}\nError: "
-                            f"```py\n{error_msg}```",
+                f"```py\n{error_msg}```",
                 color=disnake.Colour.random(),
             )
         )
@@ -229,9 +230,9 @@ class Misc(commands.Cog):
         description="Shows you spotify song information of an user's spotify rich presence"
     )
     async def spotify(
-            self,
-            ctx: disnake.ApplicationCommandInteraction,
-            user: disnake.Member = Param(description="Member Query"),
+        self,
+        ctx: disnake.ApplicationCommandInteraction,
+        user: disnake.Member = Param(description="Member Query"),
     ):
         """
         This command shows you spotify song information of a user's spotify rich presence,
@@ -365,9 +366,9 @@ class Misc(commands.Cog):
 
     @commands.slash_command(name="help", description="Shows help about bot commands.")
     async def show_help(
-            self,
-            ctx: disnake.ApplicationCommandInteraction,
-            slash_command: str = Param(description="Command to get help for."),
+        self,
+        ctx: disnake.ApplicationCommandInteraction,
+        slash_command: str = Param(description="Command to get help for."),
     ):
         """
         This command shows help about bot commands.
@@ -388,10 +389,44 @@ class Misc(commands.Cog):
             await ctx.response.send_message("Gathering Information...")
 
             command: InvokableSlashCommand = self.bot.get_slash_command(slash_command)
+            if len(command.children) > 0:
+                embeds = []
+                for key, value in command.children.items():
+                    examples = (
+                        value.callback.__doc__.replace("\n", "")
+                        .split("Examples")[1]
+                        .replace("--------", "")
+                    )
+                    embed = disnake.Embed(
+                        colour=disnake.Colour.random(),
+                        title=f"Help for {slash_command} {key}",
+                        timestamp=disnake.utils.utcnow(),
+                    ).set_footer(
+                        text=f"Requested by {ctx.author.display_name}",
+                        icon_url=ctx.author.display_avatar.url,
+                    )
+                    embed.add_field(
+                        name="Usage",
+                        value=f"`/{slash_command} {key} {', '.join([option.name for option in value.option.options])}`",
+                    )
+                    embed.add_field(
+                        name="Description",
+                        value=f"`{value.docstring['description']}`",
+                        inline=False,
+                    )
+                    embed.add_field(name="Examples", value=f"{examples}", inline=False)
+                    embeds.append(embed)
+
+                pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
+                await pag.start()
+
+            else:
+                pass
+
             examples = (
                 command.callback.__doc__.replace("\n", "")
-                    .split("Examples")[1]
-                    .replace("--------", "")
+                .split("Examples")[1]
+                .replace("--------", "")
             )
             embed = disnake.Embed(
                 colour=disnake.Colour.random(),
@@ -423,7 +458,7 @@ class Misc(commands.Cog):
 
     @show_help.autocomplete(option_name="slash_command")
     async def command_auto(
-            self, ctx: disnake.ApplicationCommandInteraction, user_input: str
+        self, ctx: disnake.ApplicationCommandInteraction, user_input: str
     ):
         """
         This command autocompletes the command to get help for.
