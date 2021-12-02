@@ -33,11 +33,11 @@ class BaseFilter:
 
     @classmethod
     def build_from_channel_mix(
-            cls,
-            left_to_right: float = 0.0,
-            right_to_left: float = 0.0,
-            right_to_right: float = 0.0,
-            left_to_left: float = 0.0,
+        cls,
+        left_to_right: float = 0.0,
+        right_to_left: float = 0.0,
+        right_to_right: float = 0.0,
+        left_to_left: float = 0.0,
     ):
         """
         Filter which manually adjusts the panning of the audio, which can make
@@ -89,16 +89,53 @@ class BaseFilter:
         return cls(filter_name="ChannelMix", payload=payload)
 
     @classmethod
+    def extreme_bass(
+        cls,
+        left_to_right: float = 1.0,
+        right_to_left: float = 3.0,
+        right_to_right: float = 8.8,
+        left_to_left: float = 10.1,
+    ):
+        """
+        Filter which adjusts the bass of the audio, which can adds extreme
+        bass to the audio.
+
+        Parameters
+        ----------
+        left_to_right : float
+            The left to right panning.
+
+        right_to_left : float
+            The right to left panning.
+
+        right_to_right : float
+            The right to right panning.
+
+        left_to_left : float
+            The left to left panning.
+
+        Returns
+        -------
+            The extreme bass filter.
+        """
+        filter_ = cls.build_from_channel_mix(
+            right_to_left=right_to_left,
+            left_to_right=left_to_right,
+            left_to_left=left_to_left,
+            right_to_right=right_to_right,
+        )
+
+    @classmethod
     def build_from_distortion(
-            cls,
-            sin_offset: float = 0.0,
-            sin_scale: float = 1.0,
-            cos_offset: float = 0.0,
-            cos_scale: float = 1.0,
-            tan_offset: float = 0.0,
-            tan_scale: float = 1.0,
-            offset: float = 0.0,
-            scale: float = 1.0,
+        cls,
+        sin_offset: float = 0.0,
+        sin_scale: float = 1.0,
+        cos_offset: float = 0.0,
+        cos_scale: float = 1.0,
+        tan_offset: float = 0.0,
+        tan_scale: float = 1.0,
+        offset: float = 0.0,
+        scale: float = 1.0,
     ):
         """
         Filter which produces a distortion effect.
@@ -152,7 +189,7 @@ class BaseFilter:
 
     @classmethod
     def build_from_timescale(
-            cls, speed: float = 1.0, pitch: float = 1.0, rate: float = 1.0
+        cls, speed: float = 1.0, pitch: float = 1.0, rate: float = 1.0
     ):
         """
         Filter which changes the speed and pitch of a track.
@@ -180,23 +217,17 @@ class BaseFilter:
         if rate < 0:
             raise FilterInvalidArgument("Timescale rate must be more than 0.")
 
-        payload = {
-            "timescale": {
-                "speed": speed,
-                "pitch": pitch,
-                "rate": rate
-            }
-        }
+        payload = {"timescale": {"speed": speed, "pitch": pitch, "rate": rate}}
         return cls(filter_name="Timescale", payload=payload)
 
     @classmethod
     def karaoke(
-            cls,
-            *,
-            level: float = 1.0,
-            mono_level: float = 1.0,
-            filter_band: float = 225.0,
-            filter_width=100.0,
+        cls,
+        *,
+        level: float = 1.0,
+        mono_level: float = 1.0,
+        filter_band: float = 225.0,
+        filter_width=100.0,
     ):
         """
         Build a karaoke filter.
@@ -254,14 +285,7 @@ class BaseFilter:
         if depth < 0 or depth > 1:
             raise FilterInvalidArgument("Tremolo depth must be between 0 and 1.")
 
-        payload = {
-            "tremolo":
-            {
-                "frequency":
-                    frequency,
-                "depth": depth
-            }
-        }
+        payload = {"tremolo": {"frequency": frequency, "depth": depth}}
         return cls(filter_name="Tremolo", payload=payload)
 
     @classmethod
@@ -287,12 +311,7 @@ class BaseFilter:
         if depth < 0 or depth > 1:
             raise FilterInvalidArgument("Vibrato depth must be between 0 and 1.")
 
-        payload = {
-            "vibrato": {
-                "frequency": frequency,
-                "depth": depth
-            }
-        }
+        payload = {"vibrato": {"frequency": frequency, "depth": depth}}
         return cls(filter_name="Vibrato", payload=payload)
 
     @classmethod
@@ -310,10 +329,5 @@ class BaseFilter:
         -------
             The 8D audio filter.
         """
-        payload = {
-            "8dAudio":
-                {
-                    "rotationHertz": rotation_hertz
-                }
-        }
+        payload = {"8dAudio": {"rotationHertz": rotation_hertz}}
         return cls(filter_name="8D Audio", payload=payload)
