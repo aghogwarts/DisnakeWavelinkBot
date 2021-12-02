@@ -185,7 +185,7 @@ class Misc(commands.Cog):
     )
     async def lavalink_information(self, ctx: disnake.ApplicationCommandInteraction):
         """
-        This command shows information about the Lavalink server. How many players are connected, nodes, etc.
+        This command shows information about the Lavalink server. Like how many players are connected, nodes, etc.
 
         Parameters
         ----------
@@ -234,7 +234,7 @@ class Misc(commands.Cog):
             user: disnake.Member = Param(description="Member Query"),
     ):
         """
-        This command shows you spotify song information of an user's spotify rich presence,
+        This command shows you spotify song information of a user's spotify rich presence,
         if the user is playing a song.
 
         Parameters
@@ -247,7 +247,7 @@ class Misc(commands.Cog):
 
         Examples
         --------
-        `/spotify @KortaPo`
+        `/spotify user: @KortaPo`
         """
         activities = user.activities
         try:
@@ -308,7 +308,7 @@ class Misc(commands.Cog):
             counter += 1
             start = time.perf_counter()
             await ctx.edit_original_message(
-                content=f"Trying Ping{('.' * counter)} {counter}/3"
+                content=f"Trying Ping {('.' * counter)} {counter}/3"
             )
             end = time.perf_counter()
             speed = round((end - start) * 1000)
@@ -381,14 +381,13 @@ class Misc(commands.Cog):
 
         Examples
         --------
-        `/help info`
+        `/help slash_command: info`
         """
         slash_commands = [command for command in self.bot.all_slash_commands]
         if slash_command in slash_commands:
             await ctx.response.send_message("Gathering Information...")
 
             command: InvokableSlashCommand = self.bot.get_slash_command(slash_command)
-            sub_commands = command.children if command.children else []
             examples = (
                 command.callback.__doc__.replace("\n", "")
                     .split("Examples")[1]
@@ -426,8 +425,24 @@ class Misc(commands.Cog):
     async def command_auto(
             self, ctx: disnake.ApplicationCommandInteraction, user_input: str
     ):
+        """
+        This command autocompletes the command to get help for.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        user_input : str
+            The user input.
+
+        Returns
+        -------
+        list
+            The list of commands matching the user input.
+        """
         commands = [command.lower() for command in self.bot.all_slash_commands]
-        selected_commands = difflib.get_close_matches(user_input.lower(), commands, n=5)
+        selected_commands = difflib.get_close_matches(user_input.lower(), commands)
         return selected_commands
 
 
