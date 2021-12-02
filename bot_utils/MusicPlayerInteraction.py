@@ -6,7 +6,6 @@ import async_timeout
 import disnake
 import humanize
 import datetime
-
 import wavelink
 
 
@@ -98,11 +97,11 @@ class Player(wavelink.Player):
 
             try:
                 self.waiting = True
-                with async_timeout.timeout(300):
+                with async_timeout.timeout(120):
                     track = await self.queue.get()
                     self.now = track
             except asyncio.TimeoutError:
-                # No music has been played for 5 minutes, cleanup and disconnect.
+                # No music has been played for 2 minutes, cleanup and disconnect.
                 return await self.teardown()
         if self.loop:
             track = self.now
@@ -213,7 +212,8 @@ class Player(wavelink.Player):
         embed.add_field(name="Video URL", value=f"[Click Here!]({track.uri})")
         embed.add_field(name="Author", value=f"{track.author}")
         embed.set_footer(
-            text=f"Requested By {track.requester}", icon_url=track.requester.display_avatar
+            text=f"Requested By {track.requester}",
+            icon_url=track.requester.display_avatar,
         )
 
         return embed
