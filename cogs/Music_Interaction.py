@@ -37,8 +37,8 @@ def youtube(query, download=False):
 
     Returns
     -------
-    list[dict]
-        A list of YouTube search results.
+    dict
+        Information about the YouTube video that was queried.
 
     """
     ytdl = ydl.YoutubeDL(
@@ -70,14 +70,16 @@ class NoChannelProvided(commands.CommandError):
 
 class IncorrectChannelError(commands.CommandError):
     """
-    Error raised when commands are issued outside of the players session channel.
+    Error raised when commands are issued outside the players' session channel.
     """
 
     pass
 
 
 class Music(commands.Cog, wavelink.WavelinkMixin):
-    """Your friendly music bot"""
+    """
+    Your friendly music bot
+    """
 
     def __init__(self, bot: Bot):
         self.bot = bot
@@ -366,7 +368,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
 
-        return player.dj == ctx.author or ctx.author.guild_permissions.kick_members  # you can change your permissions here.
+        return player.dj == ctx.author or ctx.author.guild_permissions.kick_members  # you can change your
+        # permissions here.
 
     async def connect(
         self,
@@ -407,7 +410,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             ).set_footer(text=f"Requested by {ctx.author.name}")
         )
 
-    @commands.slash_command(invoke_without_command=True)
+    @commands.slash_command()
     async def youtube(self, ctx: disnake.ApplicationCommandInteraction):
         pass
 
@@ -415,7 +418,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def video(
         self,
         ctx: disnake.ApplicationCommandInteraction,
-        query: str = Param(description="Video Query"),
+        query: str = Param(description="Video to search for."),
     ):
         """
         A command that searches YouTube videos.
@@ -430,7 +433,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         Examples
         --------
-        `/YouTube video query: dank memes`
+        `/youtube video query: dank memes`
         """
         await ctx.response.send_message("Searching...")
         if re.search(r"^(https?\:\/\/)?((www\.)?youtube\.com|youtu\.?be)\/.+$", query):
@@ -492,7 +495,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         Examples
         --------
-        `/YouTube channel query: one vilage`
+        `/youtube channel query: one vilage`
         """
 
         async with ctx.channel.typing():
@@ -573,7 +576,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         Examples
         --------
-        `/play query: "song name"`
+        `/play query: "50 cent - love me"`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -1227,7 +1230,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         --------
         `/lyrics`
 
-        `/lyrics "The Chainsmokers - Closer"`
+        `/lyrics name: "The Chainsmokers - Closer"`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -1288,7 +1291,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @commands.slash_command(description="Change the player's equalizer.")
     async def equalizer(self, ctx: disnake.ApplicationCommandInteraction):
         """
-        A command that can change music player's equalizer to your choice. You will be asked to select between equalizers.
+        A command that can change music player's equalizer to your choice.
+        You will be asked to select between equalizers.
         There are four inbuilt equalizers:
 
         Piano -> A piano-like equalizer.
@@ -1457,7 +1461,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def queue(self, ctx: disnake.ApplicationCommandInteraction):
         """
         A command that will show all the songs that queued in the music player. It has pagination,
-        so its easy for you to browse.
+        so it's easy for you to browse.
 
         Parameters
         ----------
@@ -1669,7 +1673,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         member: disnake.Member
             The member to swap to.
-        
+
         Examples
         --------
         `/swap_dj member: @KortaPo`
