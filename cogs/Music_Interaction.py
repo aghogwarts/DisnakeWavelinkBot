@@ -1,8 +1,5 @@
 from youtubesearchpython.__future__ import ChannelsSearch, VideosSearch
 
-import ast
-import asyncio
-
 import math
 import re
 import sys
@@ -18,7 +15,7 @@ from disnake.ext.commands.params import Param
 import wavelink
 from MusicBot import Bot
 from bot_utils.MusicPlayerInteraction import Player, Track
-from bot_utils.MusicPlayerViews import EqualizerView, FilterView
+from bot_utils.MusicPlayerViews import FilterView
 from bot_utils.paginator import SimpleEmbedPages, WrapText
 from jishaku.functools import executor_function
 
@@ -276,7 +273,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 type(error), error, error.__traceback__, file=sys.stderr
             )
 
-    async def cog_before_slash_command_invoke(self, ctx: disnake.ApplicationCommandInteraction) -> None:
+    async def cog_before_slash_command_invoke(
+        self, ctx: disnake.ApplicationCommandInteraction
+    ) -> None:
         """
         Checks if the slash command is invoked in the correct channel.
 
@@ -371,7 +370,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
 
-        return player.dj == ctx.author or ctx.author.guild_permissions.kick_members  # you can change your
+        return (
+            player.dj == ctx.author or ctx.author.guild_permissions.kick_members
+        )  # you can change your
         # permissions here.
 
     async def connect(
@@ -1334,77 +1335,24 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
         await pag.start()
 
-    @commands.slash_command(description="Change the player's equalizer.")
-    async def equalizer(self, ctx: disnake.ApplicationCommandInteraction):
+    @commands.slash_command(description="Add a Filter to the player.")
+    async def filter(self, ctx: disnake.ApplicationCommandInteraction):
         """
-        A command that can change music player's equalizer to your choice.
-        You will be asked to select between equalizers.
-        There are four inbuilt equalizers:
-
-        Piano -> A piano-like equalizer.
-        Flat -> A flat equalizer.
-        Metal -> A metal equalizer.
-        Boost -> A bass boost equalizer.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-
-        Examples
-        --------
-        `/equalizer`
-        """
-
-        player: Player = self.bot.wavelink.get_player(
-            guild_id=ctx.guild.id, cls=Player, context=ctx
-        )
-
-        if not player.is_connected:
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
-                    colour=disnake.Colour.random(),
-                )
-            )
-
-        if not self.is_author(ctx):
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Only the `{player.dj}` can change the equalizer.",
-                    color=disnake.Colour.random(),
-                )
-            )
-
-        if not player.is_playing:
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
-                    colour=disnake.Colour.random(),
-                )
-            )
-
-        await ctx.response.send_message(
-            content="Select an equalizer:",
-            view=EqualizerView(interaction=ctx, player=player),
-        )
-
-    @commands.slash_command(name="filter", description="Add a filter to the player.")
-    async def track_filter(self, ctx: disnake.ApplicationCommandInteraction):
-        """
-        A command that can add a filter to the player. This can adversely affect the quality of the audio.
+        A command that can add Filter to the music player of your choice.
+        You will be asked to select between filters.
         There are four inbuilt filters:
 
-        Tremolo -> A tremolo filter.
+        Tremolo -> A piano-like filter.
         Vibrato -> A vibrato filter.
-        8D -> A 8D filter.
-        Karaoke -> A karaoke filter.
+        8D -> An 8D audio filter.
+        Vibrato -> A vibrato filter.
+
 
         Parameters
         ----------
         ctx : disnake.ApplicationCommandInteraction
             The Interaction of the command.
+
 
         Examples
         --------
@@ -1426,7 +1374,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if not self.is_author(ctx):
             return await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Only the `{player.dj}` can set the filter.",
+                    description=f"{self.bot.icons['info']} Only the `{player.dj}` can add filters to the player.",
                     color=disnake.Colour.random(),
                 )
             )
@@ -1440,41 +1388,50 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             )
 
         await ctx.response.send_message(
-            content="Please select a filter.",
+            content="Select a Filter:",
             view=FilterView(interaction=ctx, player=player),
         )
 
-    @commands.slash_command(description="Create and set a custom player equalizer.")
-    async def customequalizer(
+    @commands.slash_command(description="Create and set a custom filter.")
+    async def create_filter(self, ctx: disnake.ApplicationCommandInteraction):
+        pass
+
+    @create_filter.sub_command(description="Create a Tremolo Filter.")
+    async def channel_mix(
         self,
         ctx: disnake.ApplicationCommandInteraction,
-        equalizer: str = Param(description="Your equalizer name"),
-        levels: str = Param(description="Your equalizer levels in a list."),
+        left_to_right: float = Param(description="Left to Right", default=0.5),
+        right_to_left: float = Param(description="Right to Left", default=0.5),
+        right_to_right: float = Param(description="Right to Right", default=0.5),
+        left_to_left: float = Param(description="Left to Left", default=0.5),
     ):
+
         """
-        A command that you can use to create and set a custom equalizer. This is only for people who know
-        what they are doing. You do not need to use this command to set your equalizer.
+        Filter which manually adjusts the panning of the audio, which can make
+        for some cool effects when done correctly.
+        Remember, this can adversely affect the audio quality.
 
         Parameters
         ----------
         ctx : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
-        equalizer : str
-            The name of the equalizer.
+        left_to_right : float
+            The left to right panning.
 
-        levels : str
-            The levels of the equalizer.
+        right_to_left : float
+            The right to left panning.
+
+        right_to_right : float
+            The right to right panning.
+
+        left_to_left : float
+            The left to left panning.
 
         Examples
         --------
-         `/customequalizer equalizer: Friend levels: [
-         (0, -0.25), (1, -0.25), (2, -0.125), (3, 0.0),
-         (4, 0.25), (5, 0.25), (6, 0.0), (7, -0.25), (8, -0.25),
-         (9, 0.0), (10, 0.0), (11, 0.5), (12, 0.25), (13, -0.025)
-         ]` -> The above command will create a custom equalizer with the name `Friend` and the levels,
-         and the levels need to be in a list [].
-         """
+        `/create_filter channel_mix left_to_right=0.5 right_to_left=0.5 right_to_right=0.5 left_to_left=0.5`
+        """
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -1500,21 +1457,201 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if not self.is_author(ctx):
             return await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Only the `{player.dj}` can change the equalizer.",
+                    description=f"{self.bot.icons['info']} Only the `{player.dj}` can set the filter to the player.",
                     color=disnake.Colour.random(),
                 )
             )
 
-        eq = wavelink.Equalizer.build(levels=list(ast.literal_eval(levels)), name=equalizer)
+        filter_ = wavelink.BaseFilter.build_from_channel_mix(
+            left_to_left=left_to_left,
+            left_to_right=left_to_right,
+            right_to_left=right_to_left,
+            right_to_right=right_to_right,
+        )
 
+        await player.set_filter(filter_)
         await ctx.response.send_message(
             embed=disnake.Embed(
-                description=f"{self.bot.icons['greentick']} Successfully "
-                f"changed equalizer to `{equalizer}`",
+                description=f"{self.bot.icons['greentick']} `Filter set to:` {filter_.name}",
                 colour=disnake.Colour.random(),
             )
         )
-        await player.set_eq(eq)
+
+    @create_filter.sub_command(
+        description="Build a custom Filter from base TimeScale Filter."
+    )
+    async def time_scale(
+        self,
+        ctx: disnake.ApplicationCommandInteraction,
+        speed: float = Param(description="Speed", default=1.0),
+        pitch: float = Param(description="Pitch", default=1.0),
+        rate: float = Param(description="Rate", default=1.0),
+    ):
+        """
+        Filter which changes the speed and pitch of a track.
+        You can make some very nice effects with this filter.
+
+         Parameters
+         ----------
+         ctx : disnake.ApplicationCommandInteraction
+             The Interaction of the command.
+
+         speed : float
+             The speed.
+
+         pitch : float
+             The pitch.
+
+         rate : float
+             The rate.
+
+        Examples
+        --------
+        `/create_filter time_scale time_scale speed=1.5 pitch=1.5 rate=1.5`
+        """
+
+        player: Player = self.bot.wavelink.get_player(
+            guild_id=ctx.guild.id, cls=Player, context=ctx
+        )
+
+        if not player.is_connected:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
+
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        if not self.is_author(ctx):
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['info']} Only the `{player.dj}` can set the filter to the player.",
+                    color=disnake.Colour.random(),
+                )
+            )
+
+        filter_ = wavelink.BaseFilter.build_from_timescale(
+            speed=speed, pitch=pitch, rate=rate
+        )
+
+        await player.set_filter(filter_)
+        await ctx.response.send_message(
+            embed=disnake.Embed(
+                description=f"{self.bot.icons['greentick']} `Filter set to:` {filter_.name}",
+                colour=disnake.Colour.random(),
+            )
+        )
+
+    @create_filter.sub_command(
+        description="Build a custom Filter from base Distortion Filter."
+    )
+    async def distortion(
+        self,
+        ctx: disnake.ApplicationCommandInteraction,
+        sin_offset: float = Param(description="Sin Offset", default=0.0),
+        cos_offset: float = Param(description="Cos Offset", default=0.0),
+        sin_scale: float = Param(description="Sin Scale", default=1.0),
+        cos_scale: float = Param(description="Cos Scale", default=1.0),
+        tan_offset: float = Param(description="Tan Offset", default=0.0),
+        tan_scale: float = Param(description="Tan Scale", default=1.0),
+        offset: float = Param(description="Offset", default=0.0),
+        scale: float = Param(description="Scale", default=1.0),
+    ):
+        """
+        This slash command builds a custom Filter from base Distortion Filter. This filter can be used to distort the
+        audio. Very useful for making some nice effects, if used correctly.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+             The Interaction of the command.
+
+        sin_offset : float
+            The sin offset.
+
+        sin_scale : float
+            The sin scale.
+
+        cos_offset : float
+            The cos offset.
+
+        cos_scale : float
+            The cos scale.
+
+        tan_offset : float
+            The tan offset.
+
+        tan_scale : float
+            The tan scale.
+
+        offset : float
+            The offset.
+
+        scale : float
+            The scale.
+
+        Examples
+        --------
+        `/create_filter distortion sin_offset=0.5 sin_scale=1.5 cos_offset=0.5 cos_scale=1.5
+        tan_offset=0.5 tan_scale=1.5 offset=0.5 scale=1.5`
+        """
+
+        player: Player = self.bot.wavelink.get_player(
+            guild_id=ctx.guild.id, cls=Player, context=ctx
+        )
+
+        if not player.is_connected:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
+
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        if not self.is_author(ctx):
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['info']} Only the `{player.dj}` can set the filter to the player.",
+                    color=disnake.Colour.random(),
+                )
+            )
+
+        filter_ = wavelink.BaseFilter.build_from_distortion(
+            sin_offset=sin_offset,
+            cos_offset=cos_offset,
+            sin_scale=sin_scale,
+            cos_scale=cos_scale,
+            tan_offset=tan_offset,
+            tan_scale=tan_scale,
+            offset=offset,
+            scale=scale,
+        )
+
+        await player.set_filter(filter_)
+        await ctx.response.send_message(
+            embed=disnake.Embed(
+                description=f"{self.bot.icons['greentick']} `Filter set to:` {filter_.name}",
+                colour=disnake.Colour.random(),
+            )
+        )
 
     @commands.slash_command(description="Display the player's queued songs.")
     async def queue(self, ctx: disnake.ApplicationCommandInteraction):
