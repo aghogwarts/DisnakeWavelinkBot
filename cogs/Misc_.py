@@ -16,7 +16,7 @@ from wavelink import Player
 
 class InviteButton(disnake.ui.View):
     """
-    A button that opens an invite link.
+    A button that opens an invitation link.
     """
 
     def __init__(self, bot):
@@ -29,6 +29,9 @@ class InviteButton(disnake.ui.View):
         )
 
         self.add_item(disnake.ui.Button(label="Click Here To Invite", url=url))
+        github_url = "https://github.com/KortaPo/DisnakeWavelinkBot"
+
+        self.add_item(disnake.ui.Button(label="Source Code", url=github_url))
 
 
 class Misc(commands.Cog):
@@ -40,7 +43,7 @@ class Misc(commands.Cog):
         self.bot = bot
 
     async def cog_slash_command_error(
-        self, ctx: disnake.ApplicationCommandInteraction, error: Exception
+            self, ctx: disnake.ApplicationCommandInteraction, error: Exception
     ) -> None:
         """
         Cog wide error handler.
@@ -54,7 +57,6 @@ class Misc(commands.Cog):
 
         error : Exception
             The error that was raised.
-
         """
         if ctx.response.is_done():
             safe_send = ctx.followup.send
@@ -69,7 +71,7 @@ class Misc(commands.Cog):
         await safe_send(
             embed=disnake.Embed(
                 description=f"**Error invoked by: {str(ctx.author)}**\nCommand: {ctx.application_command.name}\nError: "
-                f"```py\n{error_msg}```",
+                            f"```py\n{error_msg}```",
                 color=disnake.Colour.random(),
             )
         )
@@ -158,9 +160,18 @@ class Misc(commands.Cog):
                 inline=True,
             )
             em.add_field(
+                name="Bot Owner",
+                value=f"""
+           {self.bot.icons['arrow']} **Name**: `{self.bot.owner}`
+           {self.bot.icons['arrow']} **ID**: `{self.bot.owner.id}`
+           """,
+                inline=True,
+            )
+            em.add_field(
                 name="Developers",
                 value=f"""
-           {self.bot.icons['arrow']} `KortaPo#5915`""",
+           {self.bot.icons['arrow']} KortaPo#8459           
+           """,
                 inline=True,
             )
             em.set_thumbnail(url=self.bot.user.avatar.url)
@@ -172,9 +183,9 @@ class Misc(commands.Cog):
     @commands.slash_command(
         description="Retrieve various Node/Server/Player information."
     )
-    async def wavelink_information(self, ctx: disnake.ApplicationCommandInteraction):
+    async def lavalink_information(self, ctx: disnake.ApplicationCommandInteraction):
         """
-        This command shows information about the WaveLink.
+        This command shows information about the Lavalink server. How many players are connected, nodes, etc.
 
         Parameters
         ----------
@@ -183,7 +194,7 @@ class Misc(commands.Cog):
 
         Examples
         --------
-        `/wavelink_information`
+        `/lavalink_information`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -218,9 +229,9 @@ class Misc(commands.Cog):
         description="Shows you spotify song information of an user's spotify rich presence"
     )
     async def spotify(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        user: disnake.Member = Param(description="Member Query"),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            user: disnake.Member = Param(description="Member Query"),
     ):
         """
         This command shows you spotify song information of an user's spotify rich presence,
@@ -354,9 +365,9 @@ class Misc(commands.Cog):
 
     @commands.slash_command(name="help", description="Shows help about bot commands.")
     async def show_help(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        slash_command: str = Param(description="Command to get help for."),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            slash_command: str = Param(description="Command to get help for."),
     ):
         """
         This command shows help about bot commands.
@@ -380,8 +391,8 @@ class Misc(commands.Cog):
             sub_commands = command.children if command.children else []
             examples = (
                 command.callback.__doc__.replace("\n", "")
-                .split("Examples")[1]
-                .replace("--------", "")
+                    .split("Examples")[1]
+                    .replace("--------", "")
             )
             embed = disnake.Embed(
                 colour=disnake.Colour.random(),
@@ -413,7 +424,7 @@ class Misc(commands.Cog):
 
     @show_help.autocomplete(option_name="slash_command")
     async def command_auto(
-        self, ctx: disnake.ApplicationCommandInteraction, user_input: str
+            self, ctx: disnake.ApplicationCommandInteraction, user_input: str
     ):
         commands = [command.lower() for command in self.bot.all_slash_commands]
         selected_commands = difflib.get_close_matches(user_input.lower(), commands, n=5)
