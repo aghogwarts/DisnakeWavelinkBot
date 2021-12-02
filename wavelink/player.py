@@ -29,7 +29,6 @@ from typing import Optional, Union
 
 from wavelink.filters import BaseFilter
 from .errors import *
-from .eqs import *
 from .events import *
 
 __all__ = ("Track", "TrackPlaylist", "Player")
@@ -49,7 +48,7 @@ class Track:
     title: str
         The track title.
     identifier: Optional[str]
-        The tracks identifier. could be None depending on track type.
+        The tracks' identifier. could be None depending on track type.
     ytid: Optional[str]
         The tracks YouTube ID. Could be None if ytsearch was not used.
     length: int
@@ -179,20 +178,8 @@ class Player:
         self.volume = 100
         self.paused = False
         self.current = None
-        self._equalizer = Equalizer.flat()
         self.channel_id = None
-
         self._new_track = False
-
-    @property
-    def equalizer(self):
-        """The currently applied Equalizer."""
-        return self._equalizer
-
-    @property
-    def eq(self):
-        """Alias to :func:`equalizer`."""
-        return self.equalizer
 
     @property
     def is_connected(self) -> bool:
@@ -201,12 +188,12 @@ class Player:
 
     @property
     def is_playing(self) -> bool:
-        """Returns whether or not the player is currently playing."""
+        """Returns whether the player is currently playing."""
         return self.is_connected and self.current is not None
 
     @property
     def is_paused(self) -> bool:
-        """Returns whether or not the player is paused."""
+        """Returns whether the player is paused."""
         return self.paused
 
     @property
@@ -326,11 +313,11 @@ class Player:
         track: :class:`Track`
             The :class:`Track` to initiate playing.
         replace: bool
-            Whether or not the current track, if there is one, should be replaced or not. Defaults to True.
+            Whether the current track, if there is one, should be replaced or not. Defaults to True.
         start: int
             The position to start the player from in milliseconds. Defaults to 0.
         end: int
-            The position to end the track on in milliseconds. By default this always allows the current
+            The position to end the track on in milliseconds. By default, this always allows the current
             song to finish playing.
         """
         if replace or not self.is_playing:
@@ -389,31 +376,6 @@ class Player:
             del self.node.players[self.guild_id]
         except KeyError:
             pass
-
-    async def set_eq(self, equalizer: Equalizer) -> None:
-        """|coro|
-
-        Set the Players Equalizer.
-
-        .. versionchanged:: 0.5.0
-            set_eq now accepts an :class:`Equalizer` instead of raw band/gain pairs.
-
-        Parameters
-        ------------
-        equalizer: :class:`Equalizer`
-            The Equalizer to set.
-        """
-        await self.node._send(
-            op="equalizer", guildId=str(self.guild_id), bands=equalizer.eq
-        )
-        self._equalizer = equalizer
-
-    async def set_equalizer(self, equalizer: Equalizer) -> None:
-        """|coro|
-
-        An alias to :func:`set_eq`.
-        """
-        await self.set_eq(equalizer)
 
     async def set_pause(self, pause: bool) -> None:
         """|coro|
