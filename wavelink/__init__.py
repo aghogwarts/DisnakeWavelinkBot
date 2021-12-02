@@ -6,7 +6,6 @@ __version__ = "0.9.10"
 
 from .client import Client
 from .errors import *
-from .eqs import *
 from .events import *
 from .player import *
 from .filters import *
