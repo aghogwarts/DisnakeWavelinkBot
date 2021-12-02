@@ -86,7 +86,7 @@ class Owner(commands.Cog, name="Developer"):
                 type(error), error, error.__traceback__, file=sys.stderr
             )
 
-    @commands.slash_command(description="Commands that handle Bot commands and Cogs")
+    @commands.slash_command(description="Commands that handle Bot commands and Cogs", invoke_without_command=True)
     @commands.is_owner()
     async def botconfig(self, ctx: disnake.ApplicationCommandInteraction):
         pass
@@ -113,6 +113,10 @@ class Owner(commands.Cog, name="Developer"):
 
         cog : str
             The name of the cog to perform the action on.
+
+        Examples
+        --------
+        `/cog action: enable cog: Developer_`
         """
 
         if action.lower() == "disable":
@@ -193,6 +197,10 @@ class Owner(commands.Cog, name="Developer"):
         ----------
         ctx : disnake.ApplicationCommandInteraction
             The Interaction of the command.
+
+        Examples
+        --------
+        `/coginfo`
         """
         loaded_cogs = []
         for cog in self.bot.extensions.keys():
@@ -267,7 +275,7 @@ class Owner(commands.Cog, name="Developer"):
                     else:
                         deleted.append(m)
 
-    @commands.slash_command(name="setstatus", description="Sets the bot status.")
+    @commands.slash_command(name="setstatus", description="Sets the bot status.", invoke_without_command=True)
     @commands.is_owner()
     async def status(self, ctx: disnake.ApplicationCommandInteraction):
         """
@@ -280,7 +288,7 @@ class Owner(commands.Cog, name="Developer"):
 
         Examples
         --------
-        `/setstatus watching: disnake`
+        `/setstatus watching game: disnake`
         """
         pass
 
@@ -305,14 +313,14 @@ class Owner(commands.Cog, name="Developer"):
 
         Examples
         --------
-        `/setstatus streaming: https://www.twitch.tv/disnake game: disnake`
+        `/setstatus streaming url: https://www.twitch.tv/disnake game: disnake`
         """
         game = game.replace("{users}", str(len(self.bot.users))).replace(
             "{guilds}", str(len(self.bot.guilds))
         )
         await self.bot.change_presence(
             activity=disnake.Streaming(
-                name=str(game), url=f"https://www.twitch.tv/{url.lower()}"
+                name=str(game), url=f"https://www.twitch.tv/{url}"
             )
         )
         await ctx.response.send_message(
@@ -341,7 +349,7 @@ class Owner(commands.Cog, name="Developer"):
 
         Examples
         --------
-        `/setstatus playing: disnake`
+        `/setstatus playing game: disnake`
         """
 
         game = game.replace("{users}", str(len(self.bot.users))).replace(
@@ -375,8 +383,7 @@ class Owner(commands.Cog, name="Developer"):
 
         Examples
         --------
-        `/setstatus watching: disnake`
-
+        `/setstatus watching game: disnake`
         """
 
         game = game.replace("{users}", str(len(self.bot.users))).replace(
@@ -412,8 +419,7 @@ class Owner(commands.Cog, name="Developer"):
 
         Examples
         --------
-        `/setstatus listening: disnake`
-
+        `/setstatus listening game: disnake`
         """
 
         game = game.replace("{users}", str(len(self.bot.users))).replace(
@@ -449,8 +455,7 @@ class Owner(commands.Cog, name="Developer"):
 
         Examples
         --------
-        `/setstatus competing: disnake`
-
+        `/setstatus competing game: disnake`
         """
 
         game = game.replace("{users}", str(len(self.bot.users))).replace(
