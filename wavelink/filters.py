@@ -33,11 +33,11 @@ class BaseFilter:
 
     @classmethod
     def build_from_channel_mix(
-        cls,
-        left_to_right: float = 0.0,
-        right_to_left: float = 0.0,
-        right_to_right: float = 0.0,
-        left_to_left: float = 0.0,
+            cls,
+            left_to_right: float = 0.0,
+            right_to_left: float = 0.0,
+            right_to_right: float = 0.0,
+            left_to_left: float = 0.0,
     ):
         """
         Filter which manually adjusts the panning of the audio, which can make
@@ -90,15 +90,15 @@ class BaseFilter:
 
     @classmethod
     def build_from_distortion(
-        cls,
-        sin_offset: float = 0.0,
-        sin_scale: float = 1.0,
-        cos_offset: float = 0.0,
-        cos_scale: float = 1.0,
-        tan_offset: float = 0.0,
-        tan_scale: float = 1.0,
-        offset: float = 0.0,
-        scale: float = 1.0,
+            cls,
+            sin_offset: float = 0.0,
+            sin_scale: float = 1.0,
+            cos_offset: float = 0.0,
+            cos_scale: float = 1.0,
+            tan_offset: float = 0.0,
+            tan_scale: float = 1.0,
+            offset: float = 0.0,
+            scale: float = 1.0,
     ):
         """
         Filter which produces a distortion effect.
@@ -152,7 +152,7 @@ class BaseFilter:
 
     @classmethod
     def build_from_timescale(
-        cls, speed: float = 1.0, pitch: float = 1.0, rate: float = 1.0
+            cls, speed: float = 1.0, pitch: float = 1.0, rate: float = 1.0
     ):
         """
         Filter which changes the speed and pitch of a track.
@@ -180,17 +180,23 @@ class BaseFilter:
         if rate < 0:
             raise FilterInvalidArgument("Timescale rate must be more than 0.")
 
-        payload = {"timescale": {"speed": speed, "pitch": pitch, "rate": rate}}
+        payload = {
+            "timescale": {
+                "speed": speed,
+                "pitch": pitch,
+                "rate": rate
+            }
+        }
         return cls(filter_name="Timescale", payload=payload)
 
     @classmethod
     def karaoke(
-        cls,
-        *,
-        level: float = 1.0,
-        mono_level: float = 1.0,
-        filter_band: float = 225.0,
-        filter_width=100.0,
+            cls,
+            *,
+            level: float = 1.0,
+            mono_level: float = 1.0,
+            filter_band: float = 225.0,
+            filter_width=100.0,
     ):
         """
         Build a karaoke filter.
@@ -248,7 +254,14 @@ class BaseFilter:
         if depth < 0 or depth > 1:
             raise FilterInvalidArgument("Tremolo depth must be between 0 and 1.")
 
-        payload = {"tremolo": {"frequency": frequency, "depth": depth}}
+        payload = {
+            "tremolo":
+            {
+                "frequency":
+                    frequency,
+                "depth": depth
+            }
+        }
         return cls(filter_name="Tremolo", payload=payload)
 
     @classmethod
@@ -274,7 +287,12 @@ class BaseFilter:
         if depth < 0 or depth > 1:
             raise FilterInvalidArgument("Vibrato depth must be between 0 and 1.")
 
-        payload = {"vibrato": {"frequency": frequency, "depth": depth}}
+        payload = {
+            "vibrato": {
+                "frequency": frequency,
+                "depth": depth
+            }
+        }
         return cls(filter_name="Vibrato", payload=payload)
 
     @classmethod
@@ -292,5 +310,10 @@ class BaseFilter:
         -------
             The 8D audio filter.
         """
-        payload = {"8dAudio": {"rotationHertz": rotation_hertz}}
+        payload = {
+            "8dAudio":
+                {
+                    "rotationHertz": rotation_hertz
+                }
+        }
         return cls(filter_name="8D Audio", payload=payload)
