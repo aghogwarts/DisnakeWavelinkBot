@@ -360,13 +360,13 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Returns
         -------
         bool
-            Whether the user is the command invoker / ctx.author`.
+            Whether the user is the command invoker / ctx.author or do they have permissions to kick members.`.
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
 
-        return player.dj == ctx.author or ctx.author.guild_permissions.kick_members
+        return player.dj == ctx.author or ctx.author.guild_permissions.kick_members  # you can change your permissions here.
 
     async def connect(
         self,
@@ -418,7 +418,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         query: str = Param(description="Video Query"),
     ):
         """
-        A command that searches youtube videos.
+        A command that searches YouTube videos.
 
         Parameters
         ----------
@@ -430,7 +430,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         Examples
         --------
-        `/youtube video query: dank memes`
+        `/YouTube video query: dank memes`
         """
         await ctx.response.send_message("Searching...")
         if re.search(r"^(https?\:\/\/)?((www\.)?youtube\.com|youtu\.?be)\/.+$", query):
@@ -480,7 +480,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         query: str = Param(description="Channel Query"),
     ):
         """
-        A command that searches youtube channels.
+        A command that searches YouTube channels.
 
         Parameters
         ----------
@@ -492,7 +492,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         Examples
         --------
-        `/youtube channel query: one vilage`
+        `/YouTube channel query: one vilage`
         """
 
         async with ctx.channel.typing():
@@ -566,7 +566,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         ctx: disnake.ApplicationCommandInteraction
-            The context of the command.
+            The Interaction of the command.
 
         query: str
             The query to search for.
@@ -630,7 +630,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         ctx : disnake.ApplicationCommandInteraction
-            The context of the command.
+            The Interaction of the command.
 
         channel : disnake.TextChannel
             The channel where the bot will be invoked.
@@ -668,7 +668,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         ctx: disnake.ApplicationCommandInteraction
-            The context of the command.
+            The Interaction of the command.
 
         Examples
         --------
@@ -737,7 +737,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         ctx : disnake.ApplicationCommandInteraction
-            The context of the command.
+            The Interaction of the command.
 
         Examples
         --------
@@ -800,7 +800,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         ctx: disnake.ApplicationCommandInteraction
-            The context of the command.
+            The Interaction of the command.
 
         Examples
         --------
@@ -865,12 +865,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def stop(self, ctx: disnake.ApplicationCommandInteraction):
         """
         A command that will stop the currently playing song and the music player and only the DJ can use this command.
-        
+
         Parameters
         ----------
         ctx: disnake.ApplicationCommandInteraction
             The Interaction of the command.
-        
+
         Examples
         --------
         `/stop`
@@ -925,7 +925,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         ctx: disnake.ApplicationCommandInteraction
-            The context of the command.
+            The Interaction of the command.
 
         Examples
         --------
@@ -962,15 +962,15 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     ):
         """
         A command that will alter the volume of the music player, between 1 and 100.
-        
+
         Parameters
         ----------
         ctx: disnake.ApplicationCommandInteraction
-            The context of the command.
-        
+            The Interaction of the command.
+
         vol: int
             The volume to set the player to.
-        
+
         Examples
         --------
         `/volume vol: 50`
@@ -1018,7 +1018,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         ctx: disnake.ApplicationCommandInteraction
-            The context of the command.
+            The Interaction of the command.
 
         Examples
         --------
@@ -1075,7 +1075,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
          Parameters
         ----------
         ctx: disnake.ApplicationCommandInteraction
-            The context of the command.
+            The Interaction of the command.
 
         Examples
         --------
@@ -1299,7 +1299,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         ctx : disnake.ApplicationCommandInteraction
-            The context of the command.
+            The Interaction of the command.
 
 
         Examples
@@ -1344,7 +1344,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def track_filter(self, ctx: disnake.ApplicationCommandInteraction):
         """
         A command that can add a filter to the player. This can adversely affect the quality of the audio.
-        There are four inbuilt filters:
+        There are three inbuilt filters:
 
         Tremolo -> A tremolo filter.
         Vibrato -> A vibrato filter.
@@ -1357,7 +1357,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         Examples
         --------
-        `/filter filter_: tremolo`
+        `/filter`
         """
 
         player: Player = self.bot.wavelink.get_player(
@@ -1665,7 +1665,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         ctx : disnake.ApplicationCommandInteraction
-            The context of the command.
+            The Interaction of the command.
 
         member: disnake.Member
             The member to swap to.
