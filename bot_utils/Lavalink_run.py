@@ -6,7 +6,7 @@ bash_command = (
     "cd Lavalink && java -jar Lavalink.jar"  # command that needs to be run on shell.
 )
 
-program = "java"  # checking that if Java is installed on the host system or not.
+program = "java"  # checking that if Java is installed on the host's system or not.
 
 
 def run_lavalink_process():
