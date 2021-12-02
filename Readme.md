@@ -135,17 +135,17 @@ The most notable ones are:
 
 `logging` - This is where you configure the logging, Lavalink uses logging to log errors, warnings and information. It is very useful and you should keep it enabled.
 
+If you want to know more about Lavalink, visit this repository:
+[Click here to visit](https://github.com/freyacodes/Lavalink)
+
+Also, visit this the Lavaplayer repository:
+[Click here to visit](https://github.com/sedmelluq/Lavaplayer)
+
 ## Wavelink
 Here comes Wavelink, A powerful and robust wrapper around Lavalink that is written for `python`.
 It abstracts away all the complexities of Lavalink and makes it easy for us play our favourite music tracks in it, 
 with your discord bot application.
 Wavelink supports all the features of Lavalink (my version of it.).
-
-If you want to know more about Lavalink, visit this repository:
-[Click here to visit](https://github.com/freyacodes/Lavalink)
-
-Also visit this repository:
-[Click here to visit](https://github.com/sedmelluq/Lavaplayer)
 
 ## How to run this.
 1.) In a web browser, navigate to [Discord Developer Portal](https://discord.com/developers/applications):
