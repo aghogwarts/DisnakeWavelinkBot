@@ -41,7 +41,6 @@ class EmbedPaginator(disnake.ui.View):
         Returns
         -------
         None
-
         """
         self.go_to_first_page.disabled = page_number == 0
         if self.compact:
@@ -94,9 +93,9 @@ class EmbedPaginator(disnake.ui.View):
         try:
             if max_pages is None:
                 # If it doesn't give maximum pages, it cannot be checked
-                await self.show_page(interaction)
+                await self.show_page(interaction)  # type: ignore
             elif max_pages > page_number >= 0:
-                await self.show_page(interaction)
+                await self.show_page(interaction)  # type: ignore
         except IndexError:
             # An error happened that can be handled, so ignore it.
             pass
@@ -114,7 +113,6 @@ class EmbedPaginator(disnake.ui.View):
         -------
         bool
             Whether the interaction author is the author of the message.
-
         """
         if interaction.user and interaction.user.id in (
             self.ctx.bot.owner_id,
@@ -132,7 +130,7 @@ class EmbedPaginator(disnake.ui.View):
 
         Returns
         -------
-
+        None
         """
         if self.message:
             await self.message.edit(view=None)
@@ -174,7 +172,7 @@ class EmbedPaginator(disnake.ui.View):
 
         Returns
         -------
-
+        None
         """
         await self.show_page(0)
 
@@ -192,7 +190,6 @@ class EmbedPaginator(disnake.ui.View):
 
         interaction : disnake.Interaction
             The interaction that was performed.
-
         """
         await self.show_page(self.current_page - 1)
 
@@ -210,7 +207,6 @@ class EmbedPaginator(disnake.ui.View):
 
         interaction : disnake.Interaction
             The interaction that was performed.
-
         """
         await self.show_page(self.current_page + 1)
 
@@ -228,7 +224,6 @@ class EmbedPaginator(disnake.ui.View):
 
         interaction : disnake.Interaction
             The interaction that was performed.
-
         """
         await self.show_page(len(self.embeds) - 1)
 
@@ -246,7 +241,6 @@ class EmbedPaginator(disnake.ui.View):
 
         interaction : disnake.Interaction
             The interaction that was performed.
-
         """
         await interaction.response.defer()
         await interaction.delete_original_message()
@@ -258,7 +252,7 @@ class EmbedPaginator(disnake.ui.View):
 
         Returns
         -------
-
+        None
         """
         embed = self.embeds[0]
         embed.set_footer(text=f"Page 1/{len(self.embeds)}")
@@ -276,8 +270,6 @@ class SimpleEmbedPages(EmbedPaginator):
 
     entries : list
         A list of embeds to paginate over.
-
-
     """
 
     def __init__(self, entries, *, ctx):
@@ -286,7 +278,9 @@ class SimpleEmbedPages(EmbedPaginator):
 
 
 class Paginator(ListPageSource):
-    """A paginator for a list of entries."""
+    """
+    A paginator for a list of entries.
+    """
 
     async def format_page(self, menu, embed: disnake.Embed):
         """
@@ -340,7 +334,7 @@ class TextPaginator(ListPageSource):
 
         Parameters
         ----------
-        menu : disnake.ui.Menu
+        menu : menus.Menu
             The menu.
         text : str
             The text.
@@ -349,7 +343,6 @@ class TextPaginator(ListPageSource):
         -------
         str
             The formatted text.
-
         """
         return text
 
@@ -369,7 +362,6 @@ def WrapText(text: str, length: int) -> typing.List[str]:
     -------
     typing.List[str]
         A list of strings.
-
     """
     wrapper = textwrap.TextWrapper(width=length)
     words = wrapper.wrap(text=text)
@@ -391,7 +383,6 @@ def WrapList(list_: list, length: int) -> typing.List[list]:
     -------
     list
         The wrapped list.
-
     """
 
     def chunks(seq: list, size: int) -> list:
@@ -410,7 +401,6 @@ def WrapList(list_: list, length: int) -> typing.List[list]:
         -------
         list
             The list of chunks.
-
         """
         for i in range(0, len(seq), size):
             yield seq[i: i + size]
