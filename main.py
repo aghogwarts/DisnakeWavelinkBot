@@ -19,4 +19,21 @@ if __name__ == "__main__":
 
         bot.run(config["token"][0], reconnect=True)
     except KeyboardInterrupt:
-        logger.info("Shutting down...", __name="Music Bot")
+        try:
+            bot.session.close()  # Closing the ClientSession
+            logger.info("Shutting down...", __name="Music Bot")
+            exit(0)
+        except AttributeError:
+            logger.info("Exiting Program gracefully.", __name="Music Bot")
+            exit(0)
+
+    except SystemExit:
+        try:
+            bot.session.close()  # Closing the ClientSession
+            logger.info("Closing Aiohttp ClientSession...", __name="Music Bot")
+            bot.clear()  # clearing the cache
+            logger.info("Clearing Bot Cache", __name="Music Bot")
+            exit(0)
+        except AttributeError:
+            logger.info("Gracefully stopping the program....", __name="Music Bot")
+            exit(0)
