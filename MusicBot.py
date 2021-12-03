@@ -46,11 +46,11 @@ class Bot(commands.AutoShardedBot):
 
     def load_cogs(self, exts) -> None:
         """
-        A method that loads all the cogs in the cogs folder.
+        A method that loads all the cogs to the bot from the specified folder.
 
         Parameters
         ----------
-        exts: `Iterable[list]`
+        exts: Iterable[`list`]
             A list of extensions to load.
 
         Returns
@@ -72,7 +72,6 @@ class Bot(commands.AutoShardedBot):
     async def login(self, *args, **kwargs) -> None:
         """
         A method that logs the bot into Discord.
-        Create the ClientSession before logging in.
 
         Parameters
         ----------
@@ -86,7 +85,7 @@ class Bot(commands.AutoShardedBot):
         None
         """
 
-        self.session = ClientSession()
+        self.session = ClientSession()  # creating a ClientSession
 
         await super().login(*args, **kwargs)
 
@@ -137,16 +136,3 @@ class Bot(commands.AutoShardedBot):
             self._buffer = bytearray()
         msg = disnake.utils._from_json(msg)
         self.dispatch("socket_response", msg)
-
-    async def on_disconnect(self):
-        """
-        An event that triggers when the bot is disconnected from the gateway.
-
-        Returns
-        -------
-        None
-        """
-        self.clear()  # clearing bot cache
-        self.logger.info(f"Bot disconnected from gateway.", __name="Music Bot")
-        await self.session.close()  # closing the ClientSession
-        self.logger.info(f"ClientSession closed.", __name="Music Bot")
