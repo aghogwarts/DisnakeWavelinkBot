@@ -156,7 +156,7 @@ To know more about jishaku, visit this repository:
 
 **Note: ** Jishaku has been rewritten to support disnake in this repository. However there is a good fork exists for jishaku that supports disnake.
 
-[Disnake-Jishaku](https://github.com/Kraots/disnake-jishaku)
+[Disnake-Jishaku](https://github.com/Kraots/Jishaku)
 
 ## How to run this.
 1.) In a web browser, navigate to [Discord Developer Portal](https://discord.com/developers/applications):
