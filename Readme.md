@@ -147,6 +147,17 @@ It abstracts away all the complexities of Lavalink and makes it easy for us play
 with your discord bot application.
 Wavelink supports all the features of Lavalink (my version of it.).
 
+# Jishaku
+You have probably seen, a directory called `jishaku`, Jishaku is debugging cog that is made for bot developers. It has special commands that allow bot developers to control their bot directly from discord. Jishaku commands are not slash commands (not yet), they are text commands ( `?jsk` ) and be accessed only by the owner of the bot.
+To know more about jishaku, visit this repository:
+
+
+[Jishaku](https://github.com/Gorialis/Jishaku)
+
+**Note: ** Jishaku has been rewritten to support disnake in this repository. However there is a good fork exists for jishaku that supports disnake.
+
+[Disnake-Jishaku](https://github.com/Kraots/disnake-jishaku)
+
 ## How to run this.
 1.) In a web browser, navigate to [Discord Developer Portal](https://discord.com/developers/applications):
 
