@@ -277,7 +277,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         self, ctx: disnake.ApplicationCommandInteraction
     ) -> None:
         """
-        Checks if the slash command is invoked in the correct channel.
+        Checks if the slash command is invoked in the correct channel and the user has joined in the correct channel.
 
         Parameters
         ----------
@@ -303,6 +303,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                     f"{ctx.author.mention}, you must be in {music_player.context.channel.mention} for this session."
                 )
                 raise IncorrectChannelError
+        else:
+            pass
 
         if ctx.application_command.name == "play" and not music_player.context:
             return
