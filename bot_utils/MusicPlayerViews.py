@@ -17,11 +17,11 @@ class Filter(disnake.ui.Select["FilterView"]):
                 emoji="🟥",
             ),
             disnake.SelectOption(
-                label="Karaoke", description="Piano Filter.", emoji="🟩"
+                label="Karaoke", description="Karaoke Filter.", emoji="🟩"
             ),
-            disnake.SelectOption(label="8D", description="Metal Filter.", emoji="🟦"),
+            disnake.SelectOption(label="8D", description="8D Audio Filter.", emoji="🟦"),
             disnake.SelectOption(
-                label="Vibrato", description="Flat Filter.", emoji="🟨"
+                label="Vibrato", description="Vibrato Filter.", emoji="🟨"
             ),
             disnake.SelectOption(
                 label="ExtremeBass", description="ExtremeBass Filter.", emoji="🟩"
