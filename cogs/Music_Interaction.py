@@ -18,6 +18,7 @@ from bot_utils.MusicPlayerInteraction import Player, Track
 from bot_utils.MusicPlayerViews import FilterView
 from bot_utils.paginator import SimpleEmbedPages, WrapText
 from jishaku.functools import executor_function
+from wavelink import FilterInvalidArgument
 
 youtube_url_regex = re.compile(r"https?://(?:www\.)?.+")
 
@@ -174,10 +175,10 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.Cog.listener("on_voice_state_update")
     async def DJ_assign(
-        self,
-        member: disnake.Member,
-        before: disnake.VoiceState,
-        after: disnake.VoiceState,
+            self,
+            member: disnake.Member,
+            before: disnake.VoiceState,
+            after: disnake.VoiceState,
     ):
         """
         Assign DJ role to the user who is currently playing music.
@@ -220,7 +221,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             player.dj = member
 
     async def cog_slash_command_error(
-        self, ctx: disnake.ApplicationCommandInteraction, error: Exception
+            self, ctx: disnake.ApplicationCommandInteraction, error: Exception
     ) -> None:
         """
         Cog wide error handler.
@@ -260,7 +261,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await safe_send(
                 embed=disnake.Embed(
                     description=f"**Error invoked by: {str(ctx.author)}**\nCommand: {ctx.application_command.name}\nError: "
-                    f"```py\n{error_msg}```",
+                                f"```py\n{error_msg}```",
                     color=disnake.Colour.random(),
                 )
             )
@@ -274,7 +275,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             )
 
     async def cog_before_slash_command_invoke(
-        self, ctx: disnake.ApplicationCommandInteraction
+            self, ctx: disnake.ApplicationCommandInteraction
     ) -> None:
         """
         Checks if the slash command is invoked in the correct channel and the user has joined in the correct channel.
@@ -373,14 +374,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         )
 
         return (
-            player.dj == ctx.author or ctx.author.guild_permissions.kick_members
+                player.dj == ctx.author or ctx.author.guild_permissions.kick_members
         )  # you can change your
         # permissions here.
 
     async def connect(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        channel: typing.Union[disnake.VoiceChannel, disnake.StageChannel] = None,
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            channel: typing.Union[disnake.VoiceChannel, disnake.StageChannel] = None,
     ) -> None:
         """
         Connect to a voice channel.
@@ -422,9 +423,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @youtube.sub_command(description="Search youtube videos")
     async def video(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        query: str = Param(description="Video to search for."),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            query: str = Param(description="Video to search for."),
     ):
         """
         A command that searches YouTube videos.
@@ -484,9 +485,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @youtube.sub_command(description="Search youtube channels")
     async def channel(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        query: str = Param(description="Channel Query"),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            query: str = Param(description="Channel Query")
     ):
         """
         A command that searches YouTube channels.
@@ -564,9 +565,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Play or queue a song with the given query.")
     async def play(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        query: str = Param(description="Song search"),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            query: str = Param(description="Search your song...."),
     ):
         """
         A command that will play your favorite song and if a song is already playing, it will add the song in
@@ -578,7 +579,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             The Interaction of the command.
 
         query: str
-            The query to search for.
+            The song query to search for.
 
         Examples
         --------
@@ -587,6 +588,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
+
         await ctx.response.defer()
 
         if not player.is_connected:
@@ -595,12 +597,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         query = query.strip("<>")
         if not youtube_url_regex.match(query):
             query = f"ytsearch:{query}"
-
+            
         tracks = await self.bot.wavelink.get_tracks(query)
         if not tracks:
             return await ctx.edit_original_message(
                 content=f"{self.bot.icons['redtick']} No songs were found with that query. "
-                f"Please try again.",
+                        f"Please try again.",
             )
 
         if isinstance(tracks, wavelink.TrackPlaylist):
@@ -626,9 +628,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         description="Switch the channel where the bot was first invoked."
     )
     async def switch_channel(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        channel: disnake.TextChannel = Param(description="Your channel"),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            channel: disnake.TextChannel = Param(description="Your channel"),
     ):
         """
         A command that will switch to a different channel and set it as the channel where the bot was invoked.
@@ -992,9 +994,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Change the players volume, between 1 and 100.")
     async def volume(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        vol: int = Param(description="The volume to set the player to.", gt=1, lt=100),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            vol: int = Param(description="The volume to set the player to.", gt=1, lt=100),
     ):
         """
         A command that will alter the volume of the music player, between 1 and 100.
@@ -1048,7 +1050,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await ctx.response.send_message(
             embed=disnake.Embed(
                 description=f"{self.bot.icons['redtick']} Set the volume "
-                f"to **{vol}**%",
+                            f"to **{vol}**%",
                 colour=disnake.Colour.random(),
             )
         )
@@ -1255,13 +1257,13 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Show lyrics of the current playing song.")
     async def lyrics(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        *,
-        name: str = Param(
-            description="The name of the song to search  the lyrics of.",
-            default=None,
-        ),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            *,
+            name: str = Param(
+                description="The name of the song to search  the lyrics of.",
+                default=None,
+            ),
     ):
         """
         A command that will show the lyrics of the current playing song or the name of the song you want lyrics
@@ -1400,12 +1402,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @create_filter.sub_command(description="Create a Tremolo Filter.")
     async def channel_mix(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        left_to_right: float = Param(description="Left to Right", default=0.5),
-        right_to_left: float = Param(description="Right to Left", default=0.5),
-        right_to_right: float = Param(description="Right to Right", default=0.5),
-        left_to_left: float = Param(description="Left to Left", default=0.5),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            left_to_right: float = Param(description="Left to Right", default=0.5, ge=0.0, le=10.0),
+            right_to_left: float = Param(description="Right to Left", default=0.5, ge=0.0, le=10.0),
+            right_to_right: float = Param(description="Right to Right", default=0.5, ge=0.0, le=10.0),
+            left_to_left: float = Param(description="Left to Left", default=0.5, ge=0.0, le=10.0),
     ):
 
         """
@@ -1463,13 +1465,20 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                     color=disnake.Colour.random(),
                 )
             )
-
-        filter_ = wavelink.BaseFilter.build_from_channel_mix(
-            left_to_left=left_to_left,
-            left_to_right=left_to_right,
-            right_to_left=right_to_left,
-            right_to_right=right_to_right,
-        )
+        try:
+            filter_ = wavelink.BaseFilter.build_from_channel_mix(
+                left_to_left=left_to_left,
+                left_to_right=left_to_right,
+                right_to_left=right_to_left,
+                right_to_right=right_to_right,
+            )
+        except ValueError as e:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `{e}`",
+                    colour=disnake.Colour.random(),
+                )
+            )
 
         await player.set_filter(filter_)
         await ctx.response.send_message(
@@ -1483,11 +1492,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         description="Build a custom Filter from base TimeScale Filter."
     )
     async def time_scale(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        speed: float = Param(description="Speed", default=1.0),
-        pitch: float = Param(description="Pitch", default=1.0),
-        rate: float = Param(description="Rate", default=1.0),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            speed: float = Param(description="Speed", default=1.0, ge=0.0),
+            pitch: float = Param(description="Pitch", default=1.0, ge=0.0),
+            rate: float = Param(description="Rate", default=1.0, ge=0.0),
     ):
         """
         Filter which changes the speed and pitch of a track.
@@ -1499,17 +1508,17 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
              The Interaction of the command.
 
          speed : float
-             The speed.
+             The speed of the audio.
 
          pitch : float
-             The pitch.
+             The pitch of the audio.
 
          rate : float
-             The rate.
+             The rate of the audio.
 
         Examples
         --------
-        `/create_filter time_scale time_scale speed=1.5 pitch=1.5 rate=1.5`
+        `/create_filter time_scale speed=1.5 pitch=1.5 rate=1.5`
         """
 
         player: Player = self.bot.wavelink.get_player(
@@ -1540,10 +1549,17 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                     color=disnake.Colour.random(),
                 )
             )
-
-        filter_ = wavelink.BaseFilter.build_from_timescale(
-            speed=speed, pitch=pitch, rate=rate
-        )
+        try:
+            filter_ = wavelink.BaseFilter.build_from_timescale(
+                speed=speed, pitch=pitch, rate=rate
+            )
+        except FilterInvalidArgument as e:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `{e}`",
+                    colour=disnake.Colour.random(),
+                )
+            )
 
         await player.set_filter(filter_)
         await ctx.response.send_message(
@@ -1557,16 +1573,16 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         description="Build a custom Filter from base Distortion Filter."
     )
     async def distortion(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        sin_offset: float = Param(description="Sin Offset", default=0.0),
-        cos_offset: float = Param(description="Cos Offset", default=0.0),
-        sin_scale: float = Param(description="Sin Scale", default=1.0),
-        cos_scale: float = Param(description="Cos Scale", default=1.0),
-        tan_offset: float = Param(description="Tan Offset", default=0.0),
-        tan_scale: float = Param(description="Tan Scale", default=1.0),
-        offset: float = Param(description="Offset", default=0.0),
-        scale: float = Param(description="Scale", default=1.0),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            sin_offset: float = Param(description="Sin Offset", default=0.0),
+            cos_offset: float = Param(description="Cos Offset", default=0.0),
+            sin_scale: float = Param(description="Sin Scale", default=1.0),
+            cos_scale: float = Param(description="Cos Scale", default=1.0),
+            tan_offset: float = Param(description="Tan Offset", default=0.0),
+            tan_scale: float = Param(description="Tan Scale", default=1.0),
+            offset: float = Param(description="Offset", default=0.0),
+            scale: float = Param(description="Scale", default=1.0),
     ):
         """
         This slash command builds a custom Filter from base Distortion Filter. This filter can be used to distort the
@@ -1578,28 +1594,28 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
              The Interaction of the command.
 
         sin_offset : float
-            The sin offset.
+            The sin offset of the filter.
 
         sin_scale : float
-            The sin scale.
+            The sin scale of the filter.
 
         cos_offset : float
-            The cos offset.
+            The cos offset of the filter.
 
         cos_scale : float
-            The cos scale.
+            The cos scale of the filter.
 
         tan_offset : float
-            The tan offset.
+            The tan offset of the filter.
 
         tan_scale : float
-            The tan scale.
+            The tan scale of the filter.
 
         offset : float
-            The offset.
+            The main offset of the filter.
 
         scale : float
-            The scale.
+            The main scale of the filter.
 
         Examples
         --------
@@ -1687,7 +1703,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return await ctx.response.send_message(
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['info']} There are no more songs "
-                    f"in the queue.",
+                                f"in the queue.",
                     colour=disnake.Colour.random(),
                 ),
             )
@@ -1696,7 +1712,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         entries = []
         for track in player.queue._queue:
             embed = disnake.Embed(
-                title=f"`{len(player.queue._queue)}` tracks in queue....",
+                title=f"`{len(player.queue._queue)} tracks in queue....`",
                 color=disnake.Colour.random(),
             )
             embed.add_field(name=f"{track.title}", value=track.uri, inline=False)
@@ -1784,11 +1800,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Seek to a specific time in the song.")
     async def seek(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        position: str = Param(
-            description="The time position to seek to. For eg: /seek 3:56"
-        ),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            position: str = Param(
+                description="The time position to seek to. For eg: /seek 3:56"
+            ),
     ):
         """
         A command that will seek aka skip to a specific part of a track in a song that has been playing.
@@ -1829,7 +1845,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return await ctx.response.send_message(
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['redtick']} `There player is paused right now, resume it in order to "
-                    f"seek.`",
+                                f"seek.`",
                     colour=disnake.Colour.random(),
                 )
             )
@@ -1857,9 +1873,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         description="Swap the current DJ to another member in the voice channel."
     )
     async def swap_dj(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        member: disnake.Member = Param(description="The member to swap to"),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            member: disnake.Member = Param(description="The member to swap to"),
     ):
         """
         A command that will switch the player's DJ to another member in the same voice channel.
