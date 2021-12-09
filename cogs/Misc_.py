@@ -100,82 +100,82 @@ class Misc(commands.Cog):
         `/info`
         """
         await ctx.response.defer()
-        async with ctx.channel.typing():
-            process = psutil.Process()
-            version = sys.version_info
-            em = disnake.Embed(color=disnake.Colour.random())
 
-            # File Stats
-            def line_count():
-                """
-                Counts the number of lines in the codebase.
+        process = psutil.Process()
+        version = sys.version_info
+        em = disnake.Embed(color=disnake.Colour.random())
 
-                Returns
-                -------
-                tuple[int, int, int, int, int, int]
-                    The number of lines in the codebase.
-                """
-                files = classes = funcs = comments = lines = letters = 0
-                p = pathlib.Path("./")
-                for f in p.rglob("*.py"):
-                    files += 1
-                    with f.open() as of:
-                        letters = sum(len(f.open().read()) for f in p.rglob("*.py"))
-                        for line in of.readlines():
-                            line = line.strip()
-                            if line.startswith("class"):
-                                classes += 1
-                            if line.startswith("def"):
-                                funcs += 1
-                            if line.startswith("async def"):
-                                funcs += 1
-                            if "#" in line:
-                                comments += 1
-                            lines += 1
-                return files, classes, funcs, comments, lines, letters
+        # File Stats
+        def line_count():
+            """
+            Counts the number of lines in the codebase.
 
-            (
-                files,
-                classes,
-                funcs,
-                comments,
-                lines,
-                letters,
-            ) = await self.bot.loop.run_in_executor(None, line_count)
-            #
-            em.add_field(
-                name="Bot",
-                value=f"""
-           {self.bot.icons['arrow']} **Guilds**: `{len(self.bot.guilds)}`
-           {self.bot.icons['arrow']} **Users**: `{len(self.bot.users)}`
-           {self.bot.icons['arrow']} **Commands**: `{len([cmd for cmd in list(self.bot.walk_commands()) if not cmd.hidden])}`""",
-                inline=True,
-            )
-            em.add_field(
-                name="File Statistics",
-                value=f"""
-           {self.bot.icons['arrow']} **Letters**: `{letters}`
-           {self.bot.icons['arrow']} **Files**: `{files}`
-           {self.bot.icons['arrow']} **Lines**: `{lines}`
-           {self.bot.icons['arrow']} **Functions**: `{funcs}`""",
-                inline=True,
-            )
-            em.add_field(
-                name="Bot Owner",
-                value=f"""
-           {self.bot.icons['arrow']} **Name**: `{self.bot.owner}`
-           {self.bot.icons['arrow']} **ID**: `{self.bot.owner.id}`
-           """,
-                inline=True,
-            )
-            em.add_field(
-                name="Developers",
-                value=f"""
-           {self.bot.icons['arrow']} KortaPo#8459           
-           """,
-                inline=True,
-            )
-            em.set_thumbnail(url=self.bot.user.avatar.url)
+            Returns
+            -------
+            tuple[int, int, int, int, int, int]
+                The number of lines in the codebase.
+            """
+            files = classes = funcs = comments = lines = letters = 0
+            p = pathlib.Path("./")
+            for f in p.rglob("*.py"):
+                files += 1
+                with f.open() as of:
+                    letters = sum(len(f.open().read()) for f in p.rglob("*.py"))
+                    for line in of.readlines():
+                        line = line.strip()
+                        if line.startswith("class"):
+                            classes += 1
+                        if line.startswith("def"):
+                            funcs += 1
+                        if line.startswith("async def"):
+                            funcs += 1
+                        if "#" in line:
+                            comments += 1
+                        lines += 1
+            return files, classes, funcs, comments, lines, letters
+
+        (
+            files,
+            classes,
+            funcs,
+            comments,
+            lines,
+            letters,
+        ) = await self.bot.loop.run_in_executor(None, line_count)
+        #
+        em.add_field(
+            name="Bot",
+            value=f"""
+       {self.bot.icons['arrow']} **Guilds**: `{len(self.bot.guilds)}`
+       {self.bot.icons['arrow']} **Users**: `{len(self.bot.users)}`
+       {self.bot.icons['arrow']} **Commands**: `{len([cmd for cmd in list(self.bot.walk_commands()) if not cmd.hidden])}`""",
+            inline=True,
+        )
+        em.add_field(
+            name="File Statistics",
+            value=f"""
+       {self.bot.icons['arrow']} **Letters**: `{letters}`
+       {self.bot.icons['arrow']} **Files**: `{files}`
+       {self.bot.icons['arrow']} **Lines**: `{lines}`
+       {self.bot.icons['arrow']} **Functions**: `{funcs}`""",
+            inline=True,
+        )
+        em.add_field(
+            name="Bot Owner",
+            value=f"""
+       {self.bot.icons['arrow']} **Name**: `{self.bot.owner}`
+       {self.bot.icons['arrow']} **ID**: `{self.bot.owner.id}`
+       """,
+            inline=True,
+        )
+        em.add_field(
+            name="Developers",
+            value=f"""
+       {self.bot.icons['arrow']} `KortaPo#8459`      
+       """,
+            inline=True,
+        )
+        em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_footer(
             text=f"Python {version[0]}.{version[1]}.{version[2]} • disnake {disnake.__version__}"
         )
