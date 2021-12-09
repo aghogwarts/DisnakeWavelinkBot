@@ -56,7 +56,7 @@ class Filter(disnake.ui.Select["FilterView"]):
         extreme_bass = wavelink.BaseFilter.build_from_channel_mix(left_to_right=1.0,
                                                                   right_to_left=3.0,
                                                                   right_to_right=8.8,
-                                                                  left_to_left=10.1, )
+                                                                  left_to_left=10.0)
         eqs = {
             "Tremolo": wavelink.BaseFilter.tremolo(),
             "Karaoke": wavelink.BaseFilter.karaoke(),
