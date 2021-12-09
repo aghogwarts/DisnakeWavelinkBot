@@ -1,5 +1,5 @@
 """
-The filter configurations are taken from Lavalink and pomice (Another Lavalink client), but rewritten entirely for
+The filter configurations are taken from Lavalink  but rewritten entirely for
 wavelink.
 """
 from wavelink.errors import FilterInvalidArgument
@@ -24,7 +24,6 @@ class BaseFilter:
     def name(self):
         """
         The name of the filter.
-
         Returns
         -------
             The name of the filter.
@@ -33,30 +32,25 @@ class BaseFilter:
 
     @classmethod
     def build_from_channel_mix(
-        cls,
-        left_to_right: float = 0.0,
-        right_to_left: float = 0.0,
-        right_to_right: float = 0.0,
-        left_to_left: float = 0.0,
+            cls,
+            left_to_right: float = 0.0,
+            right_to_left: float = 0.0,
+            right_to_right: float = 0.0,
+            left_to_left: float = 0.0,
     ):
         """
         Filter which manually adjusts the panning of the audio, which can make
         for some cool effects when done correctly.
-
         Parameters
         ----------
         left_to_right : float
             The left to right panning.
-
         right_to_left : float
             The right to left panning.
-
         right_to_right : float
             The right to right panning.
-
         left_to_left : float
             The left to left panning.
-
         Returns
         -------
             The channel mix filter.
@@ -89,85 +83,39 @@ class BaseFilter:
         return cls(filter_name="ChannelMix", payload=payload)
 
     @classmethod
-    def extreme_bass(
-        cls,
-        left_to_right: float = 1.0,
-        right_to_left: float = 3.0,
-        right_to_right: float = 8.8,
-        left_to_left: float = 10.1,
-    ):
-        """
-        Filter which adjusts the bass of the audio, which can adds extreme
-        bass to the audio.
-
-        Parameters
-        ----------
-        left_to_right : float
-            The left to right panning.
-
-        right_to_left : float
-            The right to left panning.
-
-        right_to_right : float
-            The right to right panning.
-
-        left_to_left : float
-            The left to left panning.
-
-        Returns
-        -------
-            The extreme bass filter.
-        """
-        filter_ = cls.build_from_channel_mix(
-            right_to_left=right_to_left,
-            left_to_right=left_to_right,
-            left_to_left=left_to_left,
-            right_to_right=right_to_right,
-        )
-
-    @classmethod
     def build_from_distortion(
-        cls,
-        sin_offset: float = 0.0,
-        sin_scale: float = 1.0,
-        cos_offset: float = 0.0,
-        cos_scale: float = 1.0,
-        tan_offset: float = 0.0,
-        tan_scale: float = 1.0,
-        offset: float = 0.0,
-        scale: float = 1.0,
+            cls,
+            sin_offset: float = 0.0,
+            sin_scale: float = 1.0,
+            cos_offset: float = 0.0,
+            cos_scale: float = 1.0,
+            tan_offset: float = 0.0,
+            tan_scale: float = 1.0,
+            offset: float = 0.0,
+            scale: float = 1.0,
     ):
-        """
-        Filter which produces a distortion effect.
-
+        """ A method that you can use to build cool sound effects, this is the Distortion filter,
+        A filter which distorts the audio by applying a sine wave, cosine wave, and a tangent wave. Very useful for
+        creating a distorted sound effect, when used correctly.
+        Note however, this filter can adversely effect the audio of track you are currently playing.
         Parameters
         ----------
-            The name of the filter.
-
         sin_offset : float
-            The sin offset.
-
+            The sin offset of the audio.
         sin_scale : float
-            The sin scale.
-
+            The sin scale of the audio.
         cos_offset : float
-            The cos offset.
-
+            The cos offset of the audio.
         cos_scale : float
-            The cos scale.
-
+            The cos scale of the audio.
         tan_offset : float
-            The tan offset.
-
+            The tan offset of the audio.
         tan_scale : float
-            The tan scale.
-
+            The tan scale of the audio.
         offset : float
-            The offset.
-
+            The offset of the audio.
         scale : float
-            The scale.
-
+            The scale of the audio.
         Returns
         -------
             The distortion filter.
@@ -185,27 +133,27 @@ class BaseFilter:
                 "scale": scale,
             }
         }
-        return cls(filter_name="Distortion", payload=payload)
+        return cls(filter_name="Distortion", payload=payload)  # The name cannot be changed, as it is used by
+        # Lavalink, and Lavalink does not allow you to create custom filters for the time being.
 
     @classmethod
     def build_from_timescale(
-        cls, speed: float = 1.0, pitch: float = 1.0, rate: float = 1.0
+            cls, speed: float = 1.0, pitch: float = 1.0, rate: float = 1.0
     ):
         """
-        Filter which changes the speed and pitch of a track.
+        This is method is used to build a timescale filter, which can be used to change the speed, pitch, and rate of
+        the track.
         You can make some very nice effects with this filter,
-
+        such as speeding up the track, or changing the pitch of the track, or changing the rate of the track.
+        Note: This filter can adversely effect the audio of track you are currently playing.
          Parameters
          ----------
          speed : float
-             The speed.
-
+             The speed of the track.
          pitch : float
-             The pitch.
-
+             The pitch of the track.
          rate : float
-             The rate.
-
+             The rate of the track.
          Returns
          -------
              The timescale filter.
@@ -222,30 +170,29 @@ class BaseFilter:
 
     @classmethod
     def karaoke(
-        cls,
-        *,
-        level: float = 1.0,
-        mono_level: float = 1.0,
-        filter_band: float = 225.0,
-        filter_width=100.0,
+            cls,
+            *,
+            level: float = 1.0,
+            mono_level: float = 1.0,
+            filter_band: float = 225.0,
+            filter_width=100.0,
     ):
         """
-        Build a karaoke filter.
-
+        This is a builtin filter named as Karaoke.
+        Karaoke filter changes the pitch of the track to make it sound like singing. It also changes the speed of the
+        track to make it sound like singing.
+        Note: This filter is not recommended for use with tracks that have a lot of silence, and as mentioned above,
+        this filter can adversely effect the audio of track you are currently playing.
         Parameters
         ----------
         level : float
             The level of the karaoke filter.
-
         mono_level : float
             The level of the karaoke filter when the channel is mono.
-
         filter_band : float
             The filter band of the karaoke filter.
-
         filter_width : float
             The filter width of the karaoke filter.
-
         Returns
         -------
             The karaoke filter.
@@ -266,15 +213,12 @@ class BaseFilter:
         """
          Filter which produces a wavering tone in the music,
         causing it to sound like the music is changing in volume rapidly.
-
         Parameters
         ----------
         frequency : float
-            The frequency of the vibrato.
-
+            The frequency of the tremolo.
         depth : float
-            The depth of the vibrato.
-
+            The depth of the tremolo.
         Returns
         -------
             The tremolo filter.
@@ -293,15 +237,12 @@ class BaseFilter:
         """
          Filter which produces a wavering tone in the music,
          causing it to sound like the music is changing in pitch rapidly.
-
         Parameters
         ----------
         frequency : float
             The frequency of the vibrato.
-
         depth : float
             The depth of the vibrato.
-
         Returns
         -------
             The vibrato filter.
@@ -319,12 +260,10 @@ class BaseFilter:
         """
         Filter which produces a stereo-like panning effect, which sounds like
         the audio is being rotated around the listener's head.
-
         Parameters
         ----------
         rotation_hertz : float
             The rotation speed of the audio.
-
         Returns
         -------
             The 8D audio filter.
