@@ -195,7 +195,10 @@ class Player(wavelink.Player):
             description=f"```css\nNow Playing:\n**{track.title}**```",
             colour=disnake.Colour.random(),
         )
-        embed.set_thumbnail(url=track.thumb)
+        try:
+            embed.set_thumbnail(url=track.thumb)
+        except disnake.HTTPException:
+            pass
 
         embed.add_field(
             name="Duration",
