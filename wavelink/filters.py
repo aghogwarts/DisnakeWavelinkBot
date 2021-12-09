@@ -55,21 +55,21 @@ class BaseFilter:
         -------
             The channel mix filter.
         """
-        if 0 > left_to_left > 1:
+        if 0.0 <= left_to_left <= 10.0:
             raise ValueError(
-                "'left_to_left' value must be more than or equal to 0 or less than or equal to 1."
+                "'left_to_left' value must be more than or equal to 0 or less than or equal to 10."
             )
-        if 0 > right_to_right > 1:
+        if 0.0 <= right_to_right <= 10.0:
             raise ValueError(
-                "'right_to_right' value must be more than or equal to 0 or less than or equal to 1."
+                "'right_to_right' value must be more than or equal to 0 or less than or equal to 10."
             )
-        if 0 > left_to_right > 1:
+        if 0.0 <= left_to_right <= 10.0:
             raise ValueError(
-                "'left_to_right' value must be more than or equal to 0 or less than or equal to 1."
+                "'left_to_right' value must be more than or equal to 0 or less than or equal to 10."
             )
-        if 0 > right_to_left > 1:
+        if 0.0 <= right_to_left <= 10.0:
             raise ValueError(
-                "'right_to_left' value must be more than or equal to 0 or less than or equal to 1."
+                "'right_to_left' value must be more than or equal to 0 or less than or equal to 10."
             )
 
         payload = {
@@ -113,9 +113,9 @@ class BaseFilter:
         tan_scale : float
             The tan scale of the audio.
         offset : float
-            The offset of the audio.
+            The main offset of the audio.
         scale : float
-            The scale of the audio.
+            The main scale of the audio.
         Returns
         -------
             The distortion filter.
