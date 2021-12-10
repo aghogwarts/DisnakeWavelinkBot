@@ -217,17 +217,25 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             )
             await safe_send(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} `An error occurred.`",
+                    description=f"{self.bot.icons['redtick']} `An error has occurred while "
+                                f"executing {ctx.application_command.name} command.`"
+                                f"The error has been notified to the bot owner.",
                     colour=disnake.Colour.random(),
                 )
             )
-            await self.bot.owner.send(
-                embed=disnake.Embed(
-                    description=f"**Error invoked by: {str(ctx.author)}**\nCommand: {ctx.application_command.name}\nError: "
-                    f"```py\n{error_msg}```",
-                    color=disnake.Colour.random(),
+            try:
+                await self.bot.owner.send(
+                    embed=disnake.Embed(
+                        description=f"**Error invoked by: `{str(ctx.author)}`**\n"
+                                    f"Command: `{ctx.application_command.name}`\n"
+                                    f"Guild: `{ctx.guild.name}`\n"
+                                    f"Channel: `{ctx.channel.name}`\n"
+                                    f"Error:\n```py\n{error_msg}```",
+                        color=disnake.Colour.random(),
+                    )
                 )
-            )
+            except disnake.Forbidden:
+                pass
 
             print(
                 f"Ignoring exception in command {ctx.application_command}: ",
