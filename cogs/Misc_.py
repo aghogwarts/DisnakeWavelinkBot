@@ -1,3 +1,6 @@
+from youtubesearchpython.__future__ import ChannelsSearch, VideosSearch
+
+import re
 import datetime
 import difflib
 import pathlib
@@ -12,7 +15,9 @@ from disnake.ext.commands import Param, InvokableSlashCommand
 
 import wavelink
 from bot_utils.paginator import SimpleEmbedPages
+from jishaku.functools import executor_function
 from wavelink import Player
+import youtube_dl as ydl
 
 
 class InviteButton(disnake.ui.View):
@@ -33,6 +38,44 @@ class InviteButton(disnake.ui.View):
         github_url = "https://github.com/KortaPo/DisnakeWavelinkBot"
 
         self.add_item(disnake.ui.Button(label="Source Code", url=github_url))
+
+
+@executor_function
+def youtube(query, download=False):
+    """
+    Searches YouTube for a video and returns the results.
+
+    Parameters
+    ----------
+    query : str
+        The query to search YouTube for.
+    download : bool
+        Whether to download the video.
+
+
+    Returns
+    -------
+    dict
+        Information about the YouTube video that was queried.
+
+    """
+    ytdl = ydl.YoutubeDL(
+        {
+            "format": "bestaudio/best",
+            "restrictfilenames": True,
+            "noplaylist": True,
+            "nocheckcertificate": True,
+            "ignoreerrors": True,
+            "logtostderr": False,
+            "quiet": True,
+            "no_warnings": True,
+            "default_search": "auto",
+            "source_address": "0.0.0.0",
+        }
+    )
+    info = ytdl.extract_info(query, download=download)
+    del ytdl
+    return info
 
 
 class Misc(commands.Cog):
@@ -285,7 +328,153 @@ class Misc(commands.Cog):
         percent = int((current / duration) * 25)
         perbar = f"`{min_sec_current}`| {(percent - 1) * '─'}⚪️{(25 - percent) * '─'} | `{min_sec}`"
         embed.add_field(name="Progress", value=perbar)
-        await ctx.channel.send(embed=embed)
+        await ctx.response.send_message(embed=embed)
+
+    @commands.slash_command()
+    async def youtube(self, ctx: disnake.ApplicationCommandInteraction):
+        pass
+
+    @youtube.sub_command(description="Search youtube videos")
+    async def video(
+        self,
+        ctx: disnake.ApplicationCommandInteraction,
+        query: str = Param(description="Video to search for."),
+    ):
+        """
+        A command that searches YouTube videos.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        query : str
+            The query to search for.
+
+        Examples
+        --------
+        `/youtube video query: dank memes`
+        """
+        await ctx.response.send_message("Searching...")
+        if re.search(r"^(https?\:\/\/)?((www\.)?youtube\.com|youtu\.?be)\/.+$", query):
+            async with ctx.channel.typing():
+                query = (await youtube(query))["title"]
+
+        async with ctx.channel.typing():
+            videos = (await (VideosSearch(query, limit=15)).next())["result"]
+
+        if len(videos) == 0:
+            return await ctx.response.send_message(
+                "I could not find a video with that query"
+            )
+
+        embeds = []
+
+        for video in videos:
+            url = "https://www.youtube.com/watch?v=" + video["id"]
+            channel_url = "https://www.youtube.com/channel/" + video["channel"]["id"]
+            em = disnake.Embed(
+                title=video["title"], url=url, color=disnake.Colour.random()
+            )
+            em.add_field(
+                name="Channel",
+                value=f"[{video['channel']['name']}]({channel_url})",
+                inline=True,
+            )
+            em.add_field(
+                name="Duration", value=humanize.intword(video["duration"]), inline=True
+            )
+            em.add_field(
+                name="Views", value=humanize.intword(video["viewCount"]["text"])
+            )
+            em.set_footer(
+                text=f"Use the buttons for navigating • Page: {int(videos.index(video)) + 1}/{len(videos)}"
+            )
+            em.set_thumbnail(url=video["thumbnails"][0]["url"])
+            embeds.append(em)
+
+        pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
+        await pag.start()
+
+    @youtube.sub_command(description="Search youtube channels")
+    async def channel(
+        self,
+        ctx: disnake.ApplicationCommandInteraction,
+        query: str = Param(description="Channel Query"),
+    ):
+        """
+        A command that searches YouTube channels.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        query : str
+            The query to search for.
+
+        Examples
+        --------
+        `/youtube channel query: one vilage`
+        """
+
+        async with ctx.channel.typing():
+            channels = (await (ChannelsSearch(query, limit=15, region="US")).next())[
+                "result"
+            ]
+
+        if len(channels) == 0:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    title="Channel",
+                    description="I could not find a channel with that query.",
+                    color=disnake.Colour.random(),
+                )
+            )
+
+        await ctx.response.send_message("Searching...")
+        embeds = []
+
+        for channel in channels:
+            url = "https://www.youtube.com/channel/" + channel["id"]
+            if not channel["thumbnails"][0]["url"].startswith("https:"):
+                thumbnail = f"https:{channel['thumbnails'][0]['url']}"
+            else:
+                thumbnail = channel["thumbnails"][0]["url"]
+            if channel["descriptionSnippet"] is not None:
+                em = disnake.Embed(
+                    title=channel["title"],
+                    description=" ".join(
+                        text["text"] for text in channel["descriptionSnippet"]
+                    ),
+                    url=url,
+                    color=disnake.Colour.random(),
+                )
+            else:
+                em = disnake.Embed(
+                    title=channel["title"], url=url, color=disnake.Colour.random()
+                )
+            em.add_field(
+                name="Videos",
+                value="".join(
+                    channel["videoCount"] if channel["videoCount"] is not None else "0"
+                ),
+                inline=True,
+            )
+            em.add_field(
+                name="Subscribers",
+                value="".join(
+                    channel["subscribers"]
+                    if channel["subscribers"] is not None
+                    else "0"
+                ),
+                inline=True,
+            )
+            em.set_thumbnail(url=thumbnail)
+            embeds.append(em)
+
+        pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
+        await pag.start()
 
     @commands.slash_command(description="Shows bot latency.")
     async def ping(self, ctx: disnake.ApplicationCommandInteraction):
