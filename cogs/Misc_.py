@@ -1,674 +1,105 @@
-from youtubesearchpython.__future__ import ChannelsSearch, VideosSearch
+import json
+import typing
 
-import re
-import datetime
-import difflib
-import pathlib
-import sys
-import time
-import traceback
 import disnake
-import humanize
-import psutil
-from disnake.ext import commands
-from disnake.ext.commands import Param, InvokableSlashCommand
-
 import wavelink
-from bot_utils.paginator import SimpleEmbedPages
-from jishaku.functools import executor_function
-from wavelink import Player
-import youtube_dl as ydl
+from bot_utils.MusicPlayerInteraction import Player
 
 
-class InviteButton(disnake.ui.View):
+class Filter(disnake.ui.Select["FilterView"]):
     """
-    A button that opens an invitation link.
+    Filter class for the FilterView.
     """
 
-    def __init__(self, bot):
-        super().__init__(timeout=None)
-        permissions = disnake.Permissions(294410120513)
-        url = disnake.utils.oauth_url(
-            client_id=bot.user.id,
-            scopes=["bot", "applications.commands"],
-            permissions=permissions,
+    def __init__(self, player: Player):
+        self.player = player
+        options = [
+            disnake.SelectOption(
+                label="Tremolo",
+                description="Tremolo Filter.",
+                emoji="🟥",
+            ),
+            disnake.SelectOption(
+                label="Karaoke", description="Karaoke Filter.", emoji="🟩"
+            ),
+            disnake.SelectOption(label="8D", description="8D Audio Filter.", emoji="🟦"),
+            disnake.SelectOption(
+                label="Vibrato", description="Vibrato Filter.", emoji="🟨"
+            ),
+            disnake.SelectOption(
+                label="ExtremeBass", description="ExtremeBass Filter.", emoji="🟩"
+            ),
+        ]
+
+        super().__init__(
+            placeholder="Choose your Filter...",
+            min_values=1,
+            max_values=1,
+            options=options,
         )
 
-        self.add_item(disnake.ui.Button(label="Click Here To Invite", url=url))
-        github_url = "https://github.com/KortaPo/DisnakeWavelinkBot"
-
-        self.add_item(disnake.ui.Button(label="Source Code", url=github_url))
-
-
-@executor_function
-def youtube(query, download=False):
-    """
-    Searches YouTube for a video and returns the results.
-
-    Parameters
-    ----------
-    query : str
-        The query to search YouTube for.
-    download : bool
-        Whether to download the video.
-
-
-    Returns
-    -------
-    dict
-        Information about the YouTube video that was queried.
-
-    """
-    ytdl = ydl.YoutubeDL(
-        {
-            "format": "bestaudio/best",
-            "restrictfilenames": True,
-            "noplaylist": True,
-            "nocheckcertificate": True,
-            "ignoreerrors": True,
-            "logtostderr": False,
-            "quiet": True,
-            "no_warnings": True,
-            "default_search": "auto",
-            "source_address": "0.0.0.0",
-        }
-    )
-    info = ytdl.extract_info(query, download=download)
-    del ytdl
-    return info
-
-
-class Misc(commands.Cog):
-    """
-    Miscellaneous commands.
-    """
-
-    def __init__(self, bot):
-        self.bot = bot
-
-    async def cog_slash_command_error(
-        self, ctx: disnake.ApplicationCommandInteraction, error: Exception
-    ) -> None:
+    async def callback(self, interaction: disnake.ApplicationCommandInteraction):
         """
-        Cog wide error handler.
-
-        This is called when a command fails to execute.
+        Callback for the Filter view.
 
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        error : Exception
-            The error that was raised.
-        """
-        if ctx.response.is_done():
-            safe_send = ctx.followup.send
-        else:
-            safe_send = ctx.response.send_message
-
-        # ignore all other exception types, but print them to stderr
-
-        error_msg = "".join(
-            traceback.format_exception(type(error), error, error.__traceback__)
-        )
-        await safe_send(
-            embed=disnake.Embed(
-                description=f"**Error invoked by: {str(ctx.author)}**\nCommand: {ctx.application_command.name}\nError: "
-                f"```py\n{error_msg}```",
-                color=disnake.Colour.random(),
-            )
-        )
-
-        print(
-            f"Ignoring exception in command {ctx.application_command}: ",
-            file=sys.stderr,
-        )
-        traceback.print_exception(
-            type(error), error, error.__traceback__, file=sys.stderr
-        )
-
-    @commands.slash_command(description="Shows information about the bot.")
-    async def info(self, ctx: disnake.ApplicationCommandInteraction):
-        """
-        This command shows information about the bot.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        Examples
-        --------
-        `/info`
-        """
-        await ctx.response.defer()
-
-        process = psutil.Process()
-        version = sys.version_info
-        em = disnake.Embed(color=disnake.Colour.random())
-
-        # File Stats
-        def line_count():
-            """
-            Counts the number of lines in the codebase.
-
-            Returns
-            -------
-            tuple[int, int, int, int, int, int]
-                The number of lines in the codebase.
-            """
-            files = classes = funcs = comments = lines = letters = 0
-            p = pathlib.Path("./")
-            for f in p.rglob("*.py"):
-                files += 1
-                with f.open() as of:
-                    letters = sum(len(f.open().read()) for f in p.rglob("*.py"))
-                    for line in of.readlines():
-                        line = line.strip()
-                        if line.startswith("class"):
-                            classes += 1
-                        if line.startswith("def"):
-                            funcs += 1
-                        if line.startswith("async def"):
-                            funcs += 1
-                        if "#" in line:
-                            comments += 1
-                        lines += 1
-            return files, classes, funcs, comments, lines, letters
-
-        (
-            files,
-            classes,
-            funcs,
-            comments,
-            lines,
-            letters,
-        ) = await self.bot.loop.run_in_executor(None, line_count)
-        #
-        em.add_field(
-            name="Bot",
-            value=f"""
-       {self.bot.icons['arrow']} **Guilds**: `{len(self.bot.guilds)}`
-       {self.bot.icons['arrow']} **Users**: `{len(self.bot.users)}`
-       {self.bot.icons['arrow']} **Commands**: `{len([cmd for cmd in list(self.bot.walk_commands()) if not cmd.hidden])}`""",
-            inline=True,
-        )
-        em.add_field(
-            name="File Statistics",
-            value=f"""
-       {self.bot.icons['arrow']} **Letters**: `{letters}`
-       {self.bot.icons['arrow']} **Files**: `{files}`
-       {self.bot.icons['arrow']} **Lines**: `{lines}`
-       {self.bot.icons['arrow']} **Functions**: `{funcs}`""",
-            inline=True,
-        )
-        em.add_field(
-            name="Bot Owner",
-            value=f"""
-       {self.bot.icons['arrow']} **Name**: `{self.bot.owner}`
-       {self.bot.icons['arrow']} **ID**: `{self.bot.owner.id}`
-       """,
-            inline=True,
-        )
-        em.add_field(
-            name="Developers",
-            value=f"""
-       {self.bot.icons['arrow']} `KortaPo#8459`      
-       """,
-            inline=True,
-        )
-        em.set_thumbnail(url=self.bot.user.avatar.url)
-        em.set_footer(
-            text=f"Python {version[0]}.{version[1]}.{version[2]} • disnake {disnake.__version__}"
-        )
-        await ctx.edit_original_message(embed=em, view=InviteButton(self.bot))
-
-    @commands.slash_command(
-        description="Retrieve various Node/Server/Player information."
-    )
-    async def lavalink_information(self, ctx: disnake.ApplicationCommandInteraction):
-        """
-        This command shows information about the Lavalink server. Like how many players are connected, nodes, etc.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        Examples
-        --------
-        `/lavalink_information`
-        """
-        player: Player = self.bot.wavelink.get_player(
-            guild_id=ctx.guild.id, cls=Player, context=ctx
-        )
-        node = player.node
-
-        used = humanize.naturalsize(node.stats.memory_used)
-        total = humanize.naturalsize(node.stats.memory_allocated)
-        free = humanize.naturalsize(node.stats.memory_free)
-        cpu = node.stats.cpu_cores
-
-        fmt = (
-            f"**WaveLink:** `{wavelink.__version__}`\n\n"
-            f"Connected to `{len(self.bot.wavelink.nodes)}` nodes.\n"
-            f"Best available Node `{self.bot.wavelink.get_best_node().__repr__()}`\n"
-            f"`{len(self.bot.wavelink.players)}` players are distributed on nodes.\n"
-            f"`{node.stats.players}` players are distributed on server.\n"
-            f"`{node.stats.playing_players}` players are playing on server.\n\n"
-            f"Server Memory: `{used}/{total}` | `({free} free)`\n"
-            f"Server CPU: `{cpu}`\n\n"
-            f"Server Uptime: `{humanize.precisedelta(datetime.timedelta(milliseconds=node.stats.uptime))}`"
-        )
-        await ctx.response.send_message(
-            embed=disnake.Embed(
-                description=fmt, color=disnake.Colour.random()
-            ).set_footer(
-                text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url
-            )
-        )
-
-    @commands.slash_command(
-        description="Shows you spotify song information of an user's spotify rich presence"
-    )
-    async def spotify(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        user: disnake.Member = Param(description="Member Query"),
-    ):
-        """
-        This command shows you spotify song information of a user's spotify rich presence,
-        if the user is playing a song.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        user : disnake.Member
-            The member to query.
-
-        Examples
-        --------
-        `/spotify user: @KortaPo`
-        """
-        activities = user.activities
-        try:
-            act = [
-                activity
-                for activity in activities
-                if isinstance(activity, disnake.Spotify)
-            ][0]
-        except IndexError:
-            return await ctx.channel.send("No spotify was detected")
-        start = humanize.naturaltime(disnake.utils.utcnow() - act.created_at)
-        print(start)
-        name = act.title
-        art = " ".join(act.artists)
-        album = act.album
-        duration = round(((act.end - act.start).total_seconds() / 60), 2)
-        min_sec = time.strftime(
-            "%M:%S", time.gmtime((act.end - act.start).total_seconds())
-        )
-        current = round(((disnake.utils.utcnow() - act.start).total_seconds() / 60), 2)
-        min_sec_current = time.strftime(
-            "%M:%S", time.gmtime((disnake.utils.utcnow() - act.start).total_seconds())
-        )
-        embed = disnake.Embed(color=ctx.guild.me.color)
-        embed.set_author(
-            name=user.display_name,
-            icon_url="https://netsbar.com/wp-content/uploads/2018/10/Spotify_Icon.png",
-        )
-        embed.description = f"Listening To  [**{name}**] (https://open.spotify.com/track/{act.track_id})"
-        embed.add_field(name="Artist", value=art, inline=True)
-        embed.add_field(name="Album", value=album, inline=True)
-        embed.set_thumbnail(url=act.album_cover_url)
-        embed.add_field(name="Started Listening", value=start, inline=True)
-        percent = int((current / duration) * 25)
-        perbar = f"`{min_sec_current}`| {(percent - 1) * '─'}⚪️{(25 - percent) * '─'} | `{min_sec}`"
-        embed.add_field(name="Progress", value=perbar)
-        await ctx.response.send_message(embed=embed)
-
-    @commands.slash_command()
-    async def youtube(self, ctx: disnake.ApplicationCommandInteraction):
-        pass
-
-    @youtube.sub_command(description="Search youtube videos")
-    async def video(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        query: str = Param(description="Video to search for."),
-    ):
-        """
-        A command that searches YouTube videos.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        query : str
-            The query to search for.
-
-        Examples
-        --------
-        `/youtube video query: dank memes`
-        """
-        await ctx.response.send_message("Searching...")
-        if re.search(r"^(https?\:\/\/)?((www\.)?youtube\.com|youtu\.?be)\/.+$", query):
-            async with ctx.channel.typing():
-                query = (await youtube(query))["title"]
-
-        async with ctx.channel.typing():
-            videos = (await (VideosSearch(query, limit=15)).next())["result"]
-
-        if len(videos) == 0:
-            return await ctx.response.send_message(
-                "I could not find a video with that query"
-            )
-
-        embeds = []
-
-        for video in videos:
-            url = "https://www.youtube.com/watch?v=" + video["id"]
-            channel_url = "https://www.youtube.com/channel/" + video["channel"]["id"]
-            em = disnake.Embed(
-                title=video["title"], url=url, color=disnake.Colour.random()
-            )
-            em.add_field(
-                name="Channel",
-                value=f"[{video['channel']['name']}]({channel_url})",
-                inline=True,
-            )
-            em.add_field(
-                name="Duration", value=humanize.intword(video["duration"]), inline=True
-            )
-            em.add_field(
-                name="Views", value=humanize.intword(video["viewCount"]["text"])
-            )
-            em.set_footer(
-                text=f"Use the buttons for navigating • Page: {int(videos.index(video)) + 1}/{len(videos)}"
-            )
-            em.set_thumbnail(url=video["thumbnails"][0]["url"])
-            embeds.append(em)
-
-        pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
-        await pag.start()
-
-    @youtube.sub_command(description="Search youtube channels")
-    async def channel(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        query: str = Param(description="Channel Query"),
-    ):
-        """
-        A command that searches YouTube channels.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        query : str
-            The query to search for.
-
-        Examples
-        --------
-        `/youtube channel query: one vilage`
-        """
-
-        async with ctx.channel.typing():
-            channels = (await (ChannelsSearch(query, limit=15, region="US")).next())[
-                "result"
-            ]
-
-        if len(channels) == 0:
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    title="Channel",
-                    description="I could not find a channel with that query.",
-                    color=disnake.Colour.random(),
-                )
-            )
-
-        await ctx.response.send_message("Searching...")
-        embeds = []
-
-        for channel in channels:
-            url = "https://www.youtube.com/channel/" + channel["id"]
-            if not channel["thumbnails"][0]["url"].startswith("https:"):
-                thumbnail = f"https:{channel['thumbnails'][0]['url']}"
-            else:
-                thumbnail = channel["thumbnails"][0]["url"]
-            if channel["descriptionSnippet"] is not None:
-                em = disnake.Embed(
-                    title=channel["title"],
-                    description=" ".join(
-                        text["text"] for text in channel["descriptionSnippet"]
-                    ),
-                    url=url,
-                    color=disnake.Colour.random(),
-                )
-            else:
-                em = disnake.Embed(
-                    title=channel["title"], url=url, color=disnake.Colour.random()
-                )
-            em.add_field(
-                name="Videos",
-                value="".join(
-                    channel["videoCount"] if channel["videoCount"] is not None else "0"
-                ),
-                inline=True,
-            )
-            em.add_field(
-                name="Subscribers",
-                value="".join(
-                    channel["subscribers"]
-                    if channel["subscribers"] is not None
-                    else "0"
-                ),
-                inline=True,
-            )
-            em.set_thumbnail(url=thumbnail)
-            embeds.append(em)
-
-        pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
-        await pag.start()
-
-    @commands.slash_command(description="Shows bot latency.")
-    async def ping(self, ctx: disnake.ApplicationCommandInteraction):
-        """
-        This command shows bot latency.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        Examples
-        --------
-        `/ping`
-        """
-        await ctx.response.send_message("Gathering Information...")
-        times = []
-        counter = 0
-        embed = disnake.Embed(colour=disnake.Colour.random())
-        for _ in range(3):
-            counter += 1
-            start = time.perf_counter()
-            await ctx.edit_original_message(
-                content=f"Trying Ping {('.' * counter)} {counter}/3"
-            )
-            end = time.perf_counter()
-            speed = round((end - start) * 1000)
-            times.append(speed)
-            if speed < 160:
-                embed.add_field(
-                    name=f"Ping {counter}:", value=f"🟢 | {speed}ms", inline=True
-                )
-            elif speed > 170:
-                embed.add_field(
-                    name=f"Ping {counter}:", value=f"🟡 | {speed}ms", inline=True
-                )
-            else:
-                embed.add_field(
-                    name=f"Ping {counter}:", value=f"🔴 | {speed}ms", inline=True
-                )
-
-        embed.add_field(name="Bot Latency", value=f"{round(self.bot.latency * 1000)}ms")
-        embed.add_field(
-            name="Normal Speed",
-            value=f"{round((round(sum(times)) + round(self.bot.latency * 1000)) / 4)}ms",
-        )
-
-        embed.set_footer(text=f"Total estimated elapsed time: {round(sum(times))}ms")
-        embed.set_author(name=ctx.me.display_name, icon_url=ctx.me.avatar.url)
-
-        await ctx.edit_original_message(
-            content=f":ping_pong: **{round((round(sum(times)) + round(self.bot.latency * 1000)) / 4)}ms**",
-            embed=embed,
-        )
-
-    @commands.slash_command(description="Shows you the bot's uptime.")
-    async def uptime(self, ctx: disnake.ApplicationCommandInteraction):
-        """
-        This command shows you the bot's uptime.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        Examples
-        --------
-        `/uptime`
-        """
-        await ctx.response.send_message("Gathering Information...")
-        embed = disnake.Embed(colour=disnake.Colour.random())
-        embed.set_author(name=ctx.me.display_name, icon_url=ctx.me.avatar.url)
-        embed.add_field(
-            name="Uptime",
-            value=f"{humanize.naturaltime(disnake.utils.utcnow() - self.bot.start_time)}",
-        )
-        await ctx.edit_original_message(content=":clock1: **Uptime**", embed=embed)
-
-    @commands.slash_command(name="help", description="Shows help about bot commands.")
-    async def show_help(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        slash_command: str = Param(description="Command to get help for."),
-    ):
-        """
-        This command shows help about bot commands.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-        slash_command : str
-            The command to get help for.
-
-        Examples
-        --------
-        `/help slash_command: info`
-        """
-        slash_commands = [command for command in self.bot.all_slash_commands]
-        if slash_command in slash_commands:
-            await ctx.response.send_message("Gathering Information...")
-
-            command: InvokableSlashCommand = self.bot.get_slash_command(slash_command)
-            if len(command.children) > 0:
-                embeds = []
-                for key, value in command.children.items():
-                    examples = (
-                        value.callback.__doc__.replace("\n", "")
-                        .split("Examples")[1]
-                        .replace("--------", "")
-                    )
-                    embed = disnake.Embed(
-                        colour=disnake.Colour.random(),
-                        title=f"Help for {slash_command} {key}",
-                        timestamp=disnake.utils.utcnow(),
-                    ).set_footer(
-                        text=f"Requested by {ctx.author.display_name}",
-                        icon_url=ctx.author.display_avatar.url,
-                    )
-                    embed.add_field(
-                        name="Usage",
-                        value=f"`/{slash_command} {key} {', '.join([option.name for option in value.option.options])}`",
-                    )
-                    embed.add_field(
-                        name="Description",
-                        value=f"`{value.docstring['description']}`",
-                        inline=False,
-                    )
-                    embed.add_field(name="Examples", value=f"{examples}", inline=False)
-                    embeds.append(embed)
-
-                pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
-                await pag.start()
-
-            else:
-                pass
-
-            examples = (
-                command.callback.__doc__.replace("\n", "")
-                .split("Examples")[1]
-                .replace("--------", "")
-            )
-            embed = disnake.Embed(
-                colour=disnake.Colour.random(),
-                title=f"Help for {slash_command}",
-                timestamp=disnake.utils.utcnow(),
-            ).set_footer(
-                text=f"Requested by {ctx.author.display_name}",
-                icon_url=ctx.author.display_avatar.url,
-            )
-            embed.add_field(
-                name="Usage",
-                value=f"`/{command.name} {', '.join([option.name for option in command.options])}`",
-            )
-            embed.add_field(
-                name="Description",
-                value=f"`{command.docstring['description']}`",
-                inline=False,
-            )
-            embed.add_field(name="Examples", value=f"{examples}", inline=False)
-
-            return await ctx.edit_original_message(
-                content=f":question: **{slash_command}**", embed=embed
-            )
-        else:
-            return await ctx.response.send_message(
-                f"{self.bot.icons['redtick']} This command does not exists.",
-                ephemeral=True,
-            )
-
-    @show_help.autocomplete(option_name="slash_command")
-    async def command_auto(
-        self, ctx: disnake.ApplicationCommandInteraction, user_input: str
-    ):
-        """
-        This command autocompletes the command to get help for.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        user_input : str
-            The user input.
+        interaction : disnake.ApplicationCommandInteraction
+            The interaction object.
 
         Returns
         -------
-        list
-            The list of commands matching the user input.
+        None
         """
-        commands = [command.lower() for command in self.bot.all_slash_commands]
-        selected_commands = difflib.get_close_matches(user_input.lower(), commands)
-        return selected_commands
+
+        await interaction.response.send_message(f"Filter set to {self.values[0]}.")
+        extreme_bass = wavelink.BaseFilter.build_from_channel_mix(
+            left_to_right=1.0, right_to_left=3.0, right_to_right=8.8, left_to_left=9.0
+        )
+        eqs = {
+            "Tremolo": wavelink.BaseFilter.tremolo(),
+            "Karaoke": wavelink.BaseFilter.karaoke(),
+            "8D": wavelink.BaseFilter.Eight_D_Audio(),
+            "Vibrato": wavelink.BaseFilter.vibrato(),
+            "ExtremeBass": extreme_bass,
+        }  # you can make your own custom Filters and pass it here.
+        await self.player.set_filter(eqs[self.values[0]])
 
 
-def setup(bot):
-    bot.add_cog(Misc(bot))
+class FilterView(disnake.ui.View):
+    """
+    A view that allows the user to set the filter.
+    """
+
+    def __init__(
+        self, interaction: disnake.ApplicationCommandInteraction, player: Player
+    ):
+        super().__init__(timeout=60)
+        self.interaction = interaction
+        self.add_item(Filter(player=player))
+
+    async def interaction_check(
+        self, interaction: disnake.ApplicationCommandInteraction
+    ):
+        """
+        Check if the interaction is the same as the one that created this view.
+
+        Parameters
+        ----------
+        interaction : disnake.ApplicationCommandInteraction
+            The interaction to check.
+
+        Returns
+        -------
+        None
+        """
+        if interaction.author.id != self.interaction.author.id:
+            return await interaction.response.send_message(
+                "This is not your menu!", ephemeral=True
+            )
+        return True
+
+    async def on_timeout(self) -> None:
+        for item in self.children:
+            item.disabled = True
+        await self.interaction.edit_original_message(view=self)
