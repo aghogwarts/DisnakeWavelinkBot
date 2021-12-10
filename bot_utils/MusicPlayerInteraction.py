@@ -7,6 +7,7 @@ import disnake
 import humanize
 import datetime
 import wavelink
+from bot_utils.paginator import ViewPages, RichPager
 
 
 class Track(wavelink.Track):
@@ -57,9 +58,7 @@ class Player(wavelink.Player):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.context: typing.Union[disnake.ApplicationCommandInteraction] = kwargs.get(
-            "context", None
-        )
+        self.context: disnake.ApplicationCommandInteraction = kwargs.get("context")
         if self.context:
             self.dj: disnake.Member = self.context.author
 
@@ -213,7 +212,7 @@ class Player(wavelink.Player):
         embed.add_field(name="Channel", value=f"**`{channel}`**")
         embed.add_field(name="DJ", value=self.dj.mention)
         embed.add_field(name="Video URL", value=f"[Click Here!]({track.uri})")
-        embed.add_field(name="Author", value=f"{track.author}")
+        embed.add_field(name="Author", value=f"`{track.author}`")
         embed.set_footer(
             text=f"Requested By {track.requester}",
             icon_url=track.requester.display_avatar,
@@ -276,3 +275,21 @@ class Player(wavelink.Player):
 
         """
         self._loop = value
+
+
+class QueuePages(ViewPages):
+    """
+    A simple paginator interface that is a subclass of :class: ViewPages.
+    This class is used to paginate the queue.
+    """
+
+    def __init__(
+        self, entries, ctx: disnake.ApplicationCommandInteraction, per_page: int = 5
+    ):
+        super().__init__(RichPager(entries, per_page=per_page), ctx=ctx)
+        self.embed = disnake.Embed(
+            description=f"**{len(entries)}** songs in Queue...",
+            colour=disnake.Colour.random(),
+        ).set_footer(
+            text=f"Requested By {ctx.author}", icon_url=ctx.author.display_avatar.url
+        )
