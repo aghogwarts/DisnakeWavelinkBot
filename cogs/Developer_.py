@@ -1,19 +1,32 @@
+#  -*- coding: utf-8 -*-
+
+
 import os
 import pkgutil
 import sys
 import traceback
+import typing
 from io import BytesIO
+
 import disnake
 from disnake.ext import commands
 from disnake.ext.commands import Param
 
+from enum import Enum
 
-async def command_autocomp(
-    inter: disnake.ApplicationCommandInteraction, user_input: str
-):
-    # This func will suggest options to complete the string argument
-    all_items = ["enable", "disable", "reload", "remove"]
-    return [item for item in all_items if user_input.lower() in item]
+
+class Action(str, Enum):
+    """
+    Enum for the different actions that can be taken by the developer cog.
+    """
+
+    Enable = "enable"
+    Disable = "disable"
+    Reload = "reload"
+    Remove = "remove"
+
+    def __str__(self):
+        return self.value
 
 
 async def cog_autocomp(inter: disnake.ApplicationCommandInteraction, user_input: str):
@@ -28,7 +41,7 @@ class Owner(commands.Cog, name="Developer"):
     Commands specifically developer for Bot developers.
     """
 
-    def __init__(self, bot):
+    def __init__(self, bot: typing.Union[commands.Bot, commands.AutoShardedBot]):
         self.bot = bot
 
     async def cog_slash_command_error(
@@ -55,15 +68,18 @@ class Owner(commands.Cog, name="Developer"):
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['redtick']} You are not the owner of this bot.",
                     color=disnake.Colour.random(),
-                )
+                ),
+                ephemeral=True,
             )
-        if isinstance(error, commands.CommandError):
+
+        if isinstance(error, commands.BotMissingPermissions):
             await safe_send(
                 embed=disnake.Embed(
-                    color=disnake.Colour.random(), description=f"{error}"
-                )
+                    description=f"{self.bot.icons['redtick']} I don't have the required permissions.",
+                    color=disnake.Colour.random(),
+                ),
+                ephemeral=True,
             )
-            return
 
             # ignore all other exception types, but print them to stderr
         else:
@@ -99,7 +115,7 @@ class Owner(commands.Cog, name="Developer"):
     async def cog(
         self,
         ctx: disnake.ApplicationCommandInteraction,
-        action: str = Param(autocomplete=command_autocomp),
+        action: str = Param(autocomplete=Action),
         cog: str = Param(autocomplete=cog_autocomp),
     ):
         """
