@@ -25,7 +25,8 @@ import random
 
 
 class ExponentialBackoff:
-    """An implementation of the exponential backoff algorithm
+    """
+    An implementation of the exponential backoff algorithm
     Provides a convenient interface to implement an exponential backoff
     for reconnecting or retrying transmissions in a distributed network.
     Once instantiated, the delay method will return the next interval to
@@ -58,7 +59,8 @@ class ExponentialBackoff:
         self._randfunc = rand.randrange if integral else rand.uniform
 
     def delay(self):
-        """Compute the next delay
+        """
+        Compute the next delay
         Returns the next delay to wait according to the exponential
         backoff algorithm.  This is a value between 0 and base * 2^exp
         where exponent starts off at 1 and is incremented at every
