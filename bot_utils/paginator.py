@@ -1,3 +1,6 @@
+#  -*- coding: utf-8 -*-
+
+
 from __future__ import annotations
 
 import asyncio
@@ -40,7 +43,6 @@ class ViewPages(disnake.ui.View):
         Fills the items with the items from the source.
         """
         if not self.compact:
-            self.numbered_page.row = 1
             self.stop_pages.row = 1
 
         if self.source.is_paginating():
@@ -145,6 +147,9 @@ class ViewPages(disnake.ui.View):
     async def show_checked_page(
         self, interaction: disnake.Interaction, page_number: int
     ) -> None:
+        """
+        Shows the page with the given number.
+        """
         max_pages = self.source.get_max_pages()
         try:
             if max_pages is None:
@@ -163,7 +168,7 @@ class ViewPages(disnake.ui.View):
         ):
             return True
         await interaction.response.send_message(
-            "This pagination menu cannot be controlled by you, sorry!", ephemeral=True
+            "This is not your menu.", ephemeral=True
         )
         return False
 
@@ -174,16 +179,19 @@ class ViewPages(disnake.ui.View):
     async def on_error(
         self, error: Exception, item: disnake.ui.Item, interaction: disnake.Interaction
     ) -> None:
-        if interaction.response.is_done():
-            await interaction.followup.send(
-                "An unknown error occurred, sorry", ephemeral=True
-            )
-        else:
-            await interaction.response.send_message(
-                "An unknown error occurred, sorry", ephemeral=True
-            )
+        safe_send = (
+            interaction.response.followup
+            if interaction.response.is_done()
+            else interaction.response.send_message
+        )
+        await safe_send(
+            "An error occurred while trying to show this page.", ephemeral=True
+        )
 
     async def start(self) -> None:
+        """
+        Starts the pagination menu.
+        """
         if (
             self.check_embeds
             and not self.ctx.channel.permissions_for(self.ctx.me).embed_links
