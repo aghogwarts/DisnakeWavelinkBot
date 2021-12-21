@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "WavelinkMusicBot"
+version = "1.7.9"
+description = "A music bot based on slash commands and Lavalink and written in disnake."
+authors = ["KortaPo"]
+license = "ISC"
+readme = "README.md"
+
+
+
+[tool.poetry.dependencies]
+python = "^3.9"
+disnake = "^2.2.2"
+youtube_dl = "^2021.6.6"
+youtube-search-python = "^1.5.3"
+aiohttp = "3.7.4.post0"
+async-timeout = "3.0.1"
+import-expression = "^1.1.4"
+astunparse = "^1.6.3"
+PyYAML = "^6.0"
+orjson = "^3.6.5"
+psutil = "^5.8.0"
+loguru = "^0.5.3"
+braceexpand = "^0.1.7"
+"mystbin.py" = "^2.2.0"
+requests = "^2.26.0"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+bot = "run: python3 main.py"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
