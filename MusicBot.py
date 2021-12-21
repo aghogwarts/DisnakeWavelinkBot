@@ -1,18 +1,26 @@
+#  -*- coding: utf-8 -*-
+
+
 import json
 import pkgutil
 import traceback
 import zlib
 from typing import Optional, Any
 
-import loguru
+import mystbin
 from loguru import logger
 import disnake
 from aiohttp import ClientSession
 from disnake import Intents, AllowedMentions
 from disnake.ext import commands
 
-with open("./bot_utils/config.json") as f:
+from bot_utils.Helpers_ import Config
+
+with open("./config/icons.json", mode="r", encoding="utf-8") as f:
     data = json.load(f)
+    #  encoding fixes the issues raised when trying to run this code on Windows.
+
+bot_config: Config = Config()
 
 
 class Bot(commands.AutoShardedBot):
@@ -25,7 +33,7 @@ class Bot(commands.AutoShardedBot):
         intents.dm_messages = False  # Disabling this Intent will make the Bot not receive DM message events
 
         super().__init__(
-            command_prefix=commands.when_mentioned_or("?"),
+            command_prefix=bot_config.prefix,
             intents=intents,
             allowed_mentions=AllowedMentions(everyone=False, users=False, roles=False),
             case_insensitive=True,
@@ -33,16 +41,18 @@ class Bot(commands.AutoShardedBot):
             help_command=None,  # type: ignore
             sync_permissions=True,
             enable_debug_events=True,
+            owners=bot_config.owners,
             reload=True,  # This Kwarg Enables Cog watchdog, Hot reloading of cogs.
             *args,
             **kwargs,
         )
 
         self.session: Optional[ClientSession] = None
-        self.config = data
         self.icons = data["ICONS"]
         self.logger = logger
         self.start_time = disnake.utils.utcnow()
+        self.bot_config = bot_config
+        self.mystbin_client = None
 
     def load_cogs(self, exts) -> None:
         """
@@ -86,6 +96,9 @@ class Bot(commands.AutoShardedBot):
         """
 
         self.session = ClientSession()  # creating a ClientSession
+        self.mystbin_client = mystbin.Client(
+            session=self.session
+        )  # creating a mystbin client
 
         await super().login(*args, **kwargs)
 
@@ -105,6 +118,16 @@ class Bot(commands.AutoShardedBot):
             f"Total Users: {len(self.users)}\n"
             f"------------------------------------------"
         )
+
+    @property
+    async def get_owners(self):
+        """
+        A method that returns the owners of the bot.
+        """
+        owners = [
+            await self.get_or_fetch_user(int(owner)) for owner in self.bot_config.owners
+        ]
+        return owners
 
     async def on_socket_raw_receive(self, msg):
         """
