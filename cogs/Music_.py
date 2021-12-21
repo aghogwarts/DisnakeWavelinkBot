@@ -27,11 +27,6 @@ SOUNDCLOUD_URL_REGEX = re.compile(
     r"^(https?:\/\/)?(www.)?(m\.)?soundcloud\.com\/[\w\-\.]+(\/)+[\w\-\.]+/?$"
 )
 
-DISCORD_MP3_URL_REGEX = re.compile(
-    r"https?://cdn.discordapp.com/attachments/(?P<channel_id>[0-9]+)/"
-    r"(?P<message_id>[0-9]+)/(?P<file>[a-zA-Z0-9_.]+)+"
-)
-
 
 class NoChannelProvided(commands.CommandError):
     """
@@ -1114,7 +1109,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         lyrics = data["lyrics"]
         content = WrapText(lyrics, length=1000)
-        pag = LyricsPaginator(lyrics=content, ctx=ctx)
+        pag = LyricsPaginator(lyrics=content, ctx=ctx, thumbnail=player.now.thumbnail)
 
     @commands.slash_command(description="Add a Filter to the player.")
     async def filter(self, ctx: disnake.ApplicationCommandInteraction):
