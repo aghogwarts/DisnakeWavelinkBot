@@ -1,4 +1,6 @@
 #  -*- coding: utf-8 -*-
+
+
 import asyncio
 import datetime
 import functools
@@ -275,14 +277,14 @@ class LyricsPaginator(ViewPages):
     A custom paginator for lyrics.
     """
 
-    def __init__(self, ctx: disnake.ApplicationCommandInteraction, lyrics: list):
+    def __init__(self, ctx: disnake.ApplicationCommandInteraction, lyrics: list, thumbnail: str):
         super().__init__(ctx=ctx, source=RichPager(lyrics, per_page=10))
         self.embed = disnake.Embed(
             title="Lyrics",
             colour=disnake.Colour.random(),
         ).set_footer(
             text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url
-        )
+        ).set_thumbnail(url=thumbnail)
 
 
 class SearchService(str, Enum):
