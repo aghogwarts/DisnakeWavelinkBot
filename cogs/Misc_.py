@@ -1,43 +1,28 @@
+#  -*- coding: utf-8 -*-
+
+
 from youtubesearchpython.__future__ import ChannelsSearch, VideosSearch
 
-import re
 import datetime
 import difflib
 import pathlib
+import re
 import sys
 import time
 import traceback
+import typing
+
 import disnake
 import humanize
 import psutil
+import youtube_dl as ydl
 from disnake.ext import commands
 from disnake.ext.commands import Param, InvokableSlashCommand
 
-import wavelink
+from bot_utils.Helpers_ import BotInformationView, ErrorView
 from bot_utils.paginator import SimpleEmbedPages
-from jishaku.functools import executor_function
+from bot_utils.Helpers_ import executor_function
 from wavelink import Player
-import youtube_dl as ydl
-
-
-class InviteButton(disnake.ui.View):
-    """
-    A button that opens an invitation link.
-    """
-
-    def __init__(self, bot):
-        super().__init__(timeout=None)
-        permissions = disnake.Permissions(294410120513)
-        url = disnake.utils.oauth_url(
-            client_id=bot.user.id,
-            scopes=["bot", "applications.commands"],
-            permissions=permissions,
-        )
-
-        self.add_item(disnake.ui.Button(label="Click Here To Invite", url=url))
-        github_url = "https://github.com/KortaPo/DisnakeWavelinkBot"
-
-        self.add_item(disnake.ui.Button(label="Source Code", url=github_url))
 
 
 @executor_function
@@ -83,7 +68,7 @@ class Misc(commands.Cog):
     Miscellaneous commands.
     """
 
-    def __init__(self, bot):
+    def __init__(self, bot: typing.Union[commands.Bot, commands.AutoShardedBot]):
         self.bot = bot
 
     async def cog_slash_command_error(
@@ -112,27 +97,19 @@ class Misc(commands.Cog):
         error_msg = "".join(
             traceback.format_exception(type(error), error, error.__traceback__)
         )
+        paste = await self.bot.mystbin_client.post(error_msg, syntax="py")
+        url = paste.url
+
         await safe_send(
             embed=disnake.Embed(
                 description=f"{self.bot.icons['redtick']} `An error has occurred while "
-                            f"executing {ctx.application_command.name} command.`"
-                            f"The error has been notified to the bot owner.",
+                f"executing {ctx.application_command.name} command. The error has been generated on "
+                f"mystbin. "
+                f"Please report this to {', '.join([str(owner) for owner in await self.bot.get_owners])}`",
                 colour=disnake.Colour.random(),
-            )
+            ),
+            view=ErrorView(url=url),
         )
-        try:
-            await self.bot.owner.send(
-                embed=disnake.Embed(
-                    description=f"**Error invoked by: `{str(ctx.author)}`**\n"
-                                f"Command: `{ctx.application_command.name}`\n"
-                                f"Guild: `{ctx.guild.name}`\n"
-                                f"Channel: `{ctx.channel.name}`\n"
-                                f"Error:\n```py\n{error_msg}```",
-                    color=disnake.Colour.random(),
-                )
-            )
-        except disnake.Forbidden:
-            pass
 
         print(
             f"Ignoring exception in command {ctx.application_command}: ",
@@ -156,9 +133,18 @@ class Misc(commands.Cog):
         --------
         `/info`
         """
-        await ctx.response.defer()
+        player: Player = self.bot.wavelink.get_player(
+            guild_id=ctx.guild.id, cls=Player, context=ctx
+        )
 
         process = psutil.Process()
+        permissions = disnake.Permissions(294410120513)
+        github_url = "https://github.com/KortaPo/DisnakeWavelinkBot"
+        url = disnake.utils.oauth_url(
+            client_id=self.bot.user.id,
+            scopes=["bot", "applications.commands"],
+            permissions=permissions,
+        )
         version = sys.version_info
         em = disnake.Embed(color=disnake.Colour.random())
 
@@ -220,9 +206,8 @@ class Misc(commands.Cog):
         em.add_field(
             name="Bot Owner",
             value=f"""
-       {self.bot.icons['arrow']} **Name**: `{self.bot.owner}`
-       {self.bot.icons['arrow']} **ID**: `{self.bot.owner.id}`
-       """,
+       {self.bot.icons['arrow']} **Name**: `{', '.join([owner.name for owner in await self.bot.get_owners])}`
+       {self.bot.icons['arrow']} **ID**: `{', '.join([str(owner.id) for owner in await self.bot.get_owners])}`""",
             inline=True,
         )
         em.add_field(
@@ -232,55 +217,23 @@ class Misc(commands.Cog):
        """,
             inline=True,
         )
+        em.add_field(
+            name="Invite",
+            value=f"[Click here to Invite {self.bot.user.name}]({url})",
+            inline=True,
+        )
+        em.add_field(
+            name="Source Code",
+            value=f"[Click here to view the source code of {self.bot.user.name}]({github_url})",
+            inline=True,
+        )
         em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_footer(
             text=f"Python {version[0]}.{version[1]}.{version[2]} • disnake {disnake.__version__}"
         )
-        await ctx.edit_original_message(embed=em, view=InviteButton(self.bot))
-
-    @commands.slash_command(
-        description="Retrieve various Node/Server/Player information."
-    )
-    async def lavalink_information(self, ctx: disnake.ApplicationCommandInteraction):
-        """
-        This command shows information about the Lavalink server. Like how many players are connected, nodes, etc.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        Examples
-        --------
-        `/lavalink_information`
-        """
-        player: Player = self.bot.wavelink.get_player(
-            guild_id=ctx.guild.id, cls=Player, context=ctx
-        )
-        node = player.node
-
-        used = humanize.naturalsize(node.stats.memory_used)
-        total = humanize.naturalsize(node.stats.memory_allocated)
-        free = humanize.naturalsize(node.stats.memory_free)
-        cpu = node.stats.cpu_cores
-
-        fmt = (
-            f"**WaveLink:** `{wavelink.__version__}`\n\n"
-            f"Connected to `{len(self.bot.wavelink.nodes)}` nodes.\n"
-            f"Best available Node `{self.bot.wavelink.get_best_node().__repr__()}`\n"
-            f"`{len(self.bot.wavelink.players)}` players are distributed on nodes.\n"
-            f"`{node.stats.players}` players are distributed on server.\n"
-            f"`{node.stats.playing_players}` players are playing on server.\n\n"
-            f"Server Memory: `{used}/{total}` | `({free} free)`\n"
-            f"Server CPU: `{cpu}`\n\n"
-            f"Server Uptime: `{humanize.precisedelta(datetime.timedelta(milliseconds=node.stats.uptime))}`"
-        )
         await ctx.response.send_message(
-            embed=disnake.Embed(
-                description=fmt, color=disnake.Colour.random()
-            ).set_footer(
-                text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url
-            )
+            embed=em,
+            view=BotInformationView(bot=self.bot, player=player, interaction=ctx),
         )
 
     @commands.slash_command(
@@ -307,6 +260,7 @@ class Misc(commands.Cog):
         --------
         `/spotify user: @KortaPo`
         """
+
         activities = user.activities
         try:
             act = [
@@ -489,83 +443,6 @@ class Misc(commands.Cog):
 
         pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
         await pag.start()
-
-    @commands.slash_command(description="Shows bot latency.")
-    async def ping(self, ctx: disnake.ApplicationCommandInteraction):
-        """
-        This command shows bot latency.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        Examples
-        --------
-        `/ping`
-        """
-        await ctx.response.send_message("Gathering Information...")
-        times = []
-        counter = 0
-        embed = disnake.Embed(colour=disnake.Colour.random())
-        for _ in range(3):
-            counter += 1
-            start = time.perf_counter()
-            await ctx.edit_original_message(
-                content=f"Trying Ping {('.' * counter)} {counter}/3"
-            )
-            end = time.perf_counter()
-            speed = round((end - start) * 1000)
-            times.append(speed)
-            if speed < 160:
-                embed.add_field(
-                    name=f"Ping {counter}:", value=f"🟢 | {speed}ms", inline=True
-                )
-            elif speed > 170:
-                embed.add_field(
-                    name=f"Ping {counter}:", value=f"🟡 | {speed}ms", inline=True
-                )
-            else:
-                embed.add_field(
-                    name=f"Ping {counter}:", value=f"🔴 | {speed}ms", inline=True
-                )
-
-        embed.add_field(name="Bot Latency", value=f"{round(self.bot.latency * 1000)}ms")
-        embed.add_field(
-            name="Normal Speed",
-            value=f"{round((round(sum(times)) + round(self.bot.latency * 1000)) / 4)}ms",
-        )
-
-        embed.set_footer(text=f"Total estimated elapsed time: {round(sum(times))}ms")
-        embed.set_author(name=ctx.me.display_name, icon_url=ctx.me.avatar.url)
-
-        await ctx.edit_original_message(
-            content=f":ping_pong: **{round((round(sum(times)) + round(self.bot.latency * 1000)) / 4)}ms**",
-            embed=embed,
-        )
-
-    @commands.slash_command(description="Shows you the bot's uptime.")
-    async def uptime(self, ctx: disnake.ApplicationCommandInteraction):
-        """
-        This command shows you the bot's uptime.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        Examples
-        --------
-        `/uptime`
-        """
-        await ctx.response.send_message("Gathering Information...")
-        embed = disnake.Embed(colour=disnake.Colour.random())
-        embed.set_author(name=ctx.me.display_name, icon_url=ctx.me.avatar.url)
-        embed.add_field(
-            name="Uptime",
-            value=f"{humanize.naturaltime(disnake.utils.utcnow() - self.bot.start_time)}",
-        )
-        await ctx.edit_original_message(content=":clock1: **Uptime**", embed=embed)
 
     @commands.slash_command(name="help", description="Shows help about bot commands.")
     async def show_help(
