@@ -1082,9 +1082,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                     colour=disnake.Colour.random(),
                 )
             )
-
+        lyrics_query = f"https://some-random-api.ml/lyrics?title={name}-{player.now.author}"
         resp = await self.bot.session.get(
-            f"https://some-random-api.ml/lyrics?title={name}%20{player.now.artist}"
+            lyrics_query
         )
 
         if not 200 <= resp.status <= 299:
@@ -1110,6 +1110,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         lyrics = data["lyrics"]
         content = WrapText(lyrics, length=1000)
         pag = LyricsPaginator(lyrics=content, ctx=ctx, thumbnail=player.now.thumbnail)
+        await pag.start()
 
     @commands.slash_command(description="Add a Filter to the player.")
     async def filter(self, ctx: disnake.ApplicationCommandInteraction):
