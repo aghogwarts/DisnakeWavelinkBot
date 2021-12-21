@@ -24,6 +24,7 @@ loguru = "^0.5.3"
 braceexpand = "^0.1.7"
 "mystbin.py" = "^2.2.0"
 requests = "^2.26.0"
+humanize = "^3.13.1"
 
 [tool.poetry.dev-dependencies]
 
