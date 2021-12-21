@@ -32,7 +32,7 @@ from .errors import *
 from .events import *
 
 __all__ = ("Track", "TrackPlaylist", "Player")
-__log__ = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class Track:
@@ -87,7 +87,7 @@ class Track:
         self.query = query
 
         self.title = info.get("title")
-        self.identifier = info.get("identifier", "")
+        self.identifier = info.get("identifier")
         self.ytid = (
             self.identifier
             if re.match(r"^[a-zA-Z0-9_-]{11}$", self.identifier)
@@ -97,17 +97,24 @@ class Track:
         self.duration = self.length
         self.uri = info.get("uri")
         self.author = info.get("author")
+        self.thumb = None
 
         self.is_stream = info.get("isStream")
         self.dead = False
 
+    @property
+    def thumbnail(self):
         if self.ytid:
             self.thumb = f"https://img.youtube.com/vi/{self.ytid}/hqdefault.jpg"
         else:
-            self.thumb = None
+            self.thumb = "https://via.placeholder.com/150%"
+        return self.thumb
 
     def __str__(self):
         return self.title
+
+    def __repr__(self):
+        return f"<wavelink.Track title={self.title}, uri={self.uri}>"
 
     @property
     def is_dead(self):
@@ -131,6 +138,9 @@ class TrackPlaylist:
         self.tracks = [
             Track(id_=track["track"], info=track["info"]) for track in data["tracks"]
         ]
+
+    def __repr__(self):
+        return f"<wavelink.TrackPlaylist tracks={len(self.tracks)}>, data={self.data}"
 
 
 class Player:
@@ -241,7 +251,7 @@ class Player:
         await self._dispatch_voice_update()
 
     async def _dispatch_voice_update(self) -> None:
-        __log__.debug(f"PLAYER | Dispatching voice update:: {self.channel_id}")
+        logger.debug(f"PLAYER | Dispatching voice update:: {self.channel_id}")
         if {"sessionId", "event"} == self._voice_state.keys():
             await self.node._send(
                 op="voiceUpdate", guildId=str(self.guild_id), **self._voice_state
@@ -282,7 +292,7 @@ class Player:
         await self._get_shard_socket(guild.shard_id).voice_state(
             self.guild_id, str(channel_id), self_deaf=self_deaf
         )
-        __log__.info(f"PLAYER | Connected to voice channel:: {self.channel_id}")
+        logger.info(f"PLAYER | Connected to voice channel:: {self.channel_id}")
 
     async def disconnect(self, *, force: bool = False) -> None:
         """|coro|
@@ -297,7 +307,7 @@ class Player:
         if not guild:
             raise InvalidIDProvided(f"No guild found for id <{self.guild_id}>")
 
-        __log__.info(f"PLAYER | Disconnected from voice channel:: {self.channel_id}")
+        logger.info(f"PLAYER | Disconnected from voice channel:: {self.channel_id}")
         self.channel_id = None
         await self._get_shard_socket(guild.shard_id).voice_state(self.guild_id, None)
 
@@ -333,12 +343,13 @@ class Player:
         if self.current:
             self._new_track = True
 
-        self.current = track
+        self.current: Track = track
+        track_id = self.current.id
 
         payload = {
             "op": "play",
             "guildId": str(self.guild_id),
-            "track": track.id,
+            "track": track_id,
             "noReplace": no_replace,
             "startTime": str(start),
         }
@@ -347,7 +358,7 @@ class Player:
 
         await self.node._send(**payload)
 
-        __log__.debug(
+        logger.debug(
             f"PLAYER | Started playing track:: {str(track)} ({self.channel_id})"
         )
 
@@ -357,7 +368,7 @@ class Player:
         Stop the Player's currently playing song.
         """
         await self.node._send(op="stop", guildId=str(self.guild_id))
-        __log__.debug(
+        logger.debug(
             f"PLAYER | Current track stopped:: {str(self.current)} ({self.channel_id})"
         )
         self.current = None
@@ -389,7 +400,7 @@ class Player:
         """
         await self.node._send(op="pause", guildId=str(self.guild_id), pause=pause)
         self.paused = pause
-        __log__.debug(f"PLAYER | Set pause:: {self.paused} ({self.channel_id})")
+        logger.debug(f"PLAYER | Set pause:: {self.paused} ({self.channel_id})")
 
     async def set_volume(self, vol: int) -> None:
         """|coro|
@@ -405,7 +416,7 @@ class Player:
         await self.node._send(
             op="volume", guildId=str(self.guild_id), volume=self.volume
         )
-        __log__.debug(f"PLAYER | Set volume:: {self.volume} ({self.channel_id})")
+        logger.debug(f"PLAYER | Set volume:: {self.volume} ({self.channel_id})")
 
     async def seek(self, position: int = 0) -> None:
         """Seek to the given position in the song.
@@ -501,7 +512,7 @@ class Player:
         await self.node._send(
             op="filters", guildId=str(self.guild_id), **filter_.payload
         )
-        __log__.debug(
+        logger.debug(
             f"PLAYER | Set filter:: {BaseFilter.name} {filter_.payload} ({self.channel_id})"
         )
 
