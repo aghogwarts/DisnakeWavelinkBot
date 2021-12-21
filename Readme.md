@@ -7,14 +7,34 @@ Disnake is a maintained and updated fork of `discord.py`.
 
 [Disnake Github Repo](https://github.com/DisnakeDev/disnake)
 
-
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install the libraries from ``requirements.txt`` file.
+Use the package manager [pip package manager](https://pip.pypa.io/en/stable/) to install the libraries from ``requirements.txt`` file.
 
 ```bash
 pip install -r requirements.txt
 ```
+
+If you have [Poetry package manager](https://python-poetry.org/) installed, you can install the dependencies using 
+the following command.
+
+```bash
+poetry install
+```
+
+## Bot Configuration
+You can configure the bot by using the file called ``config.yml`` in the ``config`` directory.
+You need to pass the bot token, prefix and the bot owner's ID. For example:
+```yaml
+Bot:
+  prefix: "!"  # Prefix for the bot, this is required.
+  token: "..." # Bot token, this is required.
+  owners: [1234] # Bot owner's ID, this is required, if you do not have multiple owners, just pass your ID.
+```
+You can also configure the emojis used by the bot, through the ``icons.json`` file in the ``config`` directory.
+You can pass your own emojis, or use the default ones. If you are passing custom emojis, 
+you need to pass the emojis in the following format:
+``<:emoji_name:emoji_id>``
 
 ## Note
 This music bot uses Lavalink to play music. Lavalink is a Java based program.
@@ -24,7 +44,7 @@ You will need `python 3.8` or above to run this program.
 The entire music bot operates on slash commands and global slash commands take up to an hour to get registered.
 
 Lavalink.jar file is too big to be included in the repository, so you have to install it yourself in the directory 
-``lavalink``.
+``Lavalink``.
 
 Visit [Lavalink 3.4](https://github.com/freyacodes/Lavalink/releases/tag/3.4) to download the latest version. 
 Make sure you have JDK 8 or JDK 13 installed.
@@ -37,7 +57,7 @@ Lavalink is a standalone audio streaming node written in Java that is based on `
 Lavalink creates a  REST and websocket server where our application needs to connect to. Once connected, we need to send OPcodes
 that Lavalink requires, through websocket that Lavalink created.
 
-For example, if we want to play a song, we need to send the following through websocket:
+For example, if we want to play a song, we need to send the following OPcode and the neccesary data through websocket:
 ```json
 {
     "op": "play",
@@ -53,15 +73,15 @@ For example, if we want to play a song, we need to send the following through we
 
 `op` - This is the opcode that Lavalink requires. What we are sending is the `play` opcode, which tells Lavalink to play a song.
 
-`guildId` - This is the guild id of the guild that the song is being played in.
+`guildId` - This is the ID of the guild that the song is being played in.
 
 `track` - This is the track that is being played.
 
 `startTime` - This is the start time of the song. Useful when you only want to start from a certain point in the song.
 
-`endTime` - This is the end time of the song.
+`endTime` - This is the end time of the song. Useful when you only want to play a certain part of the song.
 
-`volume` - This is the volume of the song.
+`volume` - This value sets the volume of the song.
 
 `noReplace` - This is a boolean value that tells Lavalink whether to replace the current song.
 
@@ -69,7 +89,7 @@ For example, if we want to play a song, we need to send the following through we
 
 Keep in mind, that this is just for illustration purposes.
 
-## Configuration
+## Lavalink Configuration
 Lavalink can be configured by using a file called ``application.yml``. 
 It is a configuration file, where you can define port/host to open a connection and a lot of different options.
 For example:
@@ -89,7 +109,7 @@ lavalink:
       mixer: false
       http: true
       local:  true
-    bufferDurationMs: 400
+    bufferDurationMs: 200  # JDA buffer duration
     youtubePlaylistLoadLimit: 6 # Number of pages at 100 each
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
@@ -125,7 +145,7 @@ logging:
 This is an example of a configuration file, as you can see you have loads of different options, you can play with.
 The most notable ones are:
 
-`server` - This is where you configure the REST and websocket ports and address.
+`server` - This is where you configure the REST and websocket port and address.
 
 `lavalink` - This is where you configure the Lavalink server itself.
 
@@ -133,7 +153,7 @@ The most notable ones are:
 
 `sentry` - This is the sentry server.
 
-`logging` - This is where you configure the logging, Lavalink uses logging to log errors, warnings and information. It is very useful and you should keep it enabled.
+`logging` - This is where you configure the logging, Lavalink uses logging to log errors, warnings and information. It is very useful, and you should keep it enabled.
 
 If you want to know more about Lavalink, visit this repository:
 [Click here to visit](https://github.com/freyacodes/Lavalink)
@@ -147,25 +167,14 @@ It abstracts away all the complexities of Lavalink and makes it easy for us play
 with your discord bot application.
 Wavelink supports all the features of Lavalink (my version of it.).
 
-# Jishaku
-You have probably seen, a directory called `jishaku`, Jishaku is debugging cog that is made for bot developers. It has special commands that allow bot developers to control their bot directly from discord. Jishaku commands are not slash commands (not yet), they are text commands ( `?jsk` ) and be accessed only by the owner of the bot.
-To know more about jishaku, visit this repository:
-
-
-[Jishaku](https://github.com/Gorialis/Jishaku)
-
-**Note: ** Jishaku has been rewritten to support disnake in this repository. However there is a good fork exists for jishaku that supports disnake.
-
-[Disnake-Jishaku](https://github.com/Kraots/Jishaku)
-
 ## How to run this.
 1.) In a web browser, navigate to [Discord Developer Portal](https://discord.com/developers/applications):
 
 2.) Create your own __bot account__.
 
-3.) Enable Privileged Intents - Member Intents/Presence Intents/Message Intents. (Very Important)
+3.) Enable Privileged Intents - Member Intents/Presence Intents/Message Intents. (Very Important!)
 
-4.) Go in `Oauth2` tab and enable ``applications.commands`` and `bot` scope to make sure your bot can have slash commands.
+4.) Go in `Oauth2` tab and enable ``applications.commands`` and `bot` scope, so that your bot can have slash commands.
 
 5.) Copy your bot token from your bot application and then open ``config.yaml`` file and enter your ``Discord Bot Token``.
 
@@ -175,11 +184,31 @@ To know more about jishaku, visit this repository:
   python3 main.py
 ```
 
+Also note,
+This project supports [Docker](https://www.docker.com/). If you have Docker installed, 
+you can build the image using the following command.
+
+```bash
+docker build -t disnake-music .
+```
+This will build the image and tag it as ``disnake-music``. You can then run the image using the following command.
+
+```bash
+docker run -t disnake-music
+```
+
+This will run the container with the image ``disnake-music``.
+
+If you do not know how to use Docker, you can read the [Docker documentation](https://docs.docker.com/), for more information.
+Docker is one of the best ways to run your bot.
+
+
 If all the steps are correctly followed, the bot should be up and running.
 
 Enjoy :).
 
-
 ## Credits
-If you are using this, or any part of it, please feel free to give some credits :)
-Thanks.
+Well, this project is entirely free and opensource, if you want, you can certainly use it in your own projects.
+If you like this project, you can add a GitHub star to show your appreciation, and you can credit me in your project.
+Thanks :)
+Have a nice day!
