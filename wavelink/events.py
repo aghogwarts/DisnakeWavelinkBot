@@ -21,11 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-__all__ = ('TrackEnd',
-           'TrackException',
-           'TrackStuck',
-           'TrackStart',
-           'WebsocketClosed')
+__all__ = ("TrackEnd", "TrackException", "TrackStuck", "TrackStart", "WebsocketClosed")
 
 
 class TrackEnd:
@@ -41,15 +37,15 @@ class TrackEnd:
         The reason the TrackEnd event was dispatched.
     """
 
-    __slots__ = ('track', 'player', 'reason')
+    __slots__ = ("track", "player", "reason")
 
     def __init__(self, data: dict):
-        self.track = data.get('track')
-        self.player = data.get('player')
-        self.reason = data.get('reason')
+        self.track = data.get("track")
+        self.player = data.get("player")
+        self.reason = data.get("reason")
 
     def __str__(self):
-        return 'TrackEndEvent'
+        return "TrackEndEvent"
 
 
 class TrackException:
@@ -65,15 +61,15 @@ class TrackException:
         The error reason dispatched with the event.
     """
 
-    __slots__ = ('track', 'player', 'error')
+    __slots__ = ("track", "player", "error")
 
     def __init__(self, data: dict):
-        self.track = data.get('track')
-        self.player = data.get('player')
-        self.error = data.get('error')
+        self.track = data.get("track")
+        self.player = data.get("player")
+        self.error = data.get("error")
 
     def __str__(self):
-        return 'TrackExceptionEvent'
+        return "TrackExceptionEvent"
 
 
 class TrackStuck:
@@ -89,15 +85,15 @@ class TrackStuck:
         The threshold associated with the event.
     """
 
-    __slots__ = ('track', 'player', 'threshold')
+    __slots__ = ("track", "player", "threshold")
 
     def __init__(self, data: dict):
-        self.track = data.get('track')
-        self.player = data.get('player')
-        self.threshold = int(data.get('thresholdMs'))
+        self.track = data.get("track")
+        self.player = data.get("player")
+        self.threshold = int(data.get("thresholdMs"))
 
     def __str__(self):
-        return 'TrackStuckEvent'
+        return "TrackStuckEvent"
 
 
 class TrackStart:
@@ -111,14 +107,14 @@ class TrackStart:
         The track associated with the event.
     """
 
-    __slots__ = ('track', 'player')
+    __slots__ = ("track", "player")
 
     def __init__(self, data: dict):
-        self.track = data.get('track')
-        self.player = data.get('player')
+        self.track = data.get("track")
+        self.player = data.get("player")
 
     def __str__(self):
-        return 'TrackStartEvent'
+        return "TrackStartEvent"
 
 
 class WebsocketClosed:
@@ -136,13 +132,13 @@ class WebsocketClosed:
         The guild ID associated with the disconnect.
     """
 
-    __slots__ = ('player', 'reason', 'code', 'guild_id')
+    __slots__ = ("player", "reason", "code", "guild_id")
 
     def __init__(self, data: dict):
-        self.player = data.get('player')
-        self.reason = data.get('reason')
-        self.code = data.get('code')
-        self.guild_id = data.get('guildID')
+        self.player = data.get("player")
+        self.reason = data.get("reason")
+        self.code = data.get("code")
+        self.guild_id = data.get("guildID")
 
     def __str__(self):
-        return 'WebsocketClosedEvent'
+        return "WebsocketClosedEvent"
