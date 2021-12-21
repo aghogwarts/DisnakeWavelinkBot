@@ -1,3 +1,7 @@
+#  -*- coding: utf-8 -*-
+
+
+import datetime
 import math
 import re
 import sys
@@ -5,17 +9,28 @@ import traceback
 import typing
 
 import disnake
+import humanize
 from disnake.ext import commands
 from disnake.ext.commands.params import Param
 
 import wavelink
 from MusicBot import Bot
-from bot_utils.MusicPlayerInteraction import Player, Track, QueuePages
+from bot_utils.Helpers_ import LyricsPaginator, SearchService, ErrorView
+from bot_utils.MusicPlayerInteraction import Player, QueuePages, Track
 from bot_utils.MusicPlayerViews import FilterView
-from bot_utils.paginator import SimpleEmbedPages, WrapText
-from wavelink import FilterInvalidArgument
+from bot_utils.paginator import WrapText
+from wavelink.errors import FilterInvalidArgument
 
 youtube_url_regex = re.compile(r"https?://(?:www\.)?.+")
+
+SOUNDCLOUD_URL_REGEX = re.compile(
+    r"^(https?:\/\/)?(www.)?(m\.)?soundcloud\.com\/[\w\-\.]+(\/)+[\w\-\.]+/?$"
+)
+
+DISCORD_MP3_URL_REGEX = re.compile(
+    r"https?://cdn.discordapp.com/attachments/(?P<channel_id>[0-9]+)/"
+    r"(?P<message_id>[0-9]+)/(?P<file>[a-zA-Z0-9_.]+)+"
+)
 
 
 class NoChannelProvided(commands.CommandError):
@@ -80,15 +95,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 "password": "youshallnotpass",
                 "identifier": "MAIN",
                 "region": "us_central",
-            },
-            "Lavalink": {
-                "host": "lava.link",
-                "port": 80,
-                "rest_uri": "http://lava.link:80",
-                "password": "",
-                "identifier": "Lavalink",
-                "region": "us_central",
-            },
+            }
         }
 
         for n in nodes.values():
@@ -215,27 +222,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             error_msg = "".join(
                 traceback.format_exception(type(error), error, error.__traceback__)
             )
+            paste = await self.bot.mystbin_client.post(error_msg, syntax="py")
+            url = paste.url
             await safe_send(
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['redtick']} `An error has occurred while "
-                                f"executing {ctx.application_command.name} command.`"
-                                f"The error has been notified to the bot owner.",
+                    f"executing {ctx.application_command.name} command. The error has been generated on "
+                    f"mystbin. "
+                    f"Please report this to {', '.join([str(owner) for owner in await self.bot.get_owners])}`",
                     colour=disnake.Colour.random(),
-                )
+                ),
+                view=ErrorView(url=url),
             )
-            try:
-                await self.bot.owner.send(
-                    embed=disnake.Embed(
-                        description=f"**Error invoked by: `{str(ctx.author)}`**\n"
-                                    f"Command: `{ctx.application_command.name}`\n"
-                                    f"Guild: `{ctx.guild.name}`\n"
-                                    f"Channel: `{ctx.channel.name}`\n"
-                                    f"Error:\n```py\n{error_msg}```",
-                        color=disnake.Colour.random(),
-                    )
-                )
-            except disnake.Forbidden:
-                pass
 
             print(
                 f"Ignoring exception in command {ctx.application_command}: ",
@@ -268,7 +266,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         music_player: Player = self.bot.wavelink.get_player(
             ctx.guild.id, cls=Player, context=ctx
         )
-
         if music_player.context:
             if music_player.context.channel != ctx.channel:
                 await ctx.response.send_message(
@@ -277,22 +274,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 raise IncorrectChannelError
         else:
             pass
-
         if ctx.application_command.name == "play" and not music_player.context:
             return
-        elif self.is_author(ctx):
-            return
-
-        elif not self.is_author(ctx):
-            if ctx.application_command.name == "play":
-                return
-            else:
-                await safe_send(
-                    embed=disnake.Embed(
-                        description=f"{self.bot.icons['redtick']} `You must be the DJ for this session.`",
-                        colour=disnake.Colour.random(),
-                    )
-                )
 
         if not music_player.channel_id:
             return
@@ -404,10 +387,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         self,
         ctx: disnake.ApplicationCommandInteraction,
         query: str = Param(description="Search your song...."),
+        service: str = Param(
+            description="The service to search on.", default="youtube"
+        ),
     ):
         """
         A command that will play your favorite song and if a song is already playing, it will add the song in
-        queue.
+        queue. You can search for songs on a specific service. For example, soundcloud, YouTube, etc.
+        Currently, three services are supported: YouTube, soundcloud, and YouTube music.
 
         Parameters
         ----------
@@ -417,13 +404,22 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         query: str
             The song query to search for.
 
+        service: str
+            The service to search the song on.
+
         Examples
         --------
         `/play query: "50 cent - love me"`
+        /play query: "50 cent - love me" service: "soundcloud"
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
+        services = {
+            "youtube": SearchService.ytsearch,
+            "soundcloud": SearchService.scsearch,
+            "youtubemusic": SearchService.ytmsearch,
+        }
 
         await ctx.response.defer()
 
@@ -431,8 +427,15 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await self.connect(ctx=ctx)
 
         query = query.strip("<>")
-        if not youtube_url_regex.match(query):
-            query = f"ytsearch:{query}"
+        if (
+            not youtube_url_regex.match(query)
+            and service.lower() == "youtubemusic"
+            or service.lower() == "youtube"
+        ):
+            query = f"{services[service.lower()]}:{query}"
+
+        if not SOUNDCLOUD_URL_REGEX.match(query) and service.lower() == "soundcloud":
+            query = f"{services[service.lower()]}:{query}"
 
         tracks = await self.bot.wavelink.get_tracks(query)
         if not tracks:
@@ -443,7 +446,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         if isinstance(tracks, wavelink.TrackPlaylist):
             for track in tracks.tracks:
-                track = Track(track.id, track.info, requester=ctx.author)
+                track = Track(track.track_id, track.info, requester=ctx.author)
                 await player.queue.put(track)
 
             await ctx.edit_original_message(
@@ -465,6 +468,28 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         if not player.is_playing:
             await player.play_next_song()
+
+    @play.autocomplete(option_name="service")
+    async def play_service_autocomplete(
+        self, ctx: disnake.ApplicationCommandInteraction, query: str
+    ):
+        """
+        Autocomplete for the play command.
+
+        Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        query: str
+            The query to search for.
+
+        Returns
+        -------
+        list
+            A list of autocomplete options.
+        """
+        return ["youtube", "soundcloud", "youtubemusic"]
 
     @commands.slash_command(
         description="Switch the channel where the bot was first invoked."
@@ -583,7 +608,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if len(player.pause_votes) >= required:
             await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['greentick']} Vote to pause passed. Pausing player.",
+                    description=f"{self.bot.icons['greentick']} `Vote to pause passed. Pausing player.`",
                     color=disnake.Colour.random(),
                 ),
                 delete_after=10,
@@ -593,7 +618,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         else:
             await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} {ctx.author} has voted to pause the player.",
+                    description=f"{self.bot.icons['info']} `{ctx.author} has voted to pause the player.`",
                     color=disnake.Colour.random(),
                 ),
             )
@@ -897,11 +922,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             )
         )
 
-    @commands.slash_command(description="Loops the current playing track.")
+    @commands.slash_command()
     async def loop(self, ctx: disnake.ApplicationCommandInteraction):
+        pass
+
+    @loop.sub_command(description="Loops the current playing track.")
+    async def on(self, ctx: disnake.ApplicationCommandInteraction):
         """
         A command that will loop your specific music track and keep playing it repeatedly.
-        Use the loop command again to unloop your music track.
 
         Parameters
         ----------
@@ -910,9 +938,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         Examples
         --------
-        `/loop` - Loops the current track.
-
-        `/loop` - unloops the current track.
+        `/loop on` - Loops the current track.
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -953,6 +979,64 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             player.loop = True
             return
         if player.loop is True:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['greentick']} This track is on loop already.",
+                    color=disnake.Colour.random(),
+                )
+            )
+
+    @loop.sub_command(description="Stops looping the current playing track.")
+    async def off(self, ctx: disnake.ApplicationCommandInteraction):
+        """
+        A command that will loop your specific music track and keep playing it repeatedly.
+
+        Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+        `/loop off` - un-Loops the current track.
+        """
+        player: Player = self.bot.wavelink.get_player(
+            guild_id=ctx.guild.id, cls=Player, context=ctx
+        )
+
+        if not player.is_connected:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
+
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        if not self.is_author(ctx):
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['info']} Only the `{player.dj}` can loop this song.",
+                    color=disnake.Colour.random(),
+                )
+            )
+
+        if player.loop is False:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['greentick']} The track is not on loop.",
+                    color=disnake.Colour.random(),
+                )
+            )
+        if player.loop is True:
             await ctx.response.send_message(
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['greentick']} Un-looped the current track.",
@@ -961,141 +1045,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             )
             player.loop = False
             return
-
-    @commands.slash_command(description="Shuffle the players queue.")
-    async def shuffle(self, ctx: disnake.ApplicationCommandInteraction):
-        """
-        A command that will shuffle the entire queue of the current music player instance.
-        You need at least 3 songs or more in queue in order to shuffle properly.
-
-         Parameters
-        ----------
-        ctx: disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        Examples
-        --------
-        `/shuffle`
-        """
-        player: Player = self.bot.wavelink.get_player(
-            guild_id=ctx.guild.id, cls=Player, context=ctx
-        )
-
-        if not player.is_connected:
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
-                    colour=disnake.Colour.random(),
-                ),
-                delete_after=10,
-            )
-
-        if player.queue.qsize() < 3:
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Add more songs before shuffling.",
-                    color=disnake.Colour.random(),
-                )
-            )
-
-        if self.is_author(ctx):
-            await ctx.channel.send(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} `{player.dj}` has shuffled the queue.",
-                    color=disnake.Colour.random(),
-                )
-            )
-
-            player.shuffle_votes.clear()
-            return player.queue.shuffle()
-
-        required = self.vote_check(ctx)
-        player.shuffle_votes.add(ctx.author)
-
-        if len(player.shuffle_votes) >= required:
-            await ctx.channel.send(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Vote passed, shuffling songs.",
-                    color=disnake.Colour.random(),
-                )
-            )
-
-            player.shuffle_votes.clear()
-            player.queue.shuffle()
-        else:
-            return await ctx.channel.send(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} `{ctx.author}` has voted to shuffle the queue.",
-                    color=disnake.Colour.random(),
-                )
-            )
-
-    @commands.slash_command(description="Clears the entire queue.")
-    async def clearqueue(self, ctx: disnake.ApplicationCommandInteraction):
-        """
-        A command that will clear the entire queue of the current music player instance.
-
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        Examples
-        --------
-        `/clearqueue`
-        """
-        player: Player = self.bot.wavelink.get_player(
-            guild_id=ctx.guild.id, cls=Player, context=ctx
-        )
-
-        if not player.is_connected:
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
-                    colour=disnake.Colour.random(),
-                ),
-                delete_after=10,
-            )
-
-        if player.queue.qsize() == 0:
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Queue is empty.",
-                    color=disnake.Colour.random(),
-                )
-            )
-
-        if self.is_author(ctx):
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} `{player.dj}` has cleared the queue.",
-                    color=disnake.Colour.random(),
-                )
-            )
-
-            player.clear_votes.clear()
-            player.queue.clear()
-
-        required = self.vote_check(ctx)
-        player.clear_votes.add(ctx.author)
-
-        if len(player.shuffle_votes) >= required:
-            await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Vote passed, clearing the queue.",
-                    color=disnake.Colour.random(),
-                )
-            )
-
-            player.clear_votes.clear()
-            player.queue.clear()
-        else:
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} `{ctx.author}` has voted to clear the queue.",
-                    color=disnake.Colour.random(),
-                )
-            )
 
     @commands.slash_command(description="Show lyrics of the current playing song.")
     async def lyrics(
@@ -1140,7 +1089,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             )
 
         resp = await self.bot.session.get(
-            f"https://some-random-api.ml/lyrics?title={name}"
+            f"https://some-random-api.ml/lyrics?title={name}%20{player.now.artist}"
         )
 
         if not 200 <= resp.status <= 299:
@@ -1161,38 +1110,24 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             )
 
         data = await resp.json()
+        await ctx.response.send_message(content="Generating lyrics....")
 
         lyrics = data["lyrics"]
         content = WrapText(lyrics, length=1000)
-        await ctx.response.send_message(content="Generating lyrics....")
-
-        embeds = []
-        for text in content:
-            embed = disnake.Embed(
-                title=data["title"],
-                description=text,
-                colour=ctx.author.colour,
-                timestamp=disnake.utils.utcnow(),
-            )
-            embed.set_thumbnail(url=data["thumbnail"]["genius"])
-            embed.set_author(name=data["author"])
-
-            embeds.append(embed)
-        pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
-        await pag.start()
+        pag = LyricsPaginator(lyrics=content, ctx=ctx)
 
     @commands.slash_command(description="Add a Filter to the player.")
     async def filter(self, ctx: disnake.ApplicationCommandInteraction):
         """
         A command that can add Filter to the music player of your choice.
         You will be asked to select between filters.
-        There are four inbuilt filters:
+        There are five inbuilt filters:
 
-        Tremolo -> A piano-like filter.
-        Vibrato -> A vibrato filter.
-        ExtremeBass -> A bass boost filter.
-        8D -> An 8D audio filter.
-        Vibrato -> A vibrato filter.
+        1.) Tremolo -> A Tremolo filter.
+        2.) Vibrato -> A vibrato filter.
+        3.) ExtremeBass -> A bass boost filter.
+        4.) 8D -> An 8D audio filter.
+        5.) Vibrato -> A vibrato filter.
 
 
         Parameters
@@ -1524,6 +1459,10 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Display the player's queued songs.")
     async def queue(self, ctx: disnake.ApplicationCommandInteraction):
+        pass
+
+    @queue.sub_command(description="Display the player's queued songs.")
+    async def show(self, ctx: disnake.ApplicationCommandInteraction):
         """
         A command that will show all the songs that queued in the music player. It has pagination,
         so it's easy for you to browse.
@@ -1535,7 +1474,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         Examples
         --------
-         `/queue`
+         `/queue show`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -1563,17 +1502,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         entries = []
         for track in player.queue._queue:
             entries.append(
-                f"[{track.title}]({track.uri}) - `{track.author}` - `{track.length}`"
+                f"[{track.title}]({track.uri}) - `{track.author}` - "
+                f"`{humanize.precisedelta(datetime.timedelta(milliseconds=track.length))}`"
             )
 
         paginator = QueuePages(entries=entries, ctx=ctx)
 
         await paginator.start()
 
-    @commands.slash_command(description="Show the current playing song")
-    async def nowplaying(self, ctx: disnake.ApplicationCommandInteraction):
+    @queue.sub_command(description="Clear the player's queued songs.")
+    async def clear(self, ctx: disnake.ApplicationCommandInteraction):
         """
-        A command that will show the information about the track that has been playing.
+        A command that will clear the entire queue of the current music player instance.
 
         Parameters
         ----------
@@ -1582,7 +1522,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         Examples
         --------
-         `/nowplaying`
+        `/queue clear`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -1593,60 +1533,52 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
                     colour=disnake.Colour.random(),
-                )
+                ),
+                delete_after=10,
             )
 
-        if not player.is_playing:
+        if player.queue.qsize() == 0:
             return await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} `There is no song playing right now.`",
-                    colour=disnake.Colour.random(),
+                    description=f"{self.bot.icons['info']} Queue is empty.",
+                    color=disnake.Colour.random(),
                 )
             )
 
-        embed = await player.make_song_embed()  # shows the song embed.
-        await ctx.response.send_message(embed=embed)
+        if self.is_author(ctx):
+            await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['info']} `{player.dj}` has cleared the queue.",
+                    color=disnake.Colour.random(),
+                )
+            )
 
-    @commands.slash_command(description="Save the current playing song in your dms.")
-    async def save(self, ctx: disnake.ApplicationCommandInteraction):
-        """
-        A command that will show the information about the track that has been playing and send it in your dms,
-        if possible, so make sure that you have kept your dms open.
+            player.clear_votes.clear()
+            player.queue.clear()
+            return
 
-        Parameters
-        ----------
-        ctx : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+        required = self.vote_check(ctx)
+        player.clear_votes.add(ctx.author)
 
-        Examples
-        --------
-         `/save`
-        """
-        player: Player = self.bot.wavelink.get_player(
-            guild_id=ctx.guild.id, cls=Player, context=ctx
-        )
+        if len(player.shuffle_votes) >= required:
+            await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['info']} Vote passed, clearing the queue.",
+                    color=disnake.Colour.random(),
+                )
+            )
 
-        if not player.is_connected:
+            player.clear_votes.clear()
+            player.queue.clear()
+        else:
             return await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
-                    colour=disnake.Colour.random(),
+                    description=f"{self.bot.icons['info']} `{ctx.author}` has voted to clear the queue.",
+                    color=disnake.Colour.random(),
                 )
             )
 
-        if not player.is_playing:
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} `There is no song playing right now.`",
-                    colour=disnake.Colour.random(),
-                )
-            )
-
-        embed = await player.make_song_embed()  # shows the song embed.
-        await ctx.response.send_message(content="Check your dms.", ephemeral=True)
-        await ctx.author.send(embed=embed)
-
-    @commands.slash_command(description="Remove a song from the queue.")
+    @queue.sub_command(description="Remove a song from the queue by its index.")
     async def remove(
         self,
         ctx: disnake.ApplicationCommandInteraction,
@@ -1665,7 +1597,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         Examples
         --------
-         `/remove index: 1`
+         `/queue remove index: 1`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -1716,6 +1648,225 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 colour=disnake.Colour.random(),
             )
         )
+
+    @queue.sub_command(description="Shuffle the queue.")
+    async def shuffle(self, ctx: disnake.ApplicationCommandInteraction):
+        """
+        A command that will shuffle the entire queue of the current music player instance.
+        You need at least 3 songs or more in queue in order to shuffle properly.
+
+         Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+        `/queue shuffle`
+        """
+        player: Player = self.bot.wavelink.get_player(
+            guild_id=ctx.guild.id, cls=Player, context=ctx
+        )
+
+        if not player.is_connected:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
+
+        if player.queue.qsize() < 3:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['info']} Add more songs before shuffling.",
+                    color=disnake.Colour.random(),
+                )
+            )
+
+        if self.is_author(ctx):
+            await ctx.channel.send(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['info']} `{player.dj}` has shuffled the queue.",
+                    color=disnake.Colour.random(),
+                )
+            )
+
+            player.shuffle_votes.clear()
+            return player.queue.shuffle()
+
+        required = self.vote_check(ctx)
+        player.shuffle_votes.add(ctx.author)
+
+        if len(player.shuffle_votes) >= required:
+            await ctx.channel.send(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['info']} Vote passed, shuffling songs.",
+                    color=disnake.Colour.random(),
+                )
+            )
+
+            player.shuffle_votes.clear()
+            player.queue.shuffle()
+        else:
+            return await ctx.channel.send(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['info']} `{ctx.author}` has voted to shuffle the queue.",
+                    color=disnake.Colour.random(),
+                )
+            )
+
+    @queue.sub_command(name="reverse", description="Reverse the order of the queue.")
+    async def reverse_queue(self, ctx: disnake.ApplicationCommandInteraction):
+        """
+        A command that will reverse the order of the queue. You need at least 3 songs or more in queue in order to
+        reverse properly.
+
+        Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+        `/queue reverse`
+        """
+
+        player: Player = self.bot.wavelink.get_player(
+            guild_id=ctx.guild.id, cls=Player, context=ctx
+        )
+
+        if not player.is_connected:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no song playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+        if player.queue.qsize() == 0:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['info']} There are no more songs "
+                    f"in the queue.",
+                    colour=disnake.Colour.random(),
+                ),
+            )
+        if player.queue.qsize() < 3:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['info']} Add more songs before reversing the queue.",
+                    color=disnake.Colour.random(),
+                )
+            )
+
+        if not self.is_author(ctx):
+            return await ctx.channel.send(
+                embed=disnake.Embed(
+                    description=f"Only {player.dj} can use this command.",
+                    color=disnake.Colour.random(),
+                )
+            )
+        await player.queue.reverse()
+        await ctx.response.send_message(
+            embed=disnake.Embed(
+                description=f"{self.bot.icons['greentick']} `The queue has been reversed.`",
+                colour=disnake.Colour.random(),
+            )
+        )
+
+    @commands.slash_command(description="Show the current playing song")
+    async def nowplaying(self, ctx: disnake.ApplicationCommandInteraction):
+        """
+        A command that will show the information about the track that has been playing.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+         `/nowplaying`
+        """
+        player: Player = self.bot.wavelink.get_player(
+            guild_id=ctx.guild.id, cls=Player, context=ctx
+        )
+
+        if not player.is_connected:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no song playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        embed = await player.make_song_embed()  # shows the song embed.
+        await ctx.response.send_message(embed=embed, ephemeral=True)
+
+    @commands.slash_command(description="Save the current playing song in your dms.")
+    async def save(self, ctx: disnake.ApplicationCommandInteraction):
+        """
+        A command that will show the information about the track that has been playing and send it in your dms,
+        if possible, so make sure that you have kept your dms open.
+
+        Parameters
+        ----------
+        ctx : disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Examples
+        --------
+         `/save`
+        """
+        player: Player = self.bot.wavelink.get_player(
+            guild_id=ctx.guild.id, cls=Player, context=ctx
+        )
+
+        if not player.is_connected:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        if not player.is_playing:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no song playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        embed = await player.make_song_embed()  # shows the song embed.
+        await ctx.response.send_message(content="Check your dms.", ephemeral=True)
+        try:
+            await ctx.author.send(embed=embed)
+        except disnake.Forbidden:
+            return await ctx.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `I don't have permission to send messages in your dms.`",
+                    colour=disnake.Colour.random(),
+                ),
+                ephemeral=True,
+            )
 
     @commands.slash_command(description="Seek to a specific time in the song.")
     async def seek(
@@ -1791,7 +1942,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await player.seek(secs * 1000)
         await ctx.response.send_message(
             embed=disnake.Embed(
-                description=f"{self.bot.icons['greentick']} Successfully seeked to {secs * 1000} seconds.",
+                description=f"{self.bot.icons['greentick']} Successfully seeked to {secs} seconds.",
                 colour=disnake.Colour.random(),
             )
         )
