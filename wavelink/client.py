@@ -173,7 +173,7 @@ class Client:
             self.loop.create_task(cog.on_wavelink_error(listener, fut.exception()))
 
     async def get_tracks(
-        self, query: str, *, retry_on_failure: bool = True
+        self, query: str, *, retry_after_failure: bool = True
     ) -> Optional[list]:
         """|coro|
 
@@ -184,10 +184,9 @@ class Client:
         query: str
             The query to use to search for tracks. If a valid URL is not provided, it's best to default to
             "ytsearch:query", which allows the REST server to search YouTube for Tracks.
-        retry_on_failure: bool
-            Bool indicating whether the Node should retry upto a maximum of 5 attempts on load failure.
-            If this is set to True, the Node will attempt to retrieve tracks with an exponential backoff delay
-            between retries. Defaults to True.
+
+        retry_after_failure: bool
+            Whether to retry the search after a failure.
 
         Returns
         ---------
@@ -205,7 +204,7 @@ class Client:
         if node is None:
             raise ZeroConnectedNodes
 
-        return await node.get_tracks(query, retry_on_failure=retry_on_failure)
+        return await node.get_tracks(query, retry_on_failure=retry_after_failure)
 
     async def build_track(self, identifier: str):
         """|coro|
@@ -337,7 +336,7 @@ class Client:
             This must be similar to :class:`Player`. E.g a subclass.
         node_id: Optional[str]
             An optional Node identifier to create a player under. If the player already exists this will be ignored.
-            Otherwise an attempt to find the node and assign a new player will be made.
+            Otherwise, an attempt to find the node and assign a new player will be made.
 
         Returns
         ---------
@@ -435,26 +434,13 @@ class Client:
 
         Initiate a Node and connect to the provided server.
 
-        Parameters
-        ------------
-        host: str
-            The host address to connect to.
-        port: int
-            The port to connect to.
-        rest_uri: str
-            The URI to use to connect to the REST server.
-        password: str
-            The password to authenticate on the server.
-        region: str
-            The region as a valid disnake.py guild.region to associate the :class:`wavelink.node.Node` with.
-        identifier: str
-            A unique identifier for the :class:`wavelink.node.Node`
-        shard_id: Optional[int]
-            An optional Shard ID to associate with the :class:`wavelink.node.Node`. Could be None.
-        secure: bool
-            Whether the websocket should be started with the secure wss protocol.
-        heartbeat: Optional[float]
-            Send ping message every heartbeat seconds and wait pong response, if pong response is not received then close connection.
+        Parameters ------------ host: str The host address to connect to. port: int The port to connect to. rest_uri:
+        str The URI to use to connect to the REST server. password: str The password to authenticate on the server.
+        region: str The region as a valid disnake guild.region to associate the :class:`wavelink.node.Node` with.
+        identifier: str A unique identifier for the :class:`wavelink.node.Node` shard_id: Optional[int] An optional
+        Shard ID to associate with the :class:`wavelink.node.Node`. Could be None. secure: bool Whether the websocket
+        should be started with the secure wss protocol. heartbeat: Optional[float] Send ping message every heartbeat
+        seconds and wait pong response, if pong response is not received then close connection.
 
         Returns
         ---------
