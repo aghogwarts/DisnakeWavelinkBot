@@ -1,3 +1,6 @@
+#  -*- coding: utf-8 -*-
+
+
 import asyncio
 import itertools
 import random
@@ -40,13 +43,31 @@ class Queue(asyncio.Queue):
     def __len__(self):
         return self.qsize()
 
+    def __repr__(self):
+        return f"<Queue size: {self.qsize()}>"
+
+    def reverse(self):
+        """
+        Reverse the queue.
+        """
+        self._queue.reverse()
+
     def clear(self):
+        """
+        Clear the queue.
+        """
         self._queue.clear()
 
     def shuffle(self):
+        """
+        Shuffle the queue.
+        """
         random.shuffle(self._queue)
 
     def remove(self, index: int):
+        """
+        Remove a track from the queue.
+        """
         del self._queue[index]
 
 
@@ -195,8 +216,8 @@ class Player(wavelink.Player):
             colour=disnake.Colour.random(),
         )
         try:
-            embed.set_thumbnail(url=track.thumb)
-        except disnake.HTTPException:
+            embed.set_thumbnail(url=track.thumbnail)
+        except disnake.errors.HTTPException:
             pass
 
         embed.add_field(
@@ -207,7 +228,6 @@ class Player(wavelink.Player):
         embed.add_field(
             name="Position",
             value=f"`{int(position[0])}:{round(position[1] / 1000):02}/{int(length[0])}:{round(length[1] / 1000):02}`",
-            inline=False,
         )
         embed.add_field(name="Channel", value=f"**`{channel}`**")
         embed.add_field(name="DJ", value=self.dj.mention)
