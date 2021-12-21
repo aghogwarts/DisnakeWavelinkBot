@@ -33,7 +33,7 @@ class WavelinkMixin:
 
         for name, element in inspect.getmembers(cls):
             try:
-                element_listeners = getattr(element, '__wavelink_listeners__')
+                element_listeners = getattr(element, "__wavelink_listeners__")
             except AttributeError:
                 continue
 
@@ -48,7 +48,7 @@ class WavelinkMixin:
 
         return self
 
-    async def on_wavelink_error(self, listener,  error: Exception):
+    async def on_wavelink_error(self, listener, error: Exception):
         """Event dispatched when an error is raised during mixin listener dispatch.
 
         Parameters
@@ -58,8 +58,10 @@ class WavelinkMixin:
         error: Exception
             The excpetion raised when dispatching a mixin listener.
         """
-        print(f'Ignoring exception in listener {listener}:', file=sys.stderr)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        print(f"Ignoring exception in listener {listener}:", file=sys.stderr)
+        traceback.print_exception(
+            type(error), error, error.__traceback__, file=sys.stderr
+        )
 
     async def on_node_ready(self, node: Node):
         """Listener dispatched when a :class:`wavelink.node.Node` is connected and ready.
@@ -150,9 +152,10 @@ class WavelinkMixin:
         TypeError
             Listener is not a coroutine.
         """
+
         def wrapper(func):
             if not inspect.iscoroutinefunction(func):
-                raise TypeError('Wavelink listeners must be coroutines.')
+                raise TypeError("Wavelink listeners must be coroutines.")
 
             name = event or func.__name__
 
@@ -162,4 +165,5 @@ class WavelinkMixin:
                 func.__wavelink_listeners__ = [name]
 
             return func
+
         return wrapper
