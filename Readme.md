@@ -40,6 +40,7 @@ you need to pass the emojis in the following format:
 
 ## Note
 Before starting to use this project, here are some things you should note:
+
 **1**.) This music bot uses Lavalink to play music. As Lavalink is a Java based program, you will need JDK 8 or JDK 13 to be able to run Lavalink properly.
 
 **2**.) Wavelink has been rewritten for this project to support the latest versions of Lavalink, and disnake.
@@ -56,6 +57,8 @@ Before starting to use this project, here are some things you should note:
 Visit [Lavalink 3.4](https://github.com/freyacodes/Lavalink/releases/tag/3.4) to download the latest version.
 
 Install Lavalink.jar in the directory ``lavalink`` and that's it.
+
+
 ## What is Lavalink and how this music bot works??
 
 Lavalink is a standalone audio streaming node written in Java that is based on `Lavaplayer`(An audio player written in Java).
@@ -172,6 +175,22 @@ Also, visit the Lavaplayer repository:
 Wavelink is a powerful and robust wrapper around Lavalink that is written in `python`. 
 Wavelink abstracts away the complexities regarding Lavalink and makes it easier for us to use.
 It supports everything that Lavalink provides, but it also provides additional features.
+
+# What is Jishaku?
+Jishaku is an extension developed for bot developers that enables rapid prototyping, experimentation, and 
+debugging of their bots. It allows us to debug, test, and experiment with our bots through discord. It has a lot of features, and it is extremely useful.
+Again, Jishaku has been rewritten to support disnake for this project.
+Jishaku is only usable by the owner of the bot. To use jishaku, you can use the command <your bot prefix>`jishaku`, or its alias `jsk`.
+Most notable features of Jishaku are:
+
+1.) To be able to run python code from discord.
+2.) You can interact with your environment and your terminal, through your bot.
+3.) You can interact with your bot extensions, through your bot. For example, loading / unloading extensions.
+4.) You can interact with your bot, through your bot. For example, reloading the bot.
+and more.
+
+To know more about Jishaku, visit this repository: 
+[Click here to visit](https://github.com/Gorialis/Jishaku)
 
 ## How to run this.
 1.) In your favorite web browser, navigate to [Discord Developer Portal](https://discord.com/developers/applications):
