@@ -1,15 +1,16 @@
-# Music Bot
+# Welcome
 
 An example music bot that is written in Disnake [Maintained discord.py Fork] 
 
 ## Disnake 
-Disnake is a maintained and updated fork of `discord.py`.
+Disnake is a maintained and updated fork of `discord.py`. It supports and covers everything of Discord's API.
 
 [Disnake Github Repo](https://github.com/DisnakeDev/disnake)
 
 ## Installation
+There are currently two ways to install:
 
-Use the package manager [pip package manager](https://pip.pypa.io/en/stable/) to install the libraries from ``requirements.txt`` file.
+Use [pip package manager](https://pip.pypa.io/en/stable/) to install the libraries from ``requirements.txt`` file.
 
 ```bash
 pip install -r requirements.txt
@@ -21,6 +22,7 @@ the following command.
 ```bash
 poetry install
 ```
+As we have included a `pyproject.toml` file, it will install the dependencies automatically.
 
 ## Bot Configuration
 You can configure the bot by using the file called ``config.yml`` in the ``config`` directory.
@@ -37,17 +39,21 @@ you need to pass the emojis in the following format:
 ``<:emoji_name:emoji_id>``
 
 ## Note
-This music bot uses Lavalink to play music. Lavalink is a Java based program.
-You will need JDK 8 or JDK 13 to be able to run Lavalink properly.
-Wavelink has been rewritten to support disnake.
-You will need `python 3.8` or above to run this program.
-The entire music bot operates on slash commands and global slash commands take up to an hour to get registered.
+Before starting to use this project, here are some things you should note:
+**1**.) This music bot uses Lavalink to play music. As Lavalink is a Java based program, you will need JDK 8 or JDK 13 to be able to run Lavalink properly.
 
-Lavalink.jar file is too big to be included in the repository, so you have to install it yourself in the directory 
+**2**.) Wavelink has been rewritten for this project to support the latest versions of Lavalink, and disnake.
+
+**3**.) You will need Python version `3.8` or above to run this program, anything below version `3.8` will not work.
+
+**4**.) The bot mostly uses slash commands for most its functionality, but it also has messages commands.
+
+**5**.) This bot is currently only tested on Linux. So if you encounter any issues, please create an issue and report it.
+
+`Lavalink.jar` is not included in this repository as the file is too big to be included in the repository, so you have to install it yourself in the directory 
 ``Lavalink``.
 
-Visit [Lavalink 3.4](https://github.com/freyacodes/Lavalink/releases/tag/3.4) to download the latest version. 
-Make sure you have JDK 8 or JDK 13 installed.
+Visit [Lavalink 3.4](https://github.com/freyacodes/Lavalink/releases/tag/3.4) to download the latest version.
 
 Install Lavalink.jar in the directory ``lavalink`` and that's it.
 ## What is Lavalink and how this music bot works??
@@ -95,25 +101,24 @@ It is a configuration file, where you can define port/host to open a connection 
 For example:
 ```yaml
 server: # REST and WS server
-  port: 2333
-  address: 127.0.0.1
+  port: 2333  # port to open
+  address: 127.0.0.1  # the address to open
 lavalink:
   server:
-    password: "youshallnotpass"
+    password: "youshallnotpass"  # password for the for authentication.
     sources:
       youtube: true
       bandcamp: true
       soundcloud: true
       twitch: false
       vimeo: true
-      mixer: false
       http: true
       local:  true
     bufferDurationMs: 200  # JDA buffer duration
     youtubePlaylistLoadLimit: 6 # Number of pages at 100 each
-    youtubeSearchEnabled: true
-    soundcloudSearchEnabled: true
-    gc-warnings: true
+    youtubeSearchEnabled: true  # This enables the YouTube search feature.
+    soundcloudSearchEnabled: true # This enables the SoundCloud search feature.
+    gc-warnings: true  # This enables garbage collection warnings.
     #ratelimit:
       #ipBlocks: ["1.0.0.0/8", "..."] # list of ip blocks
       #excludedIps: ["...", "..."] # ips which should be explicit excluded from usage by lavalink
@@ -149,44 +154,43 @@ The most notable ones are:
 
 `lavalink` - This is where you configure the Lavalink server itself.
 
-`metrics` - This is the metrics server.
+`sources` - This is where you configure the sources that Lavalink will use.
 
-`sentry` - This is the sentry server.
+`metrics` - Metrics is a feature that allows you to expose metrics to Prometheus.
+
+`sentry` - Sentry is a feature that allows you to log exceptions to Sentry and monitor them.
 
 `logging` - This is where you configure the logging, Lavalink uses logging to log errors, warnings and information. It is very useful, and you should keep it enabled.
 
 If you want to know more about Lavalink, visit this repository:
 [Click here to visit](https://github.com/freyacodes/Lavalink)
 
-Also, visit this the Lavaplayer repository:
+Also, visit the Lavaplayer repository:
 [Click here to visit](https://github.com/sedmelluq/Lavaplayer)
 
-## Wavelink
-Here comes Wavelink, A powerful and robust wrapper around Lavalink that is written for `python`.
-It abstracts away all the complexities of Lavalink and makes it easy for us play our favourite music tracks in it, 
-with your discord bot application.
-Wavelink supports all the features of Lavalink (my version of it.).
+## What is Wavelink?
+Wavelink is a powerful and robust wrapper around Lavalink that is written in `python`. 
+Wavelink abstracts away the complexities regarding Lavalink and makes it easier for us to use.
+It supports everything that Lavalink provides, but it also provides additional features.
 
 ## How to run this.
-1.) In a web browser, navigate to [Discord Developer Portal](https://discord.com/developers/applications):
+1.) In your favorite web browser, navigate to [Discord Developer Portal](https://discord.com/developers/applications):
 
 2.) Create your own __bot account__.
 
-3.) Enable Privileged Intents - Member Intents/Presence Intents/Message Intents. (Very Important!)
+3.) Enable Privileged Intents - Member Intents - Presence Intents - Message Intents. (**Very Important!**)
 
-4.) Go in `Oauth2` tab and enable ``applications.commands`` and `bot` scope, so that your bot can have slash commands.
+4.) Go in `OAuth2` tab and enable ``applications.commands`` and `bot` scope, so that your bot can have slash commands.
 
-5.) Copy your bot token from your bot application and then open ``config.yaml`` file and enter your ``Discord Bot Token``.
-
-6.) Then run the ``main.py`` file in your preferred code editor/ IDE.
+6.) Then run ``main.py`` file in your preferred code editor/IDE, by either pressing F5 or running it through the terminal.
 
 ```bash
   python3 main.py
 ```
 
-Also note,
-This project supports [Docker](https://www.docker.com/). If you have Docker installed, 
-you can build the image using the following command.
+**Also note**:
+This project supports [Docker](https://www.docker.com/). So, if you have Docker installed, 
+you can build an image of this project from the Dockerfile we provided, using the following command.
 
 ```bash
 docker build -t disnake-music .
@@ -208,7 +212,7 @@ If all the steps are correctly followed, the bot should be up and running.
 Enjoy :).
 
 ## Credits
-Well, this project is entirely free and opensource, if you want, you can certainly use it in your own projects.
+Well, this project is entirely free and Open Source, if you want, you can certainly use it in your own projects.
 If you like this project, you can add a GitHub star to show your appreciation, and you can credit me in your project.
 Thanks :)
 Have a nice day!
