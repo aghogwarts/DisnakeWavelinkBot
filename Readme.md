@@ -184,8 +184,11 @@ Jishaku is only usable by the owner of the bot. To use jishaku, you can use the 
 Most notable features of Jishaku are:
 
 1.) To be able to run python code from discord.
+  
 2.) You can interact with your environment and your terminal, through your bot.
+  
 3.) You can interact with your bot extensions, through your bot. For example, loading / unloading extensions.
+  
 4.) You can interact with your bot, through your bot. For example, reloading the bot.
 and more.
 
