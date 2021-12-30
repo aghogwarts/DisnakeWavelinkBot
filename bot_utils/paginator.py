@@ -56,8 +56,6 @@ class ViewPages(disnake.ui.View):
             self.add_item(self.go_to_next_page)
             if use_last_and_first:
                 self.add_item(self.go_to_last_page)
-            if not self.compact:
-                self.add_item(self.numbered_page)
             self.add_item(self.stop_pages)
 
     async def _get_kwargs_from_page(self, page: int) -> typing.Dict[str, typing.Any]:
