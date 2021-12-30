@@ -46,27 +46,21 @@ class Queue(asyncio.Queue):
     def __repr__(self):
         return f"<Queue size: {self.qsize()}>"
 
-    def reverse(self):
-        """
-        Reverse the queue.
-        """
-        self._queue.reverse()
-
     def clear(self):
         """
-        Clear the queue.
+        A method that clears the queue.
         """
         self._queue.clear()
 
     def shuffle(self):
         """
-        Shuffle the queue.
+        A method that shuffles the queue.
         """
         random.shuffle(self._queue)
 
     def remove(self, index: int):
         """
-        Remove a track from the queue.
+        A method that removes a track from the queue.
         """
         del self._queue[index]
 
@@ -308,7 +302,7 @@ class QueuePages(ViewPages):
     ):
         super().__init__(RichPager(entries, per_page=per_page), ctx=ctx)
         self.embed = disnake.Embed(
-            description=f"**{len(entries)}** songs in Queue...",
+            title=f"**{len(entries)}** songs in Queue...",
             colour=disnake.Colour.random(),
         ).set_footer(
             text=f"Requested By {ctx.author}", icon_url=ctx.author.display_avatar.url
