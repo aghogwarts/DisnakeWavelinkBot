@@ -1,4 +1,6 @@
 Bot:
-  token: '...' # Discord bot token
+  token: 'Your Bot Token' # Discord bot token
   prefix: '?' # Prefix for commands.
-  owners: [...] # List of owners, this is required, you can add your account ID.
+  owners:
+     - 1234 # List of owners, this is required, you can add your account ID.
+     - 1234 # You can add more owners.
