@@ -31,7 +31,9 @@ You need to pass the bot token, prefix and the bot owner's ID. For example:
 Bot:
   prefix: "!"  # Prefix for the bot, this is required.
   token: "..." # Bot token, this is required.
-  owners: [1234] # Bot owner's ID, this is required, if you do not have multiple owners, just pass your ID.
+  owners: 
+    - 1234 # Bot owner's ID, this is required, if you do not have multiple owners, just pass your ID.
+    - 1234  # You can pass multiple owner IDs like this.
 ```
 You can also configure the emojis used by the bot, through the ``icons.json`` file in the ``config`` directory.
 You can pass your own emojis, or use the default ones. If you are passing custom emojis, 
