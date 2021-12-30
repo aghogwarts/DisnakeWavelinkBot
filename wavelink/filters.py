@@ -32,11 +32,11 @@ class BaseFilter:
 
     @classmethod
     def build_from_channel_mix(
-            cls,
-            left_to_right: float = 0.0,
-            right_to_left: float = 0.0,
-            right_to_right: float = 0.0,
-            left_to_left: float = 0.0,
+        cls,
+        left_to_right: float = 0.0,
+        right_to_left: float = 0.0,
+        right_to_right: float = 0.0,
+        left_to_left: float = 0.0,
     ):
         """
         Filter which manually adjusts the panning of the audio, which can make
@@ -55,19 +55,22 @@ class BaseFilter:
         -------
             The channel mix filter.
         """
-        if 0.0 <= left_to_left <= 10.0:
+        if 0.0 >= left_to_left <= 10.0:
             raise ValueError(
                 "'left_to_left' value must be more than or equal to 0 or less than or equal to 10."
             )
-        if 0.0 <= right_to_right <= 10.0:
-            raise ValueError(
-                "'right_to_right' value must be more than or equal to 0 or less than or equal to 10."
-            )
-        if 0.0 <= left_to_right <= 10.0:
+
+        if 0.0 >= left_to_right <= 10.0:
             raise ValueError(
                 "'left_to_right' value must be more than or equal to 0 or less than or equal to 10."
             )
-        if 0.0 <= right_to_left <= 10.0:
+
+        if 0.0 >= right_to_right <= 10.0:
+            raise ValueError(
+                "'right_to_right' value must be more than or equal to 0 or less than or equal to 10."
+            )
+
+        if 0.0 >= right_to_left <= 10.0:
             raise ValueError(
                 "'right_to_left' value must be more than or equal to 0 or less than or equal to 10."
             )
@@ -84,17 +87,17 @@ class BaseFilter:
 
     @classmethod
     def build_from_distortion(
-            cls,
-            sin_offset: float = 0.0,
-            sin_scale: float = 1.0,
-            cos_offset: float = 0.0,
-            cos_scale: float = 1.0,
-            tan_offset: float = 0.0,
-            tan_scale: float = 1.0,
-            offset: float = 0.0,
-            scale: float = 1.0,
+        cls,
+        sin_offset: float = 0.0,
+        sin_scale: float = 1.0,
+        cos_offset: float = 0.0,
+        cos_scale: float = 1.0,
+        tan_offset: float = 0.0,
+        tan_scale: float = 1.0,
+        offset: float = 0.0,
+        scale: float = 1.0,
     ):
-        """ A method that you can use to build cool sound effects, this is the Distortion filter,
+        """A method that you can use to build cool sound effects, this is the Distortion filter,
         A filter which distorts the audio by applying a sine wave, cosine wave, and a tangent wave. Very useful for
         creating a distorted sound effect, when used correctly.
         Note however, this filter can adversely effect the audio of track you are currently playing.
@@ -133,12 +136,14 @@ class BaseFilter:
                 "scale": scale,
             }
         }
-        return cls(filter_name="Distortion", payload=payload)  # The name cannot be changed, as it is used by
+        return cls(
+            filter_name="Distortion", payload=payload
+        )  # The name cannot be changed, as it is used by
         # Lavalink, and Lavalink does not allow you to create custom filters for the time being.
 
     @classmethod
     def build_from_timescale(
-            cls, speed: float = 1.0, pitch: float = 1.0, rate: float = 1.0
+        cls, speed: float = 1.0, pitch: float = 1.0, rate: float = 1.0
     ):
         """
         This is method is used to build a timescale filter, which can be used to change the speed, pitch, and rate of
@@ -170,12 +175,12 @@ class BaseFilter:
 
     @classmethod
     def karaoke(
-            cls,
-            *,
-            level: float = 1.0,
-            mono_level: float = 1.0,
-            filter_band: float = 225.0,
-            filter_width=100.0,
+        cls,
+        *,
+        level: float = 1.0,
+        mono_level: float = 1.0,
+        filter_band: float = 225.0,
+        filter_width=100.0,
     ):
         """
         This is a builtin filter named as Karaoke.
