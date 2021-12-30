@@ -1,3 +1,6 @@
+#  -*- coding: utf-8 -*-
+
+
 import threading
 import subprocess
 from loguru import logger
@@ -6,7 +9,7 @@ bash_command = (
     "cd Lavalink && java -jar Lavalink.jar"  # command that needs to be run on shell.
 )
 
-program = "java"  # checking that if Java is installed on the host's system or not.
+BaseProgram = "java"  # checking that if Java is installed on the host's system or not.
 
 
 def run_lavalink_process():
@@ -15,15 +18,15 @@ def run_lavalink_process():
 
     Returns
     -------
-    None.
+    None
     """
-    process = subprocess.run(["which", program], capture_output=True, text=True)
+    process = subprocess.run(["which", BaseProgram], capture_output=True, text=True)
     if process.returncode == 0:
         logger.success(
-            f'The program "{program}" is installed. Lavalink can be run.'
+            f'The program "{BaseProgram}" is installed. Lavalink can be run.'
         )  # checking if Java is installed on the host
         # system.
-        logger.info(f"The location of the binary is: {process.stdout}")
+        logger.info(f"The location of {BaseProgram} is: {process.stdout}")
 
         output = subprocess.run(
             bash_command, shell=True, capture_output=True, text=True
@@ -33,16 +36,12 @@ def run_lavalink_process():
         if output.returncode == 0:
             logger.success("Lavalink is running.")
         else:
-            logger.error(f"Lavalink is not running. Error: {output.stderr}")
+            logger.error(f"Lavalink is not running. Error: {output.stdout}")
     else:
         logger.error(
-            f"Sorry program {program} is not installed in your system. Please install it in order to run our "
-            f"Jar "
-            f"application."
+            f"Sorry, {BaseProgram} is not installed in your system. Please install it in order to run our Lavalink."
         )
-        print(process.stderr)
-        logger.info("Lavalink is not running.")
-        return
+        print(process.stdout)
 
 
 def lavalink_alive():
@@ -51,7 +50,7 @@ def lavalink_alive():
 
     Returns
     -------
-    None.
+    None
     """
     target = threading.Thread(target=run_lavalink_process)
     target.start()
