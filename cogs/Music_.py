@@ -212,6 +212,22 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 )
             )
 
+        if isinstance(error, disnake.Forbidden):
+            return await safe_send(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `I do not have permission to do that.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        if isinstance(error, wavelink.errors.ZeroConnectedNodes):
+            return await safe_send(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There are no nodes connected.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
         # ignore all other exception types, but print them to stderr
         else:
             error_msg = "".join(
@@ -405,7 +421,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Examples
         --------
         `/play query: "50 cent - love me"`
-        /play query: "50 cent - love me" service: "soundcloud"
+
+        `/play query: "50 cent - love me" service: "soundcloud"`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -911,7 +928,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await player.set_volume(vol)
         await ctx.response.send_message(
             embed=disnake.Embed(
-                description=f"{self.bot.icons['redtick']} Set the volume "
+                description=f"{self.bot.icons['greentick']} Set the volume "
                 f"to **{vol}**%",
                 colour=disnake.Colour.random(),
             )
@@ -1042,15 +1059,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return
 
     @commands.slash_command(description="Show lyrics of the current playing song.")
-    async def lyrics(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        *,
-        name: str = Param(
-            description="The name of the song to search  the lyrics of.",
-            default=None,
-        ),
-    ):
+    async def lyrics(self, ctx: disnake.ApplicationCommandInteraction):
         """
         A command that will show the lyrics of the current playing song or the name of the song you want lyrics
         for, if you explicitly specify it.
@@ -1066,14 +1075,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Examples
         --------
         `/lyrics`
-
-        `/lyrics name: "The Chainsmokers - Closer"`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
-        if name is None:
-            name = player.now.title
+
+        name = player.now.title
 
         if not player.is_connected:
             return await ctx.response.send_message(
@@ -1082,12 +1089,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                     colour=disnake.Colour.random(),
                 )
             )
-        lyrics_query = f"https://some-random-api.ml/lyrics?title={name}-{player.now.author}"
-        resp = await self.bot.session.get(
-            lyrics_query
+        lyrics_query = (
+            f"https://some-random-api.ml/lyrics?title={name}-{player.now.author}"
         )
+        resp = await self.bot.session.get(lyrics_query)
 
-        if not 200 <= resp.status <= 299:
+        if resp.status != 200:
             return await ctx.response.send_message(
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['redtick']} `Lyrics for this song is not found.`",
@@ -1109,7 +1116,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         lyrics = data["lyrics"]
         content = WrapText(lyrics, length=1000)
-        pag = LyricsPaginator(lyrics=content, ctx=ctx, thumbnail=player.now.thumbnail)
+        pag = LyricsPaginator(
+            lyrics=content, ctx=ctx, thumbnail=player.current.thumbnail
+        )
         await pag.start()
 
     @commands.slash_command(description="Add a Filter to the player.")
@@ -1174,7 +1183,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def create_filter(self, ctx: disnake.ApplicationCommandInteraction):
         pass
 
-    @create_filter.sub_command(description="Create a Tremolo Filter.")
+    @create_filter.sub_command(
+        description="Add a custom filter, built from channel_mix."
+    )
     async def channel_mix(
         self,
         ctx: disnake.ApplicationCommandInteraction,
@@ -1682,7 +1693,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             )
 
         if self.is_author(ctx):
-            await ctx.channel.send(
+            await ctx.response.send_message(
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['info']} `{player.dj}` has shuffled the queue.",
                     color=disnake.Colour.random(),
@@ -1712,72 +1723,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                     color=disnake.Colour.random(),
                 )
             )
-
-    @queue.sub_command(name="reverse", description="Reverse the order of the queue.")
-    async def reverse_queue(self, ctx: disnake.ApplicationCommandInteraction):
-        """
-        A command that will reverse the order of the queue. You need at least 3 songs or more in queue in order to
-        reverse properly.
-
-        Parameters
-        ----------
-        ctx: disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        Examples
-        --------
-        `/queue reverse`
-        """
-
-        player: Player = self.bot.wavelink.get_player(
-            guild_id=ctx.guild.id, cls=Player, context=ctx
-        )
-
-        if not player.is_connected:
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
-                    colour=disnake.Colour.random(),
-                )
-            )
-
-        if not player.is_playing:
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} `There is no song playing right now.`",
-                    colour=disnake.Colour.random(),
-                )
-            )
-        if player.queue.qsize() == 0:
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} There are no more songs "
-                    f"in the queue.",
-                    colour=disnake.Colour.random(),
-                ),
-            )
-        if player.queue.qsize() < 3:
-            return await ctx.response.send_message(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} Add more songs before reversing the queue.",
-                    color=disnake.Colour.random(),
-                )
-            )
-
-        if not self.is_author(ctx):
-            return await ctx.channel.send(
-                embed=disnake.Embed(
-                    description=f"Only {player.dj} can use this command.",
-                    color=disnake.Colour.random(),
-                )
-            )
-        await player.queue.reverse()
-        await ctx.response.send_message(
-            embed=disnake.Embed(
-                description=f"{self.bot.icons['greentick']} `The queue has been reversed.`",
-                colour=disnake.Colour.random(),
-            )
-        )
 
     @commands.slash_command(description="Show the current playing song")
     async def nowplaying(self, ctx: disnake.ApplicationCommandInteraction):
