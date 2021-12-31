@@ -41,7 +41,7 @@ class Bot(commands.AutoShardedBot):
             help_command=None,  # type: ignore
             sync_permissions=True,
             enable_debug_events=True,
-            owners=bot_config.owners,
+            owner_ids=bot_config.owners,
             reload=True,  # This Kwarg Enables Cog watchdog, Hot reloading of cogs.
             *args,
             **kwargs,
