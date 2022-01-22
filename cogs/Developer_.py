@@ -1,18 +1,17 @@
 #  -*- coding: utf-8 -*-
-
-
 import os
 import pkgutil
 import sys
 import traceback
 import typing
+from enum import Enum
 from io import BytesIO
 
 import disnake
 from disnake.ext import commands
 from disnake.ext.commands import Param
 
-from enum import Enum
+from core.MusicBot import Bot
 
 
 class Action(str, Enum):
@@ -29,7 +28,24 @@ class Action(str, Enum):
         return self.value
 
 
-async def cog_autocomp(inter: disnake.ApplicationCommandInteraction, user_input: str):
+async def cog_autocomp(_: disnake.ApplicationCommandInteraction, user_input: str):
+    """
+    Autocomplete for the developer cog.
+
+
+    Parameters
+    ----------
+    _ : disnake.ApplicationCommandInteraction
+        The command interaction object.
+
+    user_input : str
+        The user input.
+
+    Returns
+    -------
+    list
+        A list of possible completions.
+    """
     cog_names = []
     for pkg in pkgutil.iter_modules(["cogs"]):
         cog_names.append(pkg.name)
@@ -41,7 +57,7 @@ class Owner(commands.Cog, name="Developer"):
     Commands specifically developer for Bot developers.
     """
 
-    def __init__(self, bot: typing.Union[commands.Bot, commands.AutoShardedBot]):
+    def __init__(self, bot: typing.Union[commands.Bot, commands.AutoShardedBot, Bot]):
         self.bot = bot
 
     async def cog_slash_command_error(
@@ -49,6 +65,7 @@ class Owner(commands.Cog, name="Developer"):
     ) -> None:
         """
         Handles errors raised by commands in the cog.
+
 
         Parameters
         ----------
@@ -72,15 +89,6 @@ class Owner(commands.Cog, name="Developer"):
                 ephemeral=True,
             )
 
-        if isinstance(error, commands.BotMissingPermissions):
-            await safe_send(
-                embed=disnake.Embed(
-                    description=f"{self.bot.icons['redtick']} I don't have the required permissions.",
-                    color=disnake.Colour.random(),
-                ),
-                ephemeral=True,
-            )
-
             # ignore all other exception types, but print them to stderr
         else:
             error_msg = "".join(
@@ -88,7 +96,8 @@ class Owner(commands.Cog, name="Developer"):
             )
             await safe_send(
                 embed=disnake.Embed(
-                    description=f"**Error invoked by: {str(ctx.author)}**\nCommand: {ctx.application_command.name}\nError: "
+                    description=f"**Error invoked by: {str(ctx.author)}**\n"
+                                f"Command: {ctx.application_command.name}\nError: "
                     f"```py\n{error_msg}```",
                     color=disnake.Colour.random(),
                 )
@@ -122,6 +131,7 @@ class Owner(commands.Cog, name="Developer"):
         This command manages the cogs of the bot. It can enable, disable, reload, and remove cogs.
         Only Bot owners can use this command.
 
+
         Parameters
         ----------
         ctx : disnake.ApplicationCommandInteraction
@@ -142,10 +152,10 @@ class Owner(commands.Cog, name="Developer"):
 
             try:
                 self.bot.unload_extension(f"cogs.{cog}")
-            except Exception:
+            except Exception as e:
                 return await ctx.response.send_message(
                     embed=disnake.Embed(
-                        description=f"Cog **{cog}** is not loaded.",
+                        description=f"Cog **{cog}** is not loaded.\nError:\n```py\n{e}\n```",
                         color=disnake.Colour.random(),
                     ),
                     ephemeral=True,
@@ -212,6 +222,7 @@ class Owner(commands.Cog, name="Developer"):
         """
         This command shows information about the cogs of the bot.
 
+
         Parameters
         ----------
         ctx : disnake.ApplicationCommandInteraction
@@ -267,6 +278,7 @@ class Owner(commands.Cog, name="Developer"):
         """
         This command purges messages from the channel.
 
+
         Parameters
         ----------
         ctx : disnake.ApplicationCommandInteraction
@@ -289,7 +301,8 @@ class Owner(commands.Cog, name="Developer"):
                 if m.author == self.bot.user:
                     try:
                         await m.delete()
-                    except Exception:
+                    except Exception as error:
+                        self.bot.logger.error(error)
                         pass
                     else:
                         deleted.append(m)
@@ -303,6 +316,7 @@ class Owner(commands.Cog, name="Developer"):
     async def status(self, ctx: disnake.ApplicationCommandInteraction):
         """
         This command sets the bot status. Only Bot Owner can use this command.
+
 
         Parameters
         ----------
@@ -324,6 +338,7 @@ class Owner(commands.Cog, name="Developer"):
     ):
         """
         This subcommand sets the bot status to streaming.
+
 
         Parameters
         ----------
@@ -362,6 +377,7 @@ class Owner(commands.Cog, name="Developer"):
     ):
         """
         This subcommand sets the bot status to playing.
+
 
         Parameters
         ----------
