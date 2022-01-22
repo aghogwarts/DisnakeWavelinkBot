@@ -1,20 +1,19 @@
 #  -*- coding: utf-8 -*-
-
-
 import json
 import pkgutil
 import traceback
+import typing
 import zlib
-from typing import Optional, Any
+from typing import Optional
 
-import mystbin
-from loguru import logger
 import disnake
+import mystbin
 from aiohttp import ClientSession
-from disnake import Intents, AllowedMentions
+from disnake import AllowedMentions, Intents
 from disnake.ext import commands
+from loguru import logger
 
-from bot_utils.Helpers_ import Config
+from utils.helpers import Config
 
 with open("./config/icons.json", mode="r", encoding="utf-8") as f:
     data = json.load(f)
@@ -30,7 +29,6 @@ class Bot(commands.AutoShardedBot):
 
     def __init__(self, *args, **kwargs):
         intents = Intents.all()
-        intents.dm_messages = False  # Disabling this Intent will make the Bot not receive DM message events
 
         super().__init__(
             command_prefix=bot_config.prefix,
@@ -53,6 +51,8 @@ class Bot(commands.AutoShardedBot):
         self.start_time = disnake.utils.utcnow()
         self.bot_config = bot_config
         self.mystbin_client = None
+        self._buffer = None
+        self._zlib = None
 
     def load_cogs(self, exts) -> None:
         """
@@ -62,10 +62,6 @@ class Bot(commands.AutoShardedBot):
         ----------
         exts: Iterable[`list`]
             A list of extensions to load.
-
-        Returns
-        -------
-         None
         """
 
         for m in pkgutil.iter_modules([exts]):
@@ -75,24 +71,13 @@ class Bot(commands.AutoShardedBot):
                 self.load_extension(module)
                 self.logger.info(f"Loaded extension '{m.name}'", __name="Music Bot")
             except Exception as e:
-                traceback.format_exc(e)
+                traceback.print_exception(e.__traceback__, e, e.__traceback__)
         self.load_extension("jishaku")
         self.logger.info(f"Loaded extension 'jishaku'", __name="Music Bot")
 
     async def login(self, *args, **kwargs) -> None:
         """
         A method that logs the bot into Discord.
-
-        Parameters
-        ----------
-        *args
-            Positional arguments.
-        **kwargs
-            Keyword arguments.
-
-        Returns
-        -------
-        None
         """
 
         self.session = ClientSession()  # creating a ClientSession
@@ -105,10 +90,6 @@ class Bot(commands.AutoShardedBot):
     async def on_ready(self):
         """
         An event that triggers when the bot is connected properly to gateway and bot cache is completely loaded.
-
-        Returns
-        -------
-        None
         """
         print(
             f"----------Bot Initialization.-------------\n"
@@ -120,16 +101,28 @@ class Bot(commands.AutoShardedBot):
         )
 
     @property
-    async def get_owners(self):
+    async def get_owners(self) -> typing.List[typing.Optional[disnake.User]]:
         """
         A method that returns the owners of the bot.
+
+        Returns
+        -------
+        typing.List[typing.Optional[disnake.User]]
+            A list of owners of the bot.
         """
         owners = [
             await self.get_or_fetch_user(int(owner)) for owner in self.bot_config.owners
         ]
         return owners
 
-    async def on_socket_raw_receive(self, msg):
+    async def on_disconnect(self):
+        """
+        An event that triggers when the bot is disconnected from the gateway.
+        """
+        self.logger.info("Closing Aiohttp ClientSession...", __name="Music Bot")
+        await self.session.close()
+
+    async def on_socket_raw_receive(self, msg) -> None:
         """
         An event that triggers when the bot receives a raw message from the gateway.
         This event replicates discord.py's 'on_socket_response' event that was removed for dpy v2.0 in disnake.
@@ -138,10 +131,6 @@ class Bot(commands.AutoShardedBot):
         ----------
         msg: `bytes`
             The raw message received from the gateway.
-
-        Returns
-        -------
-        None
         """
         self._zlib = zlib.decompressobj()
         self._buffer = bytearray()
@@ -152,10 +141,11 @@ class Bot(commands.AutoShardedBot):
                 return
             try:
                 msg = self._zlib.decompress(self._buffer)
-            except Exception:
+            except Exception as e:
+                self.logger.error(f"Error decompressing message: {e}", __name="Music Bot")
                 self._buffer = bytearray()
                 return
             msg = msg.decode("utf-8")
             self._buffer = bytearray()
-        msg = disnake.utils._from_json(msg)
+        msg = disnake.utils._from_json(msg)  # type: ignore
         self.dispatch("socket_response", msg)
