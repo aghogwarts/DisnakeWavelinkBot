@@ -72,7 +72,7 @@ class RootCommand(Feature):
         )
         embed.add_field(
             name="Version",
-            value=f"Jishaku `v2.3.1`.\ndisnake `v{package_version('disnake')}.\nPython `{sys.version}` on "
+            value=f"Jishaku `v2.3.1`.\ndisnake `v{package_version('disnake')}`.\nPython `{sys.version}` on "
             f"`{sys.platform.replace(' ', '')}`.\nModule was "
             f"loaded <t:{self.load_time.timestamp():.0f}:R>, cog was "
             f"loaded <t:{self.start_time.timestamp():.0f}:R>.",
@@ -164,7 +164,7 @@ class RootCommand(Feature):
         if disnake.version_info >= (1, 5, 0):
             presence_intent = f"`Presence Intent` is {'enabled' if self.bot.intents.presences else 'disabled'}."
             members_intent = f"`Members Intent` is {'enabled' if self.bot.intents.members else 'disabled'}."
-            message_intent = f"`Message Intents` is {'enabled' if self.bot.intents.messages else 'disabled'}."
+            message_intent = f"`Message Inten` is {'enabled' if self.bot.intents.messages else 'disabled'}."
             guild_intent = f"`Guild Intent` is {'enabled' if self.bot.intents.guilds else 'disabled'}."
 
             embed.add_field(
