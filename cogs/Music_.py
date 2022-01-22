@@ -1,6 +1,4 @@
 #  -*- coding: utf-8 -*-
-
-
 import datetime
 import math
 import re
@@ -14,11 +12,10 @@ from disnake.ext import commands
 from disnake.ext.commands.params import Param
 
 import wavelink
-from MusicBot import Bot
-from bot_utils.Helpers_ import LyricsPaginator, SearchService, ErrorView
-from bot_utils.MusicPlayerInteraction import Player, QueuePages, Track
-from bot_utils.MusicPlayerViews import FilterView
-from bot_utils.paginator import WrapText
+from utils.helpers import ErrorView, LyricsPaginator, SearchService
+from utils.MusicPlayerInteraction import Player, QueuePages, Track
+from utils.MusicPlayerViews import FilterView
+from utils.paginators import WrapText
 from wavelink.errors import FilterInvalidArgument
 
 youtube_url_regex = re.compile(r"https?://(?:www\.)?.+")
@@ -49,17 +46,13 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     Your friendly music bot
     """
 
-    def __init__(self, bot: Bot):
+    def __init__(self, bot):
         self.bot = bot
 
     async def cog_load(self) -> None:
         # Better way to run code when a cog is loaded.
         """
         Fires when the cog is loaded.
-
-        Returns
-        -------
-        None
         """
         if not hasattr(self.bot, "wavelink"):
             self.bot.wavelink = wavelink.Client(bot=self.bot)
@@ -115,14 +108,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @wavelink.WavelinkMixin.listener("on_track_stuck")
     @wavelink.WavelinkMixin.listener("on_track_end")
     @wavelink.WavelinkMixin.listener("on_track_exception")
-    async def on_player_stop(self, node: wavelink.Node, payload):
+    async def on_player_stop(self, _: wavelink.Node, payload):
         """
         Fires when a player stops.
 
         Parameters
         ----------
-        node : wavelink.Node
-            The node that is ready.
+        _ : wavelink.Node
+            The node that is ready. (Unused)
         payload : wavelink.Payload
             The payload of the event.
 
@@ -136,7 +129,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def DJ_assign(
         self,
         member: disnake.Member,
-        before: disnake.VoiceState,
+        _: disnake.VoiceState,
         after: disnake.VoiceState,
     ):
         """
@@ -147,15 +140,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         member : disnake.Member
             The member who is currently playing music.
 
-        before : disnake.VoiceState
-            The voice state before the update.
+        _ : disnake.VoiceState
+            The voice state of the member. (Unused)
 
         after : disnake.VoiceState
             The voice state after the update.
-
-        Returns
-        -------
-        None
         """
         if member.bot:
             return
@@ -192,10 +181,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         error : Exception
             The error that was raised.
-
-        Returns
-        -------
-        None
         """
         if ctx.response.is_done():
             safe_send = ctx.followup.send
@@ -264,10 +249,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ----------
         ctx : disnake.ApplicationCommandInteraction
             The Interaction of the command.
-
-        Returns
-        -------
-        None
         """
         if ctx.response.is_done():
             safe_send = ctx.followup.send
@@ -369,10 +350,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         channel : disnake.VoiceChannel, Optional
             The voice channel to connect to.
-
-        Returns
-        -------
-        None
         """
 
         music_player: Player = self.bot.wavelink.get_player(
@@ -421,7 +398,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Examples
         --------
         `/play query: "50 cent - love me"`
-
         `/play query: "50 cent - love me" service: "soundcloud"`
         """
         player: Player = self.bot.wavelink.get_player(
@@ -483,15 +459,15 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @play.autocomplete(option_name="service")
     async def play_service_autocomplete(
-        self, ctx: disnake.ApplicationCommandInteraction, query: str
+        self, _: disnake.ApplicationCommandInteraction, query: str
     ):
         """
         Autocomplete for the play command.
 
         Parameters
         ----------
-        ctx: disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+        _: disnake.ApplicationCommandInteraction
+            The Interaction of the command. (Unused)
 
         query: str
             The query to search for.
@@ -501,7 +477,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         list
             A list of autocomplete options.
         """
-        return ["youtube", "soundcloud", "youtubemusic"]
+        options = ["youtube", "soundcloud", "youtubemusic"]
+        return [option for option in options if query in options]
 
     @commands.slash_command(
         description="Switch the channel where the bot was first invoked."
@@ -509,7 +486,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def switch_channel(
         self,
         ctx: disnake.ApplicationCommandInteraction,
-        channel: disnake.TextChannel = Param(description="Your channel"),
+        channel: disnake.TextChannel = Param(description="Channel to switch to."),
     ):
         """
         A command that will switch to a different channel and set it as the channel where the bot was invoked.
@@ -549,10 +526,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 delete_after=10,
             )
 
-        player.channel_id = channel.id
+        player.channel = channel
         await ctx.response.send_message(
             embed=disnake.Embed(
-                description=f"{self.bot.icons['greentick']} `Switched to {channel.name}`",
+                description=f"{self.bot.icons['greentick']} `Successfully "
+                            f"set {channel.mention} as the session channel.`",
                 colour=disnake.Colour.random(),
             ),
             delete_after=10,
@@ -1069,9 +1047,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         ctx : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
-        name : typing.Optional[str]
-            The name of the song to search the lyrics of.
-
         Examples
         --------
         `/lyrics`
@@ -1504,7 +1479,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                     colour=disnake.Colour.random(),
                 ),
             )
-        await ctx.response.send_message("Loading...")
 
         entries = []
         for track in player.queue._queue:
@@ -1512,6 +1486,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 f"[{track.title}]({track.uri}) - `{track.author}` - "
                 f"`{humanize.precisedelta(datetime.timedelta(milliseconds=track.length))}`"
             )
+
+        await ctx.response.send_message("Loading...")
 
         paginator = QueuePages(entries=entries, ctx=ctx)
 
@@ -1936,7 +1912,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if member and member not in members:
             return await ctx.response.send_message(
                 embed=disnake.Embed(
-                    description=f"{self.bot.icons['info']} `{member}` is not currently in voice, so they cannot be a DJ."
+                    description=f"{self.bot.icons['info']} `{member}` is not currently in voice, "
+                                f"so they cannot be a DJ."
                 ),
             )
 
