@@ -1,16 +1,17 @@
 #  -*- coding: utf-8 -*-
-
-
 import asyncio
+import async_timeout
+import datetime
 import itertools
 import random
 import typing
-import async_timeout
+
+
 import disnake
 import humanize
-import datetime
+
 import wavelink
-from bot_utils.paginator import ViewPages, RichPager
+from utils.paginators import RichPager, ViewPages
 
 
 class Track(wavelink.Track):
@@ -33,12 +34,12 @@ class Queue(asyncio.Queue):
 
     def __getitem__(self, item):
         if isinstance(item, slice):
-            return list(itertools.islice(self._queue, item.start, item.stop, item.step))
+            return list(itertools.islice(self._queue, item.start, item.stop, item.step))  # type: ignore
         else:
-            return self._queue[item]
+            return self._queue[item]  # type: ignore
 
     def __iter__(self):
-        return self._queue.__iter__()
+        return self._queue.__iter__()  # type: ignore
 
     def __len__(self):
         return self.qsize()
@@ -50,19 +51,19 @@ class Queue(asyncio.Queue):
         """
         A method that clears the queue.
         """
-        self._queue.clear()
+        self._queue.clear()  # type: ignore
 
     def shuffle(self):
         """
         A method that shuffles the queue.
         """
-        random.shuffle(self._queue)
+        random.shuffle(self._queue)  # type: ignore
 
     def remove(self, index: int):
         """
         A method that removes a track from the queue.
         """
-        del self._queue[index]
+        del self._queue[index]  # type: ignore
 
 
 class Player(wavelink.Player):
@@ -81,10 +82,12 @@ class Player(wavelink.Player):
         self.music_player = None
         self.music_player_message = None
         self._loop = False
+        self.channel = self.context.channel
 
         self.waiting = False
         self.updating = False
         self.now = None
+        self.current = None
 
         self.pause_votes = set()
         self.resume_votes = set()
@@ -136,7 +139,7 @@ class Player(wavelink.Player):
         self.updating = True
 
         if not self.music_player:
-            self.music_player_message = await self.context.channel.send(
+            self.music_player_message = await self.channel.send(
                 embed=await self.make_song_embed()
             )
 
@@ -146,16 +149,16 @@ class Player(wavelink.Player):
             except disnake.HTTPException:
                 pass
 
-            await self.context.channel.send(embed=await self.make_song_embed())
+            await self.channel.send(embed=await self.make_song_embed())
 
         else:
             embed = await self.make_song_embed()
-            await self.context.channel.send(content=None, embed=embed)
+            await self.channel.send(content=None, embed=embed)
 
         self.updating = False
 
     @staticmethod
-    def parse_duration(duration: int):
+    def parse_duration(duration: int) -> str:
         """
         Parse a duration into a human-readable string.
 
@@ -194,14 +197,13 @@ class Player(wavelink.Player):
         Returns
         -------
         typing.Optional[disnake.Embed]
-            The song embed.
+            A disnake.Embed object containing the song information.
         """
         track: Track = self.current
         if not track:
             return
 
         channel = self.bot.get_channel(int(self.channel_id))
-        qsize = self.queue.qsize()
         position = divmod(self.position, 60000)
         length = divmod(self.now.length, 60000)
 
@@ -242,7 +244,6 @@ class Player(wavelink.Player):
         -------
         bool
             Whether the player controller should be remade or updated.
-
         """
         try:
             async for message in self.context.channel.history(limit=10):
@@ -275,7 +276,7 @@ class Player(wavelink.Player):
         return self._loop
 
     @loop.setter
-    def loop(self, value: bool = False):
+    def loop(self, value: bool = False) -> None:
         """
         Property which sets the loop of the player.
 
@@ -283,10 +284,6 @@ class Player(wavelink.Player):
         ----------
         value : bool
             The value to set the loop to.
-
-        Returns
-        -------
-
         """
         self._loop = value
 
