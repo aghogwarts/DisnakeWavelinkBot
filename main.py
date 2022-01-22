@@ -1,11 +1,11 @@
 #  -*- coding: utf-8 -*-
-
+import time
 
 from loguru import logger
-from MusicBot import Bot
-from bot_utils.Lavalink_run import lavalink_alive
-import time
-from bot_utils.Helpers_ import Config
+
+from core.MusicBot import Bot
+from utils.helpers import Config
+from utils.Lavalink_run import lavalink_alive
 
 if __name__ == "__main__":
 
@@ -13,6 +13,7 @@ if __name__ == "__main__":
     config = Config()
     bot.load_cogs("cogs")
     logger.info("All cogs have been successfully loaded", __name="Music Bot")
+    logger.info("Starting Lavalink.....", __name="Music Bot")
     lavalink_alive()  # running Lavalink. It's important to run this before the bot starts.
     try:
         time.sleep(14)  # Wait for lavalink to start
@@ -29,8 +30,6 @@ if __name__ == "__main__":
 
     except SystemExit:
         try:
-            logger.info("Closing Aiohttp ClientSession...", __name="Music Bot")
-            bot.session.close()  # Closing the ClientSession
             logger.info("Clearing Bot Cache", __name="Music Bot")
             bot.clear()  # clearing the cache
             exit(0)
