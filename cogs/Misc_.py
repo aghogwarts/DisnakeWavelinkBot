@@ -1,9 +1,6 @@
 #  -*- coding: utf-8 -*-
-
-
 from youtubesearchpython.__future__ import ChannelsSearch, VideosSearch
 
-import datetime
 import difflib
 import pathlib
 import re
@@ -14,14 +11,13 @@ import typing
 
 import disnake
 import humanize
-import psutil
 import youtube_dl as ydl
 from disnake.ext import commands
-from disnake.ext.commands import Param, InvokableSlashCommand
+from disnake.ext.commands import InvokableSlashCommand, Param
 
-from bot_utils.Helpers_ import BotInformationView, ErrorView
-from bot_utils.paginator import SimpleEmbedPages
-from bot_utils.Helpers_ import executor_function
+from core.MusicBot import Bot
+from utils.helpers import BotInformationView, ErrorView, executor_function
+from utils.paginators import SimpleEmbedPages
 from wavelink import Player
 
 
@@ -68,11 +64,11 @@ class Misc(commands.Cog):
     Miscellaneous commands.
     """
 
-    def __init__(self, bot: typing.Union[commands.Bot, commands.AutoShardedBot]):
+    def __init__(self, bot: typing.Union[commands.Bot, commands.AutoShardedBot, Bot]):
         self.bot = bot
 
     async def cog_slash_command_error(
-        self, ctx: disnake.ApplicationCommandInteraction, error: Exception
+            self, ctx: disnake.ApplicationCommandInteraction, error: Exception
     ) -> None:
         """
         Cog wide error handler.
@@ -103,9 +99,9 @@ class Misc(commands.Cog):
         await safe_send(
             embed=disnake.Embed(
                 description=f"{self.bot.icons['redtick']} `An error has occurred while "
-                f"executing {ctx.application_command.name} command. The error has been generated on "
-                f"mystbin. "
-                f"Please report this to {', '.join([str(owner) for owner in await self.bot.get_owners])}`",
+                            f"executing {ctx.application_command.name} command. The error has been generated on "
+                            f"mystbin. "
+                            f"Please report this to {', '.join([str(owner) for owner in await self.bot.get_owners])}`",
                 colour=disnake.Colour.random(),
             ),
             view=ErrorView(url=url),
@@ -137,7 +133,6 @@ class Misc(commands.Cog):
             guild_id=ctx.guild.id, cls=Player, context=ctx
         )
 
-        process = psutil.Process()
         permissions = disnake.Permissions(294410120513)
         github_url = "https://github.com/KortaPo/DisnakeWavelinkBot"
         url = disnake.utils.oauth_url(
@@ -163,7 +158,7 @@ class Misc(commands.Cog):
             for f in p.rglob("*.py"):
                 files += 1
                 with f.open() as of:
-                    letters = sum(len(f.open().read()) for f in p.rglob("*.py"))
+                    letters_ = sum(len(f.open().read()) for f in p.rglob("*.py"))
                     for line in of.readlines():
                         line = line.strip()
                         if line.startswith("class"):
@@ -175,7 +170,7 @@ class Misc(commands.Cog):
                         if "#" in line:
                             comments += 1
                         lines += 1
-            return files, classes, funcs, comments, lines, letters
+            return files, classes, funcs, comments, lines, letters_
 
         (
             files,
@@ -191,7 +186,8 @@ class Misc(commands.Cog):
             value=f"""
        {self.bot.icons['arrow']} **Guilds**: `{len(self.bot.guilds)}`
        {self.bot.icons['arrow']} **Users**: `{len(self.bot.users)}`
-       {self.bot.icons['arrow']} **Commands**: `{len([cmd for cmd in list(self.bot.walk_commands()) if not cmd.hidden])}`""",
+       {self.bot.icons['arrow']} **Commands**: 
+       `{len([cmd for cmd in list(self.bot.walk_commands()) if not cmd.hidden])}`""",
             inline=True,
         )
         em.add_field(
@@ -240,9 +236,9 @@ class Misc(commands.Cog):
         description="Shows you spotify song information of an user's spotify rich presence"
     )
     async def spotify(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        user: disnake.Member = Param(description="Member Query"),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            user: disnake.Member = Param(description="member to search for"),
     ):
         """
         This command shows you spotify song information of a user's spotify rich presence,
@@ -258,7 +254,7 @@ class Misc(commands.Cog):
 
         Examples
         --------
-        `/spotify user: @KortaPo`
+        `/spotify user: @Member`
         """
 
         activities = user.activities
@@ -304,9 +300,9 @@ class Misc(commands.Cog):
 
     @youtube.sub_command(description="Search youtube videos")
     async def video(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        query: str = Param(description="Video to search for."),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            query: str = Param(description="Video to search for."),
     ):
         """
         A command that searches YouTube videos.
@@ -328,8 +324,7 @@ class Misc(commands.Cog):
             async with ctx.channel.typing():
                 query = (await youtube(query))["title"]
 
-        async with ctx.channel.typing():
-            videos = (await (VideosSearch(query, limit=15)).next())["result"]
+        videos = (await (VideosSearch(query, limit=15)).next())["result"]
 
         if len(videos) == 0:
             return await ctx.response.send_message(
@@ -366,9 +361,9 @@ class Misc(commands.Cog):
 
     @youtube.sub_command(description="Search youtube channels")
     async def channel(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        query: str = Param(description="Channel Query"),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            query: str = Param(description="Channel Query"),
     ):
         """
         A command that searches YouTube channels.
@@ -446,9 +441,9 @@ class Misc(commands.Cog):
 
     @commands.slash_command(name="help", description="Shows help about bot commands.")
     async def show_help(
-        self,
-        ctx: disnake.ApplicationCommandInteraction,
-        slash_command: str = Param(description="Command to get help for."),
+            self,
+            ctx: disnake.ApplicationCommandInteraction,
+            slash_command: str = Param(description="Command to get help for."),
     ):
         """
         This command shows help about bot commands.
@@ -472,11 +467,15 @@ class Misc(commands.Cog):
             if len(command.children) > 0:
                 embeds = []
                 for key, value in command.children.items():
-                    examples = (
-                        value.callback.__doc__.replace("\n", "")
-                        .split("Examples")[1]
-                        .replace("--------", "")
-                    )
+                    try:
+                        examples = (
+                            value.callback.__doc__.replace("\n", "")
+                                .split("Examples")[1]
+                                .replace("--------", "")
+                        )
+                    except AttributeError:
+                        continue
+
                     embed = disnake.Embed(
                         colour=disnake.Colour.random(),
                         title=f"Help for {slash_command} {key}",
@@ -502,12 +501,15 @@ class Misc(commands.Cog):
 
             else:
                 pass
+            try:
+                examples = (
+                    command.callback.__doc__.replace("\n", "")
+                        .split("Examples")[1]
+                        .replace("--------", "")
+                )
+            except AttributeError:
+                pass
 
-            examples = (
-                command.callback.__doc__.replace("\n", "")
-                .split("Examples")[1]
-                .replace("--------", "")
-            )
             embed = disnake.Embed(
                 colour=disnake.Colour.random(),
                 title=f"Help for {slash_command}",
@@ -538,14 +540,14 @@ class Misc(commands.Cog):
 
     @show_help.autocomplete(option_name="slash_command")
     async def command_auto(
-        self, ctx: disnake.ApplicationCommandInteraction, user_input: str
+            self, _: disnake.ApplicationCommandInteraction, user_input: str
     ):
         """
         This command autocompletes the command to get help for.
 
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+        _ : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
         user_input : str
