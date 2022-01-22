@@ -1,8 +1,7 @@
 #  -*- coding: utf-8 -*-
-
-
-import threading
 import subprocess
+import threading
+
 from loguru import logger
 
 bash_command = (
@@ -15,10 +14,6 @@ BaseProgram = "java"  # checking that if Java is installed on the host's system 
 def run_lavalink_process():
     """
     A function that runs the Lavalink server.
-
-    Returns
-    -------
-    None
     """
     process = subprocess.run(["which", BaseProgram], capture_output=True, text=True)
     if process.returncode == 0:
@@ -47,10 +42,6 @@ def run_lavalink_process():
 def lavalink_alive():
     """
     A function that creates a thread that runs the Lavalink server.
-
-    Returns
-    -------
-    None
     """
     target = threading.Thread(target=run_lavalink_process)
     target.start()
