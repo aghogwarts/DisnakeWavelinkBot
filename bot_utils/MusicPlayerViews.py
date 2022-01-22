@@ -1,9 +1,10 @@
-import json
-import typing
+#  -*- coding: utf-8 -*-
+
 
 import disnake
+
 import wavelink
-from bot_utils.MusicPlayerInteraction import Player
+from utils.MusicPlayerInteraction import Player
 
 
 class Filter(disnake.ui.Select["FilterView"]):
@@ -38,7 +39,7 @@ class Filter(disnake.ui.Select["FilterView"]):
             options=options,
         )
 
-    async def callback(self, interaction: disnake.ApplicationCommandInteraction):
+    async def callback(self, interaction: disnake.ApplicationCommandInteraction) -> None:
         """
         Callback for the Filter view.
 
@@ -46,17 +47,12 @@ class Filter(disnake.ui.Select["FilterView"]):
         ----------
         interaction : disnake.ApplicationCommandInteraction
             The interaction object.
-
-        Returns
-        -------
-        None
         """
 
         await interaction.response.send_message(f"Filter set to {self.values[0]}.")
-        extreme_bass = wavelink.BaseFilter.build_from_channel_mix(left_to_right=1.0,
-                                                                  right_to_left=3.0,
-                                                                  right_to_right=8.8,
-                                                                  left_to_left=10.0)
+        extreme_bass = wavelink.BaseFilter.build_from_channel_mix(
+            left_to_right=1.0, right_to_left=3.0, right_to_right=8.8, left_to_left=9.0
+        )
         eqs = {
             "Tremolo": wavelink.BaseFilter.tremolo(),
             "Karaoke": wavelink.BaseFilter.karaoke(),
@@ -73,15 +69,15 @@ class FilterView(disnake.ui.View):
     """
 
     def __init__(
-            self, interaction: disnake.ApplicationCommandInteraction, player: Player
+        self, interaction: disnake.ApplicationCommandInteraction, player: Player
     ):
         super().__init__(timeout=60)
         self.interaction = interaction
         self.add_item(Filter(player=player))
 
     async def interaction_check(
-            self, interaction: disnake.ApplicationCommandInteraction
-    ):
+        self, interaction: disnake.ApplicationCommandInteraction
+    ) -> bool:
         """
         Check if the interaction is the same as the one that created this view.
 
@@ -92,7 +88,8 @@ class FilterView(disnake.ui.View):
 
         Returns
         -------
-        None
+        bool
+            Whether the interaction is the same as the one that created this view.
         """
         if interaction.author.id != self.interaction.author.id:
             return await interaction.response.send_message(
