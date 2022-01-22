@@ -10,21 +10,19 @@ from enum import Enum
 
 import disnake
 import humanize
-import mystbin
-import psutil
 import yaml
 from disnake.ext import commands
+from loguru import logger
 
 import wavelink
-from bot_utils.paginator import ViewPages, RichPager
+from utils.paginators import RichPager, ViewPages
 from wavelink import Player
-from loguru import logger
 
 
 class BotInformation:
     def __init__(
         self,
-        bot: typing.Union[commands.Bot, commands.AutoShardedBot],
+        bot,
         player: wavelink.Player,
     ):
         self.bot = bot
@@ -61,9 +59,8 @@ class BotInformation:
         ).set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url)
         return embed
 
-    async def get_bot_info(self, ctx: disnake.ApplicationCommandInteraction):
+    async def get_bot_info(self, _: disnake.ApplicationCommandInteraction):
 
-        process = psutil.Process()
         version = sys.version_info
         em = disnake.Embed(color=disnake.Colour.random())
 
@@ -110,7 +107,8 @@ class BotInformation:
             value=f"""
                {self.bot.icons['arrow']} **Guilds**: `{len(self.bot.guilds)}`
                {self.bot.icons['arrow']} **Users**: `{len(self.bot.users)}`
-               {self.bot.icons['arrow']} **Commands**: `{len([cmd for cmd in list(self.bot.walk_commands()) if not cmd.hidden])}`""",
+               {self.bot.icons['arrow']} **Commands**: `{len([cmd for cmd in list(self.bot.walk_commands()) 
+                                                              if not cmd.hidden])}`""",
             inline=True,
         )
         em.add_field(
@@ -137,7 +135,7 @@ class BotInformation:
                """,
             inline=True,
         )
-        em.set_thumbnail(url=self.bot.user.avatar.url)
+        em.set_thumbnail(url=self.bot.user.display_avatar.url)
         em.set_footer(
             text=f"Python {version[0]}.{version[1]}.{version[2]} • disnake {disnake.__version__}"
         )
@@ -148,6 +146,11 @@ class BotInformation:
     ) -> disnake.Embed:
         """
         Gets the uptime of the bot.
+
+        Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The Interaction of the command.
 
         Returns
         -------
@@ -166,6 +169,11 @@ class BotInformation:
     ) -> disnake.Embed:
         """
         Gets the latency of the bot.
+
+        Parameters
+        ----------
+        ctx: disnake.ApplicationCommandInteraction
+            The Interaction of the command.
 
         Returns
         -------
@@ -204,7 +212,7 @@ class BotInformation:
         )
 
         embed.set_footer(text=f"Total estimated elapsed time: {round(sum(times))}ms")
-        embed.set_author(name=ctx.me.display_name, icon_url=ctx.me.avatar.url)
+        embed.set_author(name=ctx.me.display_name, icon_url=ctx.me.display_avatar.url)
         return embed
 
 
@@ -251,7 +259,7 @@ class Config:
         return token
 
     @property
-    def owners(self) -> typing.Optional[typing.Set[str]]:
+    def owners(self) -> typing.Optional[typing.Set[int]]:
         """
         Gets the owners of the bot.
 
@@ -323,7 +331,7 @@ class BotInformationView(disnake.ui.View):
     )
     async def lavalink_info(
         self,
-        button: disnake.ui.Button,
+        _: disnake.ui.Button,
         interaction: disnake.ApplicationCommandInteraction,
     ):
         """
@@ -331,12 +339,13 @@ class BotInformationView(disnake.ui.View):
 
         Parameters
         ----------
-        button : disnake.ui.Button
+        _ : disnake.ui.Button
             The button that was pressed.
 
         interaction : disnake.ApplicationCommandInteraction
             The interaction of the command.
         """
+        await interaction.response.defer()
         await self.interaction.edit_original_message(
             embed=await self.BotInformation.get_lavalink_info(ctx=self.interaction)
         )
@@ -344,7 +353,7 @@ class BotInformationView(disnake.ui.View):
     @disnake.ui.button(label="Latency", emoji="🤖", style=disnake.ButtonStyle.blurple)
     async def latency(
         self,
-        button: disnake.ui.Button,
+        _: disnake.ui.Button,
         interaction: disnake.ApplicationCommandInteraction,
     ):
         """
@@ -352,31 +361,33 @@ class BotInformationView(disnake.ui.View):
 
         Parameters
         ----------
-        button : disnake.ui.Button
+        _ : disnake.ui.Button
             The button that was pressed.
 
         interaction : disnake.ApplicationCommandInteraction
             The interaction of the command.
         """
+        await interaction.response.defer()
         embed = await self.BotInformation.get_latency(ctx=self.interaction)
         await self.interaction.edit_original_message(embed=embed)
 
     @disnake.ui.button(label="Uptime", emoji="⏳", style=disnake.ButtonStyle.blurple)
     async def uptime(
         self,
-        button: disnake.ui.Button,
+        _: disnake.ui.Button,
         interaction: disnake.ApplicationCommandInteraction,
     ):
         """
 
         Parameters
         ----------
-        button : disnake.ui.Button
+        _ : disnake.ui.Button
             The button that was pressed.
 
         interaction : disnake.ApplicationCommandInteraction
             The interaction of the command.
         """
+        await interaction.response.defer()
         await self.interaction.edit_original_message(
             embed=await self.BotInformation.get_uptime(ctx=self.interaction)
         )
@@ -384,26 +395,30 @@ class BotInformationView(disnake.ui.View):
     @disnake.ui.button(label="Quit", style=disnake.ButtonStyle.red, emoji="❌")
     async def quit(
         self,
-        button: disnake.ui.Button,
+        _: disnake.ui.Button,
         interaction: disnake.ApplicationCommandInteraction,
     ):
         """
 
         Parameters
         ----------
-        button : disnake.ui.Button
+        _ : disnake.ui.Button
             The button that was pressed.
 
         interaction : disnake.ApplicationCommandInteraction
             The interaction of the command.
         """
+        await interaction.response.defer()
         await self.interaction.delete_original_message()
 
     async def on_timeout(self) -> None:
         for button in self.children:
             button.disabled = True
-
-        await self.interaction.edit_original_message(view=self)
+        try:
+            await self.interaction.edit_original_message(view=self)
+        except Exception as e:
+            logger.error(f"Failed to edit message: {e}")
+            return
 
 
 def executor_function(sync_function: typing.Callable):
@@ -452,6 +467,9 @@ def executor_function(sync_function: typing.Callable):
 
 
 class ErrorView(disnake.ui.View):
+    """
+    A view that displays an error message.
+    """
     def __init__(self, url: str):
         self.url = url
         super().__init__()
