@@ -10,8 +10,8 @@ from typing import List
 
 import disnake
 
-from bot_utils import menus
-from bot_utils.menus import ListPageSource
+from utils import menus
+from utils.menus import ListPageSource
 
 
 class ViewPages(disnake.ui.View):
@@ -49,18 +49,19 @@ class ViewPages(disnake.ui.View):
             max_pages = self.source.get_max_pages()
             use_last_and_first = max_pages is not None and max_pages >= 2
             if use_last_and_first:
-                self.add_item(self.go_to_first_page)
-            self.add_item(self.go_to_previous_page)
+                self.add_item(self.go_to_first_page)  # type: ignore
+            self.add_item(self.go_to_previous_page)   # type: ignore
             if not self.compact:
-                self.add_item(self.go_to_current_page)
-            self.add_item(self.go_to_next_page)
+                self.add_item(self.go_to_current_page)  # type: ignore
+            self.add_item(self.go_to_next_page)  # type: ignore
             if use_last_and_first:
-                self.add_item(self.go_to_last_page)
-            self.add_item(self.stop_pages)
+                self.add_item(self.go_to_last_page)  # type: ignore
+            self.add_item(self.stop_pages)  # type: ignore
 
     async def _get_kwargs_from_page(self, page: int) -> typing.Dict[str, typing.Any]:
         """
         Gets the keyword arguments from a page (embed).
+
 
         Parameters
         ----------
@@ -91,7 +92,6 @@ class ViewPages(disnake.ui.View):
 
         page_number : int
             The page number to show.
-
         """
         page = await self.source.get_page(page_number)
         self.current_page = page_number
@@ -199,7 +199,7 @@ class ViewPages(disnake.ui.View):
             )
             return
 
-        await self.source._prepare_once()
+        await self.source._prepare_once()  # type: ignore
         page = await self.source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
         self._update_labels(0)
@@ -207,7 +207,7 @@ class ViewPages(disnake.ui.View):
 
     @disnake.ui.button(label="≪", style=disnake.ButtonStyle.grey)
     async def go_to_first_page(
-        self, button: disnake.ui.Button, interaction: disnake.Interaction
+        self, _: disnake.ui.Button, interaction: disnake.Interaction
     ):
         """
         A button to go to the first page.
@@ -216,7 +216,7 @@ class ViewPages(disnake.ui.View):
 
     @disnake.ui.button(label="Back", style=disnake.ButtonStyle.blurple)
     async def go_to_previous_page(
-        self, button: disnake.ui.Button, interaction: disnake.Interaction
+        self, _: disnake.ui.Button, interaction: disnake.Interaction
     ):
         """
         A button to go to the previous page.
@@ -231,49 +231,53 @@ class ViewPages(disnake.ui.View):
 
     @disnake.ui.button(label="Next", style=disnake.ButtonStyle.blurple)
     async def go_to_next_page(
-        self, button: disnake.ui.Button, interaction: disnake.Interaction
+        self, _: disnake.ui.Button, interaction: disnake.Interaction
     ):
         """
         A button that goes to the next page.
 
         Parameters
         ----------
-        button : disnake.ui.Button
-            The button that was pressed.
+        _ : disnake.ui.Button
+            The button that was pressed. (Unused)
 
         interaction : disnake.Interaction
             The interaction that was performed.
-
         """
         await self.show_checked_page(interaction, self.current_page + 1)
 
     @disnake.ui.button(label="≫", style=disnake.ButtonStyle.grey)
     async def go_to_last_page(
-        self, button: disnake.ui.Button, interaction: disnake.Interaction
+        self, _: disnake.ui.Button, interaction: disnake.Interaction
     ):
         """
         A button to go to the last page.
 
         Parameters
         ----------
-        button : disnake.ui.Button
-            The button that was pressed.
+        _ : disnake.ui.Button
+            The button that was pressed. (Unused)
 
         interaction : disnake.Interaction
             The interaction that was performed.
-
-        Returns
-        -------
-        None
         """
         # The call here is safe because it's guarded by skip_if
         await self.show_page(interaction, self.source.get_max_pages() - 1)
 
     @disnake.ui.button(label="Quit", style=disnake.ButtonStyle.red)
     async def stop_pages(
-        self, button: disnake.ui.Button, interaction: disnake.Interaction
+        self, _: disnake.ui.Button, interaction: disnake.Interaction
     ):
-        """stops the pagination session."""
+        """
+        Stops the pagination session.
+
+        Parameters
+        ----------
+        _ : disnake.ui.Button
+            The button that was pressed. (Unused)
+
+        interaction : disnake.Interaction
+        """
         await interaction.response.defer()
         await interaction.delete_original_message()
         self.stop()
@@ -282,23 +286,22 @@ class ViewPages(disnake.ui.View):
 class RichPager(menus.ListPageSource):
     """
     A class that formats the page (embed) to add more information.
-
     """
 
     async def format_page(self, menu, entries):
         pages = []
-        for index, entry in enumerate(entries, start=menu.current_page * self.per_page):
+        for index, entry in enumerate(entries, start=menu.current_page * self.per_page):  # type: ignore
             pages.append(f"{index + 1}. {entry}")
 
         maximum = self.get_max_pages()
         if maximum > 1:
             footer = (
-                f"Page {menu.current_page + 1}/{maximum} ({len(self.entries)} entries)"
+                f"Page {menu.current_page + 1}/{maximum} ({len(self.entries)} entries)"  # type: ignore
             )
-            menu.embed.set_footer(text=footer)
+            menu.embed.set_footer(text=footer)  # type: ignore
 
-        menu.embed.description = "\n".join(pages)
-        return menu.embed
+        menu.embed.description = "\n".join(pages)  # type: ignore
+        return menu.embed  # type: ignore
 
 
 class EmbedPaginator(disnake.ui.View):
@@ -315,6 +318,7 @@ class EmbedPaginator(disnake.ui.View):
         compact: bool = False,
     ):
         super().__init__(timeout=timeout)
+        self.message = None
         self.ctx = ctx
         self.input_lock = asyncio.Lock()
         self.embeds = embeds
@@ -329,10 +333,6 @@ class EmbedPaginator(disnake.ui.View):
         ----------
         page_number : int
             The current page number.
-
-        Returns
-        -------
-        None
         """
         self.go_to_first_page.disabled = page_number == 0
         if self.compact:
@@ -376,10 +376,6 @@ class EmbedPaginator(disnake.ui.View):
 
         page_number : int
             The page number to show.
-
-        Returns
-        -------
-        None
         """
         max_pages = len(self.embeds)
         try:
@@ -435,10 +431,6 @@ class EmbedPaginator(disnake.ui.View):
         ----------
         page_number : int
             The page number to show.
-
-        Returns
-        -------
-        None
         """
         if (page_number < 0) or (page_number > len(self.embeds) - 1):
             return
@@ -461,11 +453,8 @@ class EmbedPaginator(disnake.ui.View):
 
         interaction : disnake.Interaction
             The interaction that was performed.
-
-        Returns
-        -------
-        None
         """
+        await interaction.response.defer()
         await self.show_page(0)
 
     @disnake.ui.button(label="Back", style=disnake.ButtonStyle.blurple)
@@ -483,6 +472,7 @@ class EmbedPaginator(disnake.ui.View):
         interaction : disnake.Interaction
             The interaction that was performed.
         """
+        await interaction.response.defer()
         await self.show_page(self.current_page - 1)
 
     @disnake.ui.button(label="Next", style=disnake.ButtonStyle.blurple)
@@ -500,6 +490,7 @@ class EmbedPaginator(disnake.ui.View):
         interaction : disnake.Interaction
             The interaction that was performed.
         """
+        await interaction.response.defer()
         await self.show_page(self.current_page + 1)
 
     @disnake.ui.button(label="≫", style=disnake.ButtonStyle.grey)
@@ -517,6 +508,7 @@ class EmbedPaginator(disnake.ui.View):
         interaction : disnake.Interaction
             The interaction that was performed.
         """
+        await interaction.response.defer()
         await self.show_page(len(self.embeds) - 1)
 
     @disnake.ui.button(label="Quit", style=disnake.ButtonStyle.red)
@@ -541,10 +533,6 @@ class EmbedPaginator(disnake.ui.View):
     async def start(self):
         """
         Start paginating over the embeds.
-
-        Returns
-        -------
-        None
         """
         embed = self.embeds[0]
         embed.set_footer(text=f"Page 1/{len(self.embeds)}")
@@ -574,7 +562,7 @@ class Paginator(ListPageSource):
     A paginator for a list of entries.
     """
 
-    async def format_page(self, menu, embed: disnake.Embed):
+    async def format_page(self, menu, embed: disnake.Embed) -> disnake.Embed:
         """
         A method that formats the page.
 
@@ -590,26 +578,26 @@ class Paginator(ListPageSource):
         disnake.Embed
             The formatted embed.
         """
-        if len(menu.source.entries) != 1:
+        if len(menu.source.entries) != 1:  # type: ignore
             em = embed.to_dict()
             if em.get("footer") is not None:
                 if em.get("footer").get("text") is not None:
-                    if not "Page: " in em.get("footer").get("text"):
+                    if "Page: " not in em.get("footer").get("text"):
                         em["footer"]["text"] = "".join(
-                            f"{em['footer']['text']} • Page: {menu.current_page + 1}/{menu.source.get_max_pages()}"
+                            f"{em['footer']['text']} • Page: {menu.current_page + 1}/{menu.source.get_max_pages()}"  # type: ignore
                             if em["footer"]["text"] is not None
-                            else f"Page: {menu.current_page + 1}/{menu.source.get_max_pages()}"
+                            else f"Page: {menu.current_page + 1}/{menu.source.get_max_pages()}"  # type: ignore
                         )
                     else:
                         em["footer"]["text"].replace(
-                            f"Page: {menu.current_page}/{menu.source.get_max_pages()}",
-                            f"Page: {menu.current_page + 1}/{menu.source.get_max_pages()}",
+                            f"Page: {menu.current_page}/{menu.source.get_max_pages()}",  # type: ignore
+                            f"Page: {menu.current_page + 1}/{menu.source.get_max_pages()}",  # type: ignore
                         )
             else:
-                em["footer"] = {}
+                em["footer"] = {}  # type: ignore
                 em["footer"][
                     "text"
-                ] = f"Page: {menu.current_page + 1}/{menu.source.get_max_pages()}"
+                ] = f"Page: {menu.current_page + 1}/{menu.source.get_max_pages()}"  # type: ignore
             em = disnake.Embed().from_dict(em)
             return em
         return embed
