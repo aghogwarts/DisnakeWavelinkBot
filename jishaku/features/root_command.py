@@ -154,9 +154,6 @@ class RootCommand(Feature):
                 value=f"`{self.bot._connection.max_messages}` messages are cached.",
                 inline=False,
             )
-            message_cache = (
-                f"Message cache capped at {self.bot._connection.max_messages}"
-            )
         else:
             message_cache = "Message cache is disabled"
             embed.add_field(name="\u200b", value=message_cache, inline=False)
@@ -164,7 +161,7 @@ class RootCommand(Feature):
         if disnake.version_info >= (1, 5, 0):
             presence_intent = f"`Presence Intent` is {'enabled' if self.bot.intents.presences else 'disabled'}."
             members_intent = f"`Members Intent` is {'enabled' if self.bot.intents.members else 'disabled'}."
-            message_intent = f"`Message Inten` is {'enabled' if self.bot.intents.messages else 'disabled'}."
+            message_intent = f"`Message Intent` is {'enabled' if self.bot.intents.messages else 'disabled'}."
             guild_intent = f"`Guild Intent` is {'enabled' if self.bot.intents.guilds else 'disabled'}."
 
             embed.add_field(
