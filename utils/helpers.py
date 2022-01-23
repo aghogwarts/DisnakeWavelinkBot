@@ -11,7 +11,6 @@ from enum import Enum
 import disnake
 import humanize
 import yaml
-from disnake.ext import commands
 from loguru import logger
 
 import wavelink
@@ -29,10 +28,23 @@ class BotInformation:
         self.player = player
 
     async def get_lavalink_info(
-        self, ctx: disnake.ApplicationCommandInteraction
+        self, interaction: disnake.ApplicationCommandInteraction
     ) -> disnake.Embed:
+        """
+        Gets the lavalink information of the bot.
+
+        Parameters
+        ----------
+        interaction: disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Returns
+        -------
+        `disnake.Embed`
+            An embed containing information about the Lavalink node connected to the bot.
+        """
         player: Player = self.bot.wavelink.get_player(
-            guild_id=ctx.guild.id, cls=Player, context=ctx
+            guild_id=interaction.guild.id, cls=Player, context=interaction
         )
         node = player.node
 
@@ -56,16 +68,32 @@ class BotInformation:
             description=fmt,
             colour=disnake.Colour.random(),
             title="Lavalink Information",
-        ).set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url)
+        ).set_footer(text=f"Requested by {interaction.author}", icon_url=interaction.author.display_avatar.url)
         return embed
 
-    async def get_bot_info(self, _: disnake.ApplicationCommandInteraction):
+    async def get_bot_info(self, interaction: disnake.ApplicationCommandInteraction):
+        """
+        A method that returns various information about the bot.
+
+        Parameters
+        ----------
+        interaction: disnake.ApplicationCommandInteraction
+            The Interaction of the command.
+
+        Returns
+        -------
+        `disnake.Embed`
+            An embed containing information about the bot.
+        """
+        # TODO: This method has issues returning data, when the bot is run on a specific host, heroku,
+        #  I am not sure why, maybe its not with heroku but my code, so I have to investigate this.
+        #  If you have any ideas, please make a PR and let me know.
 
         version = sys.version_info
         em = disnake.Embed(color=disnake.Colour.random())
 
         # File Stats
-        def line_count():
+        def line_count() -> typing.Tuple[int, int, int, int, int, int]:
             """
             Counts the number of lines in the codebase.
 
@@ -154,8 +182,8 @@ class BotInformation:
 
         Returns
         -------
-        str
-            The uptime of the bot.
+        `disnake.Embed`
+            An embed containing information about the uptime of the bot.
         """
         uptime = disnake.utils.utcnow() - self.bot.start_time
         time_data = humanize.precisedelta(uptime)
@@ -177,8 +205,8 @@ class BotInformation:
 
         Returns
         -------
-        str
-            The latency of the bot.
+        `disnake.Embed`
+            An embed containing information about the latency of the bot.
         """
         times = []
         counter = 0
@@ -221,9 +249,13 @@ class Config:
     Used to get the configurations from a yaml file.
     """
 
-    def __init__(self, file: str = "./config/config.yaml"):
-        with open(file, encoding="utf-8") as f:
+    def __init__(self):
+        self.bot_config_file_path = "./config/config.yaml"
+        self.Lavalink_config_file_path = "./Lavalink/application.yml"
+        with open(self.bot_config_file_path, encoding="utf-8") as f:
             self.data = yaml.load(f, Loader=yaml.FullLoader)
+        with open(self.Lavalink_config_file_path, encoding="utf-8") as f:
+            self.Lavalink_data = yaml.load(f, Loader=yaml.FullLoader)
 
     @property
     def prefix(self) -> typing.Optional[str]:
@@ -277,6 +309,54 @@ class Config:
             exit(code=1)
         return set(owners)
 
+    @property
+    def lavalink_host(self) -> typing.Optional[str]:
+        """
+        Gets the host of the Lavalink server.
+
+        Returns
+        -------
+        str
+            The host of the Lavalink server.
+        """
+        host = self.Lavalink_data["server"]["address"]
+        if host is None:
+            logger.error("No Lavalink address found in application.yml")
+            sys.exit(1)
+        return host
+
+    @property
+    def lavalink_port(self) -> typing.Optional[int]:
+        """
+        Gets the port of the Lavalink server.
+
+        Returns
+        -------
+        int
+            The port of the Lavalink server.
+        """
+        port = self.Lavalink_data["server"]["port"]
+        if port is None:
+            logger.error("No Lavalink port found in application.yml")
+            sys.exit(1)
+        return int(port)
+
+    @property
+    def lavalink_password(self) -> typing.Optional[str]:
+        """
+        Gets the password of the Lavalink server.
+
+        Returns
+        -------
+        str
+            The password of the Lavalink server.
+        """
+        password = self.Lavalink_data["lavalink"]["server"]["password"]
+        if password is None:
+            logger.error("No Lavalink password found in application.yml")
+            sys.exit(1)
+        return password
+
 
 class LyricsPaginator(ViewPages):
     """
@@ -317,21 +397,22 @@ class BotInformationView(disnake.ui.View):
     def __init__(
         self,
         interaction: disnake.ApplicationCommandInteraction,
-        bot: typing.Union[commands.Bot, commands.AutoShardedBot],
+        bot,
         player: Player,
     ):
-        super().__init__(timeout=20)
+        super().__init__(timeout=30)
         self.interaction = interaction
         self.bot = bot
         self.player = player
         self.BotInformation = BotInformation(bot=bot, player=player)
+        self.is_message_deleted = False
 
     @disnake.ui.button(
         label="Lavalink Information", emoji="📜", style=disnake.ButtonStyle.green
     )
     async def lavalink_info(
         self,
-        _: disnake.ui.Button,
+        button: disnake.ui.Button,
         interaction: disnake.ApplicationCommandInteraction,
     ):
         """
@@ -339,21 +420,21 @@ class BotInformationView(disnake.ui.View):
 
         Parameters
         ----------
-        _ : disnake.ui.Button
-            The button that was pressed.
+        button : disnake.ui.Button
+            The button that was pressed. (Unused)
 
         interaction : disnake.ApplicationCommandInteraction
             The interaction of the command.
         """
         await interaction.response.defer()
         await self.interaction.edit_original_message(
-            embed=await self.BotInformation.get_lavalink_info(ctx=self.interaction)
+            embed=await self.BotInformation.get_lavalink_info(interaction=self.interaction)
         )
 
     @disnake.ui.button(label="Latency", emoji="🤖", style=disnake.ButtonStyle.blurple)
     async def latency(
         self,
-        _: disnake.ui.Button,
+        button: disnake.ui.Button,
         interaction: disnake.ApplicationCommandInteraction,
     ):
         """
@@ -361,33 +442,39 @@ class BotInformationView(disnake.ui.View):
 
         Parameters
         ----------
-        _ : disnake.ui.Button
+        button : disnake.ui.Button
             The button that was pressed.
 
         interaction : disnake.ApplicationCommandInteraction
             The interaction of the command.
         """
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except disnake.errors.NotFound:
+            pass
         embed = await self.BotInformation.get_latency(ctx=self.interaction)
         await self.interaction.edit_original_message(embed=embed)
 
     @disnake.ui.button(label="Uptime", emoji="⏳", style=disnake.ButtonStyle.blurple)
     async def uptime(
         self,
-        _: disnake.ui.Button,
+        button: disnake.ui.Button,
         interaction: disnake.ApplicationCommandInteraction,
     ):
         """
 
         Parameters
         ----------
-        _ : disnake.ui.Button
+        button : disnake.ui.Button
             The button that was pressed.
 
         interaction : disnake.ApplicationCommandInteraction
             The interaction of the command.
         """
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except disnake.errors.NotFound:
+            pass
         await self.interaction.edit_original_message(
             embed=await self.BotInformation.get_uptime(ctx=self.interaction)
         )
@@ -395,25 +482,33 @@ class BotInformationView(disnake.ui.View):
     @disnake.ui.button(label="Quit", style=disnake.ButtonStyle.red, emoji="❌")
     async def quit(
         self,
-        _: disnake.ui.Button,
+        button: disnake.ui.Button,
         interaction: disnake.ApplicationCommandInteraction,
     ):
         """
-
+        This button quits the view.
         Parameters
         ----------
-        _ : disnake.ui.Button
-            The button that was pressed.
+        button : disnake.ui.Button
+            The button that was pressed. (Unused)
 
         interaction : disnake.ApplicationCommandInteraction
             The interaction of the command.
         """
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except disnake.errors.NotFound:
+            pass
+        self.is_message_deleted = True
         await self.interaction.delete_original_message()
 
     async def on_timeout(self) -> None:
+        if self.is_message_deleted:
+            return
+
         for button in self.children:
             button.disabled = True
+
         try:
             await self.interaction.edit_original_message(view=self)
         except Exception as e:
@@ -422,7 +517,8 @@ class BotInformationView(disnake.ui.View):
 
 
 def executor_function(sync_function: typing.Callable):
-    """A decorator that wraps a sync function in an executor, changing it into an async function.
+    """
+    A decorator that wraps a sync function in an executor, changing it into an async function.
 
     This allows processing functions to be wrapped and used immediately as an async function.
 
@@ -431,26 +527,24 @@ def executor_function(sync_function: typing.Callable):
 
     Pushing processing with the Python Imaging Library into an executor:
 
-    .. code-block:: python3
+    from io import BytesIO
+    from PIL import Image
 
-        from io import BytesIO
-        from PIL import Image
+    @executor_function
+    def color_processing(color: disnake.Color):
+        with Image.new('RGB', (64, 64), color.to_rgb()) as im:
+            buff = BytesIO()
+            im.save(buff, 'png')
 
-        @executor_function
-        def color_processing(color: disnake.Color):
-            with Image.new('RGB', (64, 64), color.to_rgb()) as im:
-                buff = BytesIO()
-                im.save(buff, 'png')
+        buff.seek(0)
+        return buff
 
-            buff.seek(0)
-            return buff
+    @bot.command()
+    async def color(ctx: commands.Context, color: disnake.Color):
+        color = color or ctx.author.color
+        buff = await color_processing(color=color)
 
-        @bot.command()
-        async def color(ctx: commands.Context, color: disnake.Color):
-            color = color or ctx.author.color
-            buff = await color_processing(color=color)
-
-            await ctx.channel.send(file=disnake.File(fp=buff, filename='color.png'))
+        await ctx.channel.send(file=disnake.File(fp=buff, filename='color.png'))
     """
 
     @functools.wraps(sync_function)
@@ -470,6 +564,7 @@ class ErrorView(disnake.ui.View):
     """
     A view that displays an error message.
     """
+
     def __init__(self, url: str):
         self.url = url
         super().__init__()
