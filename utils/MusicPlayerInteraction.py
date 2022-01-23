@@ -1,12 +1,11 @@
 #  -*- coding: utf-8 -*-
 import asyncio
-import async_timeout
 import datetime
 import itertools
 import random
 import typing
-
-
+from loguru import logger
+import async_timeout
 import disnake
 import humanize
 
@@ -79,15 +78,13 @@ class Player(wavelink.Player):
             self.dj: disnake.Member = self.context.author
 
         self.queue = Queue()
-        self.music_player = None
-        self.music_player_message = None
-        self._loop = False
+        self.menu: disnake.Message = None  # type: ignore
         self.channel = self.context.channel
+        self._loop = False
 
         self.waiting = False
         self.updating = False
         self.now = None
-        self.current = None
 
         self.pause_votes = set()
         self.resume_votes = set()
@@ -110,24 +107,25 @@ class Player(wavelink.Player):
         self.shuffle_votes.clear()
         self.stop_votes.clear()
 
-        if not self.loop:
+        if not self._loop:
 
             try:
                 self.waiting = True
                 with async_timeout.timeout(120):
                     track = await self.queue.get()
                     self.now = track
+                await self.play(track)
+                self.waiting = False
+
+                # Start our song menu
+                await self.songmenucontroller()
             except asyncio.TimeoutError:
                 # No music has been played for 2 minutes, cleanup and disconnect.
                 return await self.teardown()
-        if self.loop:
+        if self._loop:
             track = self.now
-
-        await self.play(track)
-        self.waiting = False
-
-        # Start our song menu
-        await self.songmenucontroller()
+            await self.play(track)
+            await self.songmenucontroller()
 
     async def songmenucontroller(self) -> None:
         """
@@ -138,16 +136,18 @@ class Player(wavelink.Player):
 
         self.updating = True
 
-        if not self.music_player:
-            self.music_player_message = await self.channel.send(
+        if not self.menu:
+            self.menu = await self.channel.send(
                 embed=await self.make_song_embed()
             )
 
         elif not await self.is_menu_available():
             try:
-                await self.music_player_message.delete()
-            except disnake.HTTPException:
-                pass
+                await self.menu.delete()
+            except disnake.HTTPException as e:
+                logger.warning(f"Failed to delete menu message: {e}")
+            except AttributeError as e:
+                logger.warning(f"Failed to delete menu message: {e}")
 
             await self.channel.send(embed=await self.make_song_embed())
 
@@ -157,55 +157,23 @@ class Player(wavelink.Player):
 
         self.updating = False
 
-    @staticmethod
-    def parse_duration(duration: int) -> str:
-        """
-        Parse a duration into a human-readable string.
-
-        Parameters
-        ----------
-        duration : int
-            The duration to parse.
-
-        Returns
-        -------
-        str
-            The parsed duration.
-        """
-        minutes, seconds = divmod(duration, 60)
-        hours, minutes = divmod(minutes, 60)
-        days, hours = divmod(hours, 24)
-
-        duration = []
-        if days > 0:
-            duration.append(f"{days} days")
-        if hours > 0:
-            duration.append(f"{hours} hours")
-        if minutes > 0:
-            duration.append(f"{minutes} minutes")
-        if seconds > 0:
-            duration.append(f"{seconds} seconds")
-        else:
-            duration.append("Live Stream")
-
-        return ", ".join(duration)
-
     async def make_song_embed(self) -> typing.Optional[disnake.Embed]:
         """
         Method which creates the song embed containing the information about the song.
 
         Returns
         -------
-        typing.Optional[disnake.Embed]
+        typing.Optional[`disnake.Embed`]
             A disnake.Embed object containing the song information.
         """
         track: Track = self.current
         if not track:
-            return
+            return None
 
         channel = self.bot.get_channel(int(self.channel_id))
         position = divmod(self.position, 60000)
         length = divmod(self.now.length, 60000)
+        mode = "yes" if self._loop else "off"
 
         embed = disnake.Embed(
             description=f"```css\nNow Playing:\n**{track.title}**```",
@@ -223,8 +191,9 @@ class Player(wavelink.Player):
         embed.add_field(name="Volume", value=f"**`{self.volume}%`**")
         embed.add_field(
             name="Position",
-            value=f"`{int(position[0])}:{round(position[1] / 1000):02}/{int(length[0])}:{round(length[1] / 1000):02}`",
+            value=f"`{int(position[0])}:{round(position[1] / 1000):02}/{int(length[0])}:{round(length[1] / 1000):02}`"
         )
+        embed.add_field(name="Track on loop?", value=f"**`{mode}`**")
         embed.add_field(name="Channel", value=f"**`{channel}`**")
         embed.add_field(name="DJ", value=self.dj.mention)
         embed.add_field(name="Video URL", value=f"[Click Here!]({track.uri})")
@@ -247,7 +216,7 @@ class Player(wavelink.Player):
         """
         try:
             async for message in self.context.channel.history(limit=10):
-                if message.id == self.music_player_message.message.id:
+                if message.id == self.menu.message.id:
                     return True
         except (disnake.HTTPException, AttributeError):
             return False
@@ -259,26 +228,28 @@ class Player(wavelink.Player):
         Method which handles the teardown(clearing and disconnection) of the player.
         """
         try:
-            await self.music_player_message.delete()
-        except disnake.HTTPException:
-            pass
+            await self.menu.delete()
+        except disnake.HTTPException as e:
+            logger.warning(f"Failed to delete menu message: {e}")
+        except AttributeError:
+            logger.warning("Failed to delete menu message: No menu message")
 
         try:
             await self.destroy()
-        except KeyError:
-            pass
+        except KeyError as e:
+            logger.warning(f"Failed to destroy player: {e}")
 
     @property
     def loop(self):
         """
-        Property which returns the loop of the player.
+        Property which returns the loop state of the player.
         """
         return self._loop
 
     @loop.setter
     def loop(self, value: bool = False) -> None:
         """
-        Property which sets the loop of the player.
+        Property which sets the loop state of the player.
 
         Parameters
         ----------
