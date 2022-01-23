@@ -1,6 +1,7 @@
 #  -*- coding: utf-8 -*-
 import json
 import pkgutil
+import sys
 import traceback
 import typing
 import zlib
@@ -49,7 +50,7 @@ class Bot(commands.AutoShardedBot):
         self.icons = data["ICONS"]
         self.logger = logger
         self.start_time = disnake.utils.utcnow()
-        self.bot_config = bot_config
+        self.config = bot_config
         self.mystbin_client = None
         self._buffer = None
         self._zlib = None
@@ -71,7 +72,7 @@ class Bot(commands.AutoShardedBot):
                 self.load_extension(module)
                 self.logger.info(f"Loaded extension '{m.name}'", __name="Music Bot")
             except Exception as e:
-                traceback.print_exception(e.__traceback__, e, e.__traceback__)
+                traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
         self.load_extension("jishaku")
         self.logger.info(f"Loaded extension 'jishaku'", __name="Music Bot")
 
@@ -111,7 +112,7 @@ class Bot(commands.AutoShardedBot):
             A list of owners of the bot.
         """
         owners = [
-            await self.get_or_fetch_user(int(owner)) for owner in self.bot_config.owners
+            await self.get_or_fetch_user(int(owner)) for owner in self.config.owners
         ]
         return owners
 
@@ -142,7 +143,9 @@ class Bot(commands.AutoShardedBot):
             try:
                 msg = self._zlib.decompress(self._buffer)
             except Exception as e:
-                self.logger.error(f"Error decompressing message: {e}", __name="Music Bot")
+                self.logger.error(
+                    f"Error decompressing message: {e}", __name="Music Bot"
+                )
                 self._buffer = bytearray()
                 return
             msg = msg.decode("utf-8")
