@@ -3,15 +3,12 @@ import os
 import pkgutil
 import sys
 import traceback
-import typing
 from enum import Enum
 from io import BytesIO
 
 import disnake
 from disnake.ext import commands
 from disnake.ext.commands import Param
-
-from core.MusicBot import Bot
 
 
 class Action(str, Enum):
@@ -28,23 +25,22 @@ class Action(str, Enum):
         return self.value
 
 
-async def cog_autocomp(_: disnake.ApplicationCommandInteraction, user_input: str):
+async def cog_autocomp(interaction: disnake.ApplicationCommandInteraction, user_input: str):
     """
     Autocomplete for the developer cog.
 
-
     Parameters
-    ----------
-    _ : disnake.ApplicationCommandInteraction
-        The command interaction object.
+    -----------
+    interaction : disnake.ApplicationCommandInteraction
+        The command interaction object. This is not used.
 
     user_input : str
-        The user input.
+        The data entered by the user.
 
     Returns
     -------
     list
-        A list of possible completions.
+        A list of possible completions according to the user input.
     """
     cog_names = []
     for pkg in pkgutil.iter_modules(["cogs"]):
@@ -54,31 +50,30 @@ async def cog_autocomp(_: disnake.ApplicationCommandInteraction, user_input: str
 
 class Owner(commands.Cog, name="Developer"):
     """
-    Commands specifically developer for Bot developers.
+    Commands specifically made for Bot developers and owners.
     """
 
-    def __init__(self, bot: typing.Union[commands.Bot, commands.AutoShardedBot, Bot]):
+    def __init__(self, bot):
         self.bot = bot
 
     async def cog_slash_command_error(
-        self, ctx: disnake.ApplicationCommandInteraction, error: Exception
+        self, interaction: disnake.ApplicationCommandInteraction, error: Exception
     ) -> None:
         """
         Handles errors raised by commands in the cog.
 
-
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+        interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
         error : Exception
             The error that was raised.
         """
-        if ctx.response.is_done():
-            safe_send = ctx.followup.send
+        if interaction.response.is_done():
+            safe_send = interaction.followup.send
         else:
-            safe_send = ctx.response.send_message
+            safe_send = interaction.response.send_message
 
         if isinstance(error, commands.NotOwner):
             await safe_send(
@@ -96,15 +91,15 @@ class Owner(commands.Cog, name="Developer"):
             )
             await safe_send(
                 embed=disnake.Embed(
-                    description=f"**Error invoked by: {str(ctx.author)}**\n"
-                                f"Command: {ctx.application_command.name}\nError: "
+                    description=f"**Error invoked by: {str(interaction.author)}**\n"
+                    f"Command: {interaction.application_command.name}\nError: "
                     f"```py\n{error_msg}```",
                     color=disnake.Colour.random(),
                 )
             )
 
             print(
-                f"Ignoring exception in command {ctx.application_command}: ",
+                f"Ignoring exception in command {interaction.application_command}: ",
                 file=sys.stderr,
             )
             traceback.print_exception(
@@ -116,14 +111,14 @@ class Owner(commands.Cog, name="Developer"):
         invoke_without_command=True,
     )
     @commands.is_owner()
-    async def botconfig(self, ctx: disnake.ApplicationCommandInteraction):
+    async def botconfig(self, interaction: disnake.ApplicationCommandInteraction):
         pass
 
     @botconfig.sub_command(description="Cog manager")
     @commands.is_owner()
     async def cog(
         self,
-        ctx: disnake.ApplicationCommandInteraction,
+        interaction: disnake.ApplicationCommandInteraction,
         action: str = Param(autocomplete=Action),
         cog: str = Param(autocomplete=cog_autocomp),
     ):
@@ -131,10 +126,9 @@ class Owner(commands.Cog, name="Developer"):
         This command manages the cogs of the bot. It can enable, disable, reload, and remove cogs.
         Only Bot owners can use this command.
 
-
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+        interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
         action : str
@@ -153,7 +147,7 @@ class Owner(commands.Cog, name="Developer"):
             try:
                 self.bot.unload_extension(f"cogs.{cog}")
             except Exception as e:
-                return await ctx.response.send_message(
+                return await interaction.response.send_message(
                     embed=disnake.Embed(
                         description=f"Cog **{cog}** is not loaded.\nError:\n```py\n{e}\n```",
                         color=disnake.Colour.random(),
@@ -161,7 +155,7 @@ class Owner(commands.Cog, name="Developer"):
                     ephemeral=True,
                 )
 
-            await ctx.response.send_message(
+            await interaction.response.send_message(
                 embed=disnake.Embed(
                     description=f"Cog **{cog}** has stopped running.",
                     color=disnake.Colour.random(),
@@ -183,13 +177,13 @@ class Owner(commands.Cog, name="Developer"):
 
                     error_file = disnake.File(fp=file, filename="error.log")
 
-                return await ctx.response.send_message(
+                return await interaction.response.send_message(
                     f"{self.bot.icons['info']} This cog has an error located in it. ",
                     file=error_file,
                     ephemeral=True,
                 )
 
-            await ctx.response.send_message(
+            await interaction.response.send_message(
                 f"Cog **{cog}** is now running.", ephemeral=True
             )
 
@@ -207,25 +201,24 @@ class Owner(commands.Cog, name="Developer"):
 
                     error_file = disnake.File(fp=file, filename="error.log")
 
-                return await ctx.response.send_message(
+                return await interaction.response.send_message(
                     f"{self.bot.icons['info']} This cog has an error located in it. ",
                     file=error_file,
                     ephemeral=True,
                 )
 
-            await ctx.response.send_message(
+            await interaction.response.send_message(
                 f"Cog **{cog}** has been reloaded.", ephemeral=True
             )
 
     @botconfig.sub_command(description="Shows cog information")
-    async def coginfo(self, ctx: disnake.ApplicationCommandInteraction):
+    async def coginfo(self, interaction: disnake.ApplicationCommandInteraction):
         """
         This command shows information about the cogs of the bot.
 
-
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+        interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
         Examples
@@ -266,22 +259,21 @@ class Owner(commands.Cog, name="Developer"):
             inline=False,
         )
 
-        await ctx.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @commands.slash_command(description="Purge bot messages.")
     @commands.is_owner()
     async def cleanup(
         self,
-        ctx: disnake.ApplicationCommandInteraction,
+        interaction: disnake.ApplicationCommandInteraction,
         amount: int = Param(description="Amount of messages", default=10),
     ):
         """
         This command purges messages from the channel.
 
-
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+        interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
         amount : int
             The amount of messages to purge.
@@ -290,13 +282,13 @@ class Owner(commands.Cog, name="Developer"):
         --------
         `/cleanup amount: 15`
         """
-        await ctx.response.send_message(
+        await interaction.response.send_message(
             f"Deleting {amount} messages now...", ephemeral=True
         )
         deleted = []
         messages = []
-        async with ctx.channel.typing():
-            async for m in ctx.channel.history(limit=amount):
+        async with interaction.channel.typing():
+            async for m in interaction.channel.history(limit=amount):
                 messages.append(m)
                 if m.author == self.bot.user:
                     try:
@@ -313,14 +305,13 @@ class Owner(commands.Cog, name="Developer"):
         invoke_without_command=True,
     )
     @commands.is_owner()
-    async def status(self, ctx: disnake.ApplicationCommandInteraction):
+    async def status(self, interaction: disnake.ApplicationCommandInteraction):
         """
         This command sets the bot status. Only Bot Owner can use this command.
 
-
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+        interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
         Examples
@@ -332,17 +323,16 @@ class Owner(commands.Cog, name="Developer"):
     @status.sub_command(description="Set Streaming Status.")
     async def streaming(
         self,
-        ctx: disnake.ApplicationCommandInteraction,
+        interaction: disnake.ApplicationCommandInteraction,
         url: str = Param(description="Stream url"),
         game: str = Param(description="Your game name here"),
     ):
         """
         This subcommand sets the bot status to streaming.
 
-
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+        interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
         url : str
             The url of the stream.
@@ -361,7 +351,7 @@ class Owner(commands.Cog, name="Developer"):
                 name=str(game), url=f"https://www.twitch.tv/{url}"
             )
         )
-        await ctx.response.send_message(
+        await interaction.response.send_message(
             embed=disnake.Embed(
                 description=f"Streaming status set to **{game}**",
                 colour=disnake.Colour.random(),
@@ -372,16 +362,15 @@ class Owner(commands.Cog, name="Developer"):
     @status.sub_command(description="Set Playing Status.")
     async def playing(
         self,
-        ctx: disnake.ApplicationCommandInteraction,
+        interaction: disnake.ApplicationCommandInteraction,
         game: str = Param(description="Your game name here"),
     ):
         """
         This subcommand sets the bot status to playing.
 
-
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+        interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
         game : str
             The game you are playing.
@@ -395,7 +384,7 @@ class Owner(commands.Cog, name="Developer"):
             "{guilds}", str(len(self.bot.guilds))
         )
         await self.bot.change_presence(activity=disnake.Game(name=game))
-        await ctx.response.send_message(
+        await interaction.response.send_message(
             embed=disnake.Embed(
                 description=f"Playing status set to **{game}**",
                 colour=disnake.Colour.random(),
@@ -406,7 +395,7 @@ class Owner(commands.Cog, name="Developer"):
     @status.sub_command(description="Set Watching Status.")
     async def watching(
         self,
-        ctx: disnake.ApplicationCommandInteraction,
+        interaction: disnake.ApplicationCommandInteraction,
         game: str = Param(description="Your game name here"),
     ):
         """
@@ -414,7 +403,7 @@ class Owner(commands.Cog, name="Developer"):
 
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+        interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
         game : str
@@ -431,7 +420,7 @@ class Owner(commands.Cog, name="Developer"):
         await self.bot.change_presence(
             activity=disnake.Activity(name=f"{game}", type=3)
         )
-        await ctx.response.send_message(
+        await interaction.response.send_message(
             embed=disnake.Embed(
                 description=f"Watching status set to **{game}**",
                 colour=disnake.Colour.random(),
@@ -442,7 +431,7 @@ class Owner(commands.Cog, name="Developer"):
     @status.sub_command(description="Set Listening Status.")
     async def listening(
         self,
-        ctx: disnake.ApplicationCommandInteraction,
+        interaction: disnake.ApplicationCommandInteraction,
         game: str = Param(description="Your game name here"),
     ):
         """
@@ -450,7 +439,7 @@ class Owner(commands.Cog, name="Developer"):
 
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+        interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
         game : str
@@ -467,7 +456,7 @@ class Owner(commands.Cog, name="Developer"):
         await self.bot.change_presence(
             activity=disnake.Activity(name=f"{game}", type=2)
         )
-        await ctx.response.send_message(
+        await interaction.response.send_message(
             embed=disnake.Embed(
                 description=f"Listening status set to **{game}**",
                 colour=disnake.Colour.random(),
@@ -478,7 +467,7 @@ class Owner(commands.Cog, name="Developer"):
     @status.sub_command(description="Set Competing Status.")
     async def competing(
         self,
-        ctx: disnake.ApplicationCommandInteraction,
+        interaction: disnake.ApplicationCommandInteraction,
         game: str = Param(description="Your game name here"),
     ):
         """
@@ -486,7 +475,7 @@ class Owner(commands.Cog, name="Developer"):
 
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+        interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
         game : str
@@ -503,7 +492,7 @@ class Owner(commands.Cog, name="Developer"):
         await self.bot.change_presence(
             activity=disnake.Activity(name=f"{game}", type=5)
         )
-        await ctx.response.send_message(
+        await interaction.response.send_message(
             embed=disnake.Embed(
                 description=f"Competing status set to **{game}**",
                 colour=disnake.Colour.random(),
@@ -512,13 +501,13 @@ class Owner(commands.Cog, name="Developer"):
         )
 
     @status.sub_command(description="Set Original Bot Status.")
-    async def reset(self, ctx: disnake.ApplicationCommandInteraction):
+    async def reset(self, interaction: disnake.ApplicationCommandInteraction):
         """
         This subcommand resets the bot status to the original status.
 
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+        interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
         Examples
@@ -531,7 +520,7 @@ class Owner(commands.Cog, name="Developer"):
                 f"{len(self.bot.guilds)} guilds & {len(self.bot.users)} users"
             )
         )
-        await ctx.response.send_message(
+        await interaction.response.send_message(
             embed=disnake.Embed(
                 description=f"Bot status resetted", colour=disnake.Colour.random()
             ),
