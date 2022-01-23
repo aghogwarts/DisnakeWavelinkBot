@@ -58,7 +58,7 @@ Before starting to use this project, here are some things you should note:
 
 Visit [Lavalink 3.4](https://github.com/freyacodes/Lavalink/releases/tag/3.4) to download the latest version.
 
-Install Lavalink.jar in the directory ``lavalink`` and that's it.
+Install Lavalink.jar in the directory ``Lavalink`` and that's it.
 
 
 ## What is Lavalink and how this music bot works??
