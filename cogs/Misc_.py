@@ -7,7 +7,6 @@ import re
 import sys
 import time
 import traceback
-import typing
 
 import disnake
 import humanize
@@ -15,7 +14,6 @@ import youtube_dl as ydl
 from disnake.ext import commands
 from disnake.ext.commands import InvokableSlashCommand, Param
 
-from core.MusicBot import Bot
 from utils.helpers import BotInformationView, ErrorView, executor_function
 from utils.paginators import SimpleEmbedPages
 from wavelink import Player
@@ -64,29 +62,27 @@ class Misc(commands.Cog):
     Miscellaneous commands.
     """
 
-    def __init__(self, bot: typing.Union[commands.Bot, commands.AutoShardedBot, Bot]):
+    def __init__(self, bot):
         self.bot = bot
 
     async def cog_slash_command_error(
-            self, ctx: disnake.ApplicationCommandInteraction, error: Exception
+            self, interaction: disnake.ApplicationCommandInteraction, error: Exception
     ) -> None:
         """
-        Cog wide error handler.
-
-        This is called when a command fails to execute.
+        Cog wide error handler. This is called when a command fails to execute.
 
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+       interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
         error : Exception
             The error that was raised.
         """
-        if ctx.response.is_done():
-            safe_send = ctx.followup.send
+        if interaction.response.is_done():
+            safe_send = interaction.followup.send
         else:
-            safe_send = ctx.response.send_message
+            safe_send = interaction.response.send_message
 
         # ignore all other exception types, but print them to stderr
 
@@ -99,7 +95,7 @@ class Misc(commands.Cog):
         await safe_send(
             embed=disnake.Embed(
                 description=f"{self.bot.icons['redtick']} `An error has occurred while "
-                            f"executing {ctx.application_command.name} command. The error has been generated on "
+                            f"executing {interaction.application_command.name} command. The error has been generated on "
                             f"mystbin. "
                             f"Please report this to {', '.join([str(owner) for owner in await self.bot.get_owners])}`",
                 colour=disnake.Colour.random(),
@@ -108,7 +104,7 @@ class Misc(commands.Cog):
         )
 
         print(
-            f"Ignoring exception in command {ctx.application_command}: ",
+            f"Ignoring exception in command {interaction.application_command}: ",
             file=sys.stderr,
         )
         traceback.print_exception(
@@ -116,13 +112,13 @@ class Misc(commands.Cog):
         )
 
     @commands.slash_command(description="Shows information about the bot.")
-    async def info(self, ctx: disnake.ApplicationCommandInteraction):
+    async def info(self, interaction: disnake.ApplicationCommandInteraction):
         """
-        This command shows information about the bot.
+        This command shows various information about the bot.
 
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+       interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
         Examples
@@ -130,7 +126,7 @@ class Misc(commands.Cog):
         `/info`
         """
         player: Player = self.bot.wavelink.get_player(
-            guild_id=ctx.guild.id, cls=Player, context=ctx
+            guild_id=interaction.guild.id, cls=Player, context=interaction
         )
 
         permissions = disnake.Permissions(294410120513)
@@ -227,9 +223,9 @@ class Misc(commands.Cog):
         em.set_footer(
             text=f"Python {version[0]}.{version[1]}.{version[2]} • disnake {disnake.__version__}"
         )
-        await ctx.response.send_message(
+        await interaction.response.send_message(
             embed=em,
-            view=BotInformationView(bot=self.bot, player=player, interaction=ctx),
+            view=BotInformationView(bot=self.bot, player=player, interaction=interaction),
         )
 
     @commands.slash_command(
@@ -237,8 +233,8 @@ class Misc(commands.Cog):
     )
     async def spotify(
             self,
-            ctx: disnake.ApplicationCommandInteraction,
-            user: disnake.Member = Param(description="member to search for"),
+            interaction: disnake.ApplicationCommandInteraction,
+            member: disnake.Member = Param(description="Member to search for"),
     ):
         """
         This command shows you spotify song information of a user's spotify rich presence,
@@ -246,10 +242,10 @@ class Misc(commands.Cog):
 
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+       interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
-        user : disnake.Member
+        member : disnake.Member
             The member to query.
 
         Examples
@@ -257,7 +253,7 @@ class Misc(commands.Cog):
         `/spotify user: @Member`
         """
 
-        activities = user.activities
+        activities = member.activities
         try:
             act = [
                 activity
@@ -265,7 +261,7 @@ class Misc(commands.Cog):
                 if isinstance(activity, disnake.Spotify)
             ][0]
         except IndexError:
-            return await ctx.channel.send("No spotify was detected")
+            return await interaction.response.send_message("No spotify was detected")
         start = humanize.naturaltime(disnake.utils.utcnow() - act.created_at)
         print(start)
         name = act.title
@@ -279,9 +275,9 @@ class Misc(commands.Cog):
         min_sec_current = time.strftime(
             "%M:%S", time.gmtime((disnake.utils.utcnow() - act.start).total_seconds())
         )
-        embed = disnake.Embed(color=ctx.guild.me.color)
+        embed = disnake.Embed(color=interaction.guild.me.color)
         embed.set_author(
-            name=user.display_name,
+            name=member.display_name,
             icon_url="https://netsbar.com/wp-content/uploads/2018/10/Spotify_Icon.png",
         )
         embed.description = f"Listening To  [**{name}**] (https://open.spotify.com/track/{act.track_id})"
@@ -292,16 +288,16 @@ class Misc(commands.Cog):
         percent = int((current / duration) * 25)
         perbar = f"`{min_sec_current}`| {(percent - 1) * '─'}⚪️{(25 - percent) * '─'} | `{min_sec}`"
         embed.add_field(name="Progress", value=perbar)
-        await ctx.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
     @commands.slash_command()
-    async def youtube(self, ctx: disnake.ApplicationCommandInteraction):
+    async def youtube(self, interaction: disnake.ApplicationCommandInteraction):
         pass
 
     @youtube.sub_command(description="Search youtube videos")
     async def video(
             self,
-            ctx: disnake.ApplicationCommandInteraction,
+            interaction: disnake.ApplicationCommandInteraction,
             query: str = Param(description="Video to search for."),
     ):
         """
@@ -309,7 +305,7 @@ class Misc(commands.Cog):
 
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+       interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
         query : str
@@ -319,15 +315,15 @@ class Misc(commands.Cog):
         --------
         `/youtube video query: dank memes`
         """
-        await ctx.response.send_message("Searching...")
+        await interaction.response.send_message("Searching...")
         if re.search(r"^(https?\:\/\/)?((www\.)?youtube\.com|youtu\.?be)\/.+$", query):
-            async with ctx.channel.typing():
+            async with interaction.channel.typing():
                 query = (await youtube(query))["title"]
 
         videos = (await (VideosSearch(query, limit=15)).next())["result"]
 
         if len(videos) == 0:
-            return await ctx.response.send_message(
+            return await interaction.response.send_message(
                 "I could not find a video with that query"
             )
 
@@ -356,13 +352,13 @@ class Misc(commands.Cog):
             em.set_thumbnail(url=video["thumbnails"][0]["url"])
             embeds.append(em)
 
-        pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
+        pag = SimpleEmbedPages(entries=embeds, ctx=interaction)
         await pag.start()
 
     @youtube.sub_command(description="Search youtube channels")
     async def channel(
             self,
-            ctx: disnake.ApplicationCommandInteraction,
+            interaction: disnake.ApplicationCommandInteraction,
             query: str = Param(description="Channel Query"),
     ):
         """
@@ -370,7 +366,7 @@ class Misc(commands.Cog):
 
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+       interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
 
         query : str
@@ -381,13 +377,13 @@ class Misc(commands.Cog):
         `/youtube channel query: one vilage`
         """
 
-        async with ctx.channel.typing():
+        async with interaction.channel.typing():
             channels = (await (ChannelsSearch(query, limit=15, region="US")).next())[
                 "result"
             ]
 
         if len(channels) == 0:
-            return await ctx.response.send_message(
+            return await interaction.response.send_message(
                 embed=disnake.Embed(
                     title="Channel",
                     description="I could not find a channel with that query.",
@@ -395,7 +391,7 @@ class Misc(commands.Cog):
                 )
             )
 
-        await ctx.response.send_message("Searching...")
+        await interaction.response.send_message("Searching...")
         embeds = []
 
         for channel in channels:
@@ -436,13 +432,13 @@ class Misc(commands.Cog):
             em.set_thumbnail(url=thumbnail)
             embeds.append(em)
 
-        pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
+        pag = SimpleEmbedPages(entries=embeds, ctx=interaction)
         await pag.start()
 
     @commands.slash_command(name="help", description="Shows help about bot commands.")
     async def show_help(
             self,
-            ctx: disnake.ApplicationCommandInteraction,
+            interaction: disnake.ApplicationCommandInteraction,
             slash_command: str = Param(description="Command to get help for."),
     ):
         """
@@ -450,7 +446,7 @@ class Misc(commands.Cog):
 
         Parameters
         ----------
-        ctx : disnake.ApplicationCommandInteraction
+       interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
         slash_command : str
             The command to get help for.
@@ -461,7 +457,7 @@ class Misc(commands.Cog):
         """
         slash_commands = [command for command in self.bot.all_slash_commands]
         if slash_command in slash_commands:
-            await ctx.response.send_message("Gathering Information...")
+            await interaction.response.send_message("Gathering Information...")
 
             command: InvokableSlashCommand = self.bot.get_slash_command(slash_command)
             if len(command.children) > 0:
@@ -481,8 +477,8 @@ class Misc(commands.Cog):
                         title=f"Help for {slash_command} {key}",
                         timestamp=disnake.utils.utcnow(),
                     ).set_footer(
-                        text=f"Requested by {ctx.author.display_name}",
-                        icon_url=ctx.author.display_avatar.url,
+                        text=f"Requested by {interaction.author.display_name}",
+                        icon_url=interaction.author.display_avatar.url,
                     )
                     embed.add_field(
                         name="Usage",
@@ -496,7 +492,7 @@ class Misc(commands.Cog):
                     embed.add_field(name="Examples", value=f"{examples}", inline=False)
                     embeds.append(embed)
 
-                pag = SimpleEmbedPages(entries=embeds, ctx=ctx)
+                pag = SimpleEmbedPages(entries=embeds, ctx=interaction)
                 await pag.start()
 
             else:
@@ -515,8 +511,8 @@ class Misc(commands.Cog):
                 title=f"Help for {slash_command}",
                 timestamp=disnake.utils.utcnow(),
             ).set_footer(
-                text=f"Requested by {ctx.author.display_name}",
-                icon_url=ctx.author.display_avatar.url,
+                text=f"Requested by {interaction.author.display_name}",
+                icon_url=interaction.author.display_avatar.url,
             )
             embed.add_field(
                 name="Usage",
@@ -529,37 +525,37 @@ class Misc(commands.Cog):
             )
             embed.add_field(name="Examples", value=f"{examples}", inline=False)
 
-            return await ctx.edit_original_message(
+            return await interaction.edit_original_message(
                 content=f":question: **{slash_command}**", embed=embed
             )
         else:
-            return await ctx.response.send_message(
+            return await interaction.response.send_message(
                 f"{self.bot.icons['redtick']} This command does not exists.",
                 ephemeral=True,
             )
 
     @show_help.autocomplete(option_name="slash_command")
     async def command_auto(
-            self, _: disnake.ApplicationCommandInteraction, user_input: str
+            self, interaction: disnake.ApplicationCommandInteraction, user_input: str
     ):
         """
         This command autocompletes the command to get help for.
 
         Parameters
         ----------
-        _ : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+        interaction : disnake.ApplicationCommandInteraction
+            The Interaction of the command. This is not used.
 
         user_input : str
-            The user input.
+            Data that the user has entered.
 
         Returns
         -------
         list
             The list of commands matching the user input.
         """
-        commands = [command.lower() for command in self.bot.all_slash_commands]
-        selected_commands = difflib.get_close_matches(user_input.lower(), commands)
+        commands_list = [command.lower() for command in self.bot.all_slash_commands]
+        selected_commands = difflib.get_close_matches(user_input.lower(), commands_list)
         return selected_commands
 
 
