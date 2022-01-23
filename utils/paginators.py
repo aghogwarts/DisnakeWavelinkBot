@@ -48,7 +48,7 @@ class ViewPages(disnake.ui.View):
             use_last_and_first = max_pages is not None and max_pages >= 2
             if use_last_and_first:
                 self.add_item(self.go_to_first_page)  # type: ignore
-            self.add_item(self.go_to_previous_page)   # type: ignore
+            self.add_item(self.go_to_previous_page)  # type: ignore
             if not self.compact:
                 self.add_item(self.go_to_current_page)  # type: ignore
             self.add_item(self.go_to_next_page)  # type: ignore
@@ -59,7 +59,6 @@ class ViewPages(disnake.ui.View):
     async def _get_kwargs_from_page(self, page: int) -> typing.Dict[str, typing.Any]:
         """
         Gets the keyword arguments from a page (embed).
-
 
         Parameters
         ----------
@@ -81,7 +80,6 @@ class ViewPages(disnake.ui.View):
     ) -> None:
         """
         Shows the page with the given number.
-
 
         Parameters
         ----------
@@ -158,6 +156,19 @@ class ViewPages(disnake.ui.View):
             pass
 
     async def interaction_check(self, interaction: disnake.Interaction) -> bool:
+        """
+        Checks if the interaction author is allowed to use this view.
+
+        Parameters
+        ----------
+        interaction : disnake.Interaction
+            The interaction to check.
+
+        Returns
+        -------
+        bool
+            Whether the interaction is valid for this view.
+        """
         if interaction.user and interaction.user.id in (
             self.ctx.bot.owner_id,
             self.ctx.author.id,
@@ -175,6 +186,20 @@ class ViewPages(disnake.ui.View):
     async def on_error(
         self, error: Exception, item: disnake.ui.Item, interaction: disnake.Interaction
     ) -> None:
+        """
+        Called when an error occurs while handling an interaction.
+
+        Parameters
+        ----------
+        error : Exception
+            The error that occurred.
+
+        item : disnake.ui.Item
+            The item that was interacted with.
+
+        interaction : disnake.Interaction
+            The interaction that was handled.
+        """
         safe_send = (
             interaction.response.followup
             if interaction.response.is_done()
@@ -205,19 +230,35 @@ class ViewPages(disnake.ui.View):
 
     @disnake.ui.button(label="≪", style=disnake.ButtonStyle.grey)
     async def go_to_first_page(
-        self, _: disnake.ui.Button, interaction: disnake.Interaction
+        self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
         """
         A button to go to the first page.
+
+        Parameters
+        ----------
+        button : disnake.ui.Button
+            The button that was pressed. This is not used.
+
+        interaction : disnake.Interaction
+            The interaction that triggered this button.
         """
         await self.show_page(interaction, 0)
 
     @disnake.ui.button(label="Back", style=disnake.ButtonStyle.blurple)
     async def go_to_previous_page(
-        self, _: disnake.ui.Button, interaction: disnake.Interaction
+        self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
         """
         A button to go to the previous page.
+        
+        Parameters
+        ----------
+        interaction : disnake.Interaction
+            The interaction of the button.
+        
+        button : disnake.ui.Button
+            The button that was pressed. This is not used.
         """
         await self.show_checked_page(interaction, self.current_page - 1)
 
@@ -229,15 +270,15 @@ class ViewPages(disnake.ui.View):
 
     @disnake.ui.button(label="Next", style=disnake.ButtonStyle.blurple)
     async def go_to_next_page(
-        self, _: disnake.ui.Button, interaction: disnake.Interaction
+        self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
         """
         A button that goes to the next page.
 
         Parameters
         ----------
-        _ : disnake.ui.Button
-            The button that was pressed. (Unused)
+        button : disnake.ui.Button
+            The button that was pressed. This is not used.
 
         interaction : disnake.Interaction
             The interaction that was performed.
@@ -246,15 +287,15 @@ class ViewPages(disnake.ui.View):
 
     @disnake.ui.button(label="≫", style=disnake.ButtonStyle.grey)
     async def go_to_last_page(
-        self, _: disnake.ui.Button, interaction: disnake.Interaction
+        self, button: disnake.ui.Button, interaction: disnake.Interaction
     ):
         """
         A button to go to the last page.
 
         Parameters
         ----------
-        _ : disnake.ui.Button
-            The button that was pressed. (Unused)
+        button : disnake.ui.Button
+            The button that was pressed. This is not used.
 
         interaction : disnake.Interaction
             The interaction that was performed.
@@ -263,16 +304,14 @@ class ViewPages(disnake.ui.View):
         await self.show_page(interaction, self.source.get_max_pages() - 1)
 
     @disnake.ui.button(label="Quit", style=disnake.ButtonStyle.red)
-    async def stop_pages(
-        self, _: disnake.ui.Button, interaction: disnake.Interaction
-    ):
+    async def stop_pages(self, _: disnake.ui.Button, interaction: disnake.Interaction):
         """
         Stops the pagination session.
 
         Parameters
         ----------
         _ : disnake.ui.Button
-            The button that was pressed. (Unused)
+            The button that was pressed. This is not used.
 
         interaction : disnake.Interaction
         """
@@ -293,9 +332,7 @@ class RichPager(menus.ListPageSource):
 
         maximum = self.get_max_pages()
         if maximum > 1:
-            footer = (
-                f"Page {menu.current_page + 1}/{maximum} ({len(self.entries)} entries)"  # type: ignore
-            )
+            footer = f"Page {menu.current_page + 1}/{maximum} ({len(self.entries)} entries)"  # type: ignore
             menu.embed.set_footer(text=footer)  # type: ignore
 
         menu.embed.description = "\n".join(pages)  # type: ignore
@@ -413,10 +450,6 @@ class EmbedPaginator(disnake.ui.View):
     async def on_timeout(self) -> None:
         """
         Called when the paginator times out.
-
-        Returns
-        -------
-        None
         """
         if self.message:
             await self.message.edit(view=None)
@@ -599,30 +632,6 @@ class Paginator(ListPageSource):
             em = disnake.Embed().from_dict(em)
             return em
         return embed
-
-
-class TextPaginator(ListPageSource):
-    """
-    A paginator for text.
-    """
-
-    async def format_page(self, menu, text: str) -> str:
-        """
-        Format the page.
-
-        Parameters
-        ----------
-        menu : menus.Menu
-            The menu.
-        text : str
-            The text.
-
-        Returns
-        -------
-        str
-            The formatted text.
-        """
-        return text
 
 
 def WrapText(text: str, length: int) -> typing.List[str]:
