@@ -19,6 +19,12 @@ from wavelink import Player
 
 
 class BotInformation:
+    """
+    This class is a helper class that has various methods that return various kinds of information about the bot
+    and the environment it is running in.
+    This class is paired with `BotInformationView` so that the information can be accesssed with interaction components.
+
+    """
     def __init__(
         self,
         bot,
@@ -31,7 +37,7 @@ class BotInformation:
         self, interaction: disnake.ApplicationCommandInteraction
     ) -> disnake.Embed:
         """
-        Gets the lavalink information of the bot.
+        This method returns a `disnake.Embed` containing information about the connected Lavalink node instance.
 
         Parameters
         ----------
@@ -71,9 +77,9 @@ class BotInformation:
         ).set_footer(text=f"Requested by {interaction.author}", icon_url=interaction.author.display_avatar.url)
         return embed
 
-    async def get_bot_info(self, interaction: disnake.ApplicationCommandInteraction):
+    async def get_bot_info(self, interaction: disnake.ApplicationCommandInteraction) -> disnake.Embed:
         """
-        A method that returns various information about the bot.
+        A method that returns a `disnake.Embed` containing various information about the bot.
 
         Parameters
         ----------
@@ -95,7 +101,7 @@ class BotInformation:
         # File Stats
         def line_count() -> typing.Tuple[int, int, int, int, int, int]:
             """
-            Counts the number of lines in the codebase.
+            This function returns the number of lines in the bot's source code.
 
             Returns
             -------
@@ -173,7 +179,7 @@ class BotInformation:
         self, ctx: disnake.ApplicationCommandInteraction
     ) -> disnake.Embed:
         """
-        Gets the uptime of the bot.
+        This method returns an embed containing information about the bot's uptime.
 
         Parameters
         ----------
@@ -196,7 +202,7 @@ class BotInformation:
         self, ctx: disnake.ApplicationCommandInteraction
     ) -> disnake.Embed:
         """
-        Gets the latency of the bot.
+        This method returns an embed containing information about the bot's latency.
 
         Parameters
         ----------
@@ -246,7 +252,8 @@ class BotInformation:
 
 class Config:
     """
-    Used to get the configurations from a yaml file.
+    A helper class containing methods for the configuration of the bot.
+    This class is only useful for this codebase as the methods are hardcoded.
     """
 
     def __init__(self):
@@ -260,12 +267,7 @@ class Config:
     @property
     def prefix(self) -> typing.Optional[str]:
         """
-        Gets the prefix of the bot.
-
-        Returns
-        -------
-        str
-            The prefix of the bot.
+        This property returns the prefix of the bot from the config file.
         """
         prefix = self.data["Bot"]["prefix"]
         if prefix is None:
@@ -277,12 +279,7 @@ class Config:
     @property
     def token(self) -> typing.Optional[str]:
         """
-        Gets the token of the bot.
-
-        Returns
-        -------
-        str
-            The token of the bot.
+        THis property returns the token of the bot from the config file.
         """
         token = self.data["Bot"]["token"]
         if token == "":
@@ -293,12 +290,12 @@ class Config:
     @property
     def owners(self) -> typing.Optional[typing.Set[int]]:
         """
-        Gets the owners of the bot.
+        This method returns a list of owner ID (integer) that is set in the config file.
 
         Returns
         -------
         list
-            The owners of the bot.
+            The owner IDs of the bot.
         """
         owners = self.data["Bot"]["owners"]
         if not owners:
@@ -312,12 +309,7 @@ class Config:
     @property
     def lavalink_host(self) -> typing.Optional[str]:
         """
-        Gets the host of the Lavalink server.
-
-        Returns
-        -------
-        str
-            The host of the Lavalink server.
+        This method returns the host of the Lavalink server.
         """
         host = self.Lavalink_data["server"]["address"]
         if host is None:
@@ -328,12 +320,7 @@ class Config:
     @property
     def lavalink_port(self) -> typing.Optional[int]:
         """
-        Gets the port of the Lavalink server.
-
-        Returns
-        -------
-        int
-            The port of the Lavalink server.
+        This method returns the port of the Lavalink server.
         """
         port = self.Lavalink_data["server"]["port"]
         if port is None:
@@ -344,12 +331,7 @@ class Config:
     @property
     def lavalink_password(self) -> typing.Optional[str]:
         """
-        Gets the password of the Lavalink server.
-
-        Returns
-        -------
-        str
-            The password of the Lavalink server.
+        This method returns the password of the Lavalink server.
         """
         password = self.Lavalink_data["lavalink"]["server"]["password"]
         if password is None:
@@ -360,7 +342,7 @@ class Config:
 
 class LyricsPaginator(ViewPages):
     """
-    A custom paginator for lyrics.
+    A custom paginator for lyrics that subclasses the ViewPages.
     """
 
     def __init__(
@@ -382,7 +364,7 @@ class LyricsPaginator(ViewPages):
 
 class SearchService(str, Enum):
     """
-    An enum used to determine the search service to use. Useful, if you want search songs with a specific service.
+    An Enum used to determine the search service to use. Useful, if you want search songs with a specific service.
     """
 
     ytsearch = "ytsearch"
@@ -416,7 +398,7 @@ class BotInformationView(disnake.ui.View):
         interaction: disnake.ApplicationCommandInteraction,
     ):
         """
-        Shows the lavalink information.
+        This button shows the lavalink information by calling the BotInformation.lavalink_info method.
 
         Parameters
         ----------
@@ -438,12 +420,12 @@ class BotInformationView(disnake.ui.View):
         interaction: disnake.ApplicationCommandInteraction,
     ):
         """
-        Shows the latency of the bot.
+        This button shows the latency of the bot by calling the BotInformation.latency method.
 
         Parameters
         ----------
         button : disnake.ui.Button
-            The button that was pressed.
+            The button that was pressed. This argument is not used.
 
         interaction : disnake.ApplicationCommandInteraction
             The interaction of the command.
@@ -462,11 +444,12 @@ class BotInformationView(disnake.ui.View):
         interaction: disnake.ApplicationCommandInteraction,
     ):
         """
+        This button shows the uptime of the bot by calling the BotInformation.uptime method.
 
         Parameters
         ----------
         button : disnake.ui.Button
-            The button that was pressed.
+            The button that was pressed. This argument is not used.
 
         interaction : disnake.ApplicationCommandInteraction
             The interaction of the command.
@@ -487,10 +470,11 @@ class BotInformationView(disnake.ui.View):
     ):
         """
         This button quits the view.
+
         Parameters
         ----------
         button : disnake.ui.Button
-            The button that was pressed. (Unused)
+            The button that was pressed. This argument is not used.
 
         interaction : disnake.ApplicationCommandInteraction
             The interaction of the command.
@@ -517,6 +501,7 @@ class BotInformationView(disnake.ui.View):
 
 
 def executor_function(sync_function: typing.Callable):
+    #  Taken from Jishaku https://github.com/Gorialis/jishaku/blob/master/jishaku/functools.py#L19
     """
     A decorator that wraps a sync function in an executor, changing it into an async function.
 
