@@ -30,11 +30,15 @@ def run_lavalink_process():
         # and yes using shell kwarg can be dangerous.
         if output.returncode == 0:
             logger.success("Lavalink is running.")
+
+        if output.returncode == -2:
+            return
+
         else:
             logger.error(f"Lavalink is not running. Error: {output.stdout}")
     else:
         logger.error(
-            f"Sorry, {BaseProgram} is not installed in your system. Please install it in order to run our Lavalink."
+            f"Sorry, {BaseProgram} is not installed in your system. Please install it in order to run Lavalink."
         )
         print(process.stdout)
 
