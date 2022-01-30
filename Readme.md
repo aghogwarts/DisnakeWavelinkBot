@@ -206,10 +206,15 @@ To know more about Jishaku, visit this repository:
 
 4.) Go in `OAuth2` tab and enable ``applications.commands`` and `bot` scope, so that your bot can have slash commands.
 
-6.) Then run ``main.py`` file in your preferred code editor/IDE, by either pressing F5 or running it through the terminal.
+6.) Then run ``main.py`` file in your preferred code editor / IDE, by either pressing F5 or running it through the terminal.
 
 ```bash
   python3 main.py
+```
+You can even use poetry to run your bot, if you want to:
+  
+```bash
+ poetry run task bot
 ```
 
 **Also note**:
