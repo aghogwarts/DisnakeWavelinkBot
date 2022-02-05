@@ -82,7 +82,7 @@ plugins:
       - "ytsearch: %QUERY%"
 ```
 
-This is required for the bot to work.
+This is required for the bot to work. This bot uses [TopiSenpai's Spotify Plugin](https://github.com/Topis-Lavalink-Plugins/Spotify-Plugin).
 
 ## YouTube Age Restrictions
 You can configure the bot to play YouTube videos that are age restricted, normally Lavalink is not able to play age restricted videos.
