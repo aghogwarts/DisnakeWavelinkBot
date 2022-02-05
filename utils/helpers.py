@@ -25,6 +25,7 @@ class BotInformation:
     This class is paired with `BotInformationView` so that the information can be accesssed with interaction components.
 
     """
+
     def __init__(
         self,
         bot,
@@ -52,7 +53,7 @@ class BotInformation:
         player: Player = self.bot.wavelink.get_player(
             guild_id=interaction.guild.id, cls=Player, context=interaction
         )
-        node = player.node
+        node: wavelink.Node = player.node
 
         used = humanize.naturalsize(node.stats.memory_used)
         total = humanize.naturalsize(node.stats.memory_allocated)
@@ -74,10 +75,15 @@ class BotInformation:
             description=fmt,
             colour=disnake.Colour.random(),
             title="Lavalink Information",
-        ).set_footer(text=f"Requested by {interaction.author}", icon_url=interaction.author.display_avatar.url)
+        ).set_footer(
+            text=f"Requested by {interaction.author}",
+            icon_url=interaction.author.display_avatar.url,
+        )
         return embed
 
-    async def get_bot_info(self, interaction: disnake.ApplicationCommandInteraction) -> disnake.Embed:
+    async def get_bot_info(
+        self, interaction: disnake.ApplicationCommandInteraction
+    ) -> disnake.Embed:
         """
         A method that returns a `disnake.Embed` containing various information about the bot.
 
@@ -257,12 +263,9 @@ class Config:
     """
 
     def __init__(self):
-        self.bot_config_file_path = "./config/config.yaml"
-        self.Lavalink_config_file_path = "./Lavalink/application.yml"
+        self.bot_config_file_path = "./config/application.yml"
         with open(self.bot_config_file_path, encoding="utf-8") as f:
             self.data = yaml.load(f, Loader=yaml.FullLoader)
-        with open(self.Lavalink_config_file_path, encoding="utf-8") as f:
-            self.Lavalink_data = yaml.load(f, Loader=yaml.FullLoader)
 
     @property
     def prefix(self) -> typing.Optional[str]:
@@ -279,10 +282,10 @@ class Config:
     @property
     def token(self) -> typing.Optional[str]:
         """
-        THis property returns the token of the bot from the config file.
+        This property returns the token of the bot from the config file.
         """
         token = self.data["Bot"]["token"]
-        if token == "":
+        if token is None:
             logger.error("No token found in config.yaml")
             exit(code=1)
         return token
@@ -311,7 +314,7 @@ class Config:
         """
         This method returns the host of the Lavalink server.
         """
-        host = self.Lavalink_data["server"]["address"]
+        host = self.data["server"]["address"]
         if host is None:
             logger.error("No Lavalink address found in application.yml")
             sys.exit(1)
@@ -322,7 +325,7 @@ class Config:
         """
         This method returns the port of the Lavalink server.
         """
-        port = self.Lavalink_data["server"]["port"]
+        port = self.data["server"]["port"]
         if port is None:
             logger.error("No Lavalink port found in application.yml")
             sys.exit(1)
@@ -333,7 +336,7 @@ class Config:
         """
         This method returns the password of the Lavalink server.
         """
-        password = self.Lavalink_data["lavalink"]["server"]["password"]
+        password = self.data["lavalink"]["server"]["password"]
         if password is None:
             logger.error("No Lavalink password found in application.yml")
             sys.exit(1)
@@ -370,6 +373,7 @@ class SearchService(str, Enum):
     ytsearch = "ytsearch"
     ytmsearch = "ytmsearch"
     scsearch = "scsearch"
+    spsearch = "spsearch"
 
     def __str__(self):
         return self.value
@@ -410,7 +414,9 @@ class BotInformationView(disnake.ui.View):
         """
         await interaction.response.defer()
         await self.interaction.edit_original_message(
-            embed=await self.BotInformation.get_lavalink_info(interaction=self.interaction)
+            embed=await self.BotInformation.get_lavalink_info(
+                interaction=self.interaction
+            )
         )
 
     @disnake.ui.button(label="Latency", emoji="🤖", style=disnake.ButtonStyle.blurple)
