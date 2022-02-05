@@ -20,17 +20,17 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-import aiohttp
 import asyncio
 import logging
 import sys
 import traceback
-from typing import Any, Dict
+from typing import Any, Dict, Union
+
+import aiohttp
 
 from .backoff import ExponentialBackoff
 from .events import *
 from .stats import Stats
-
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +58,7 @@ class WebSocket:
             "Authorization": self.password,
             "Num-Shards": str(self.shard_count),
             "User-Id": str(self.user_id),
+            "Client-Name": "wavelink",
         }
 
     @property
@@ -165,7 +166,16 @@ class WebSocket:
             except KeyError:
                 pass
 
-    def _get_event_payload(self, name: str, data):
+    @staticmethod
+    def _get_event_payload(
+        name: str, data
+    ) -> Union[
+        tuple[str, TrackEnd],
+        tuple[str, TrackStart],
+        tuple[str, TrackException],
+        tuple[str, TrackStuck],
+        tuple[str, WebsocketClosed],
+    ]:
         if name == "TrackEndEvent":
             return "on_track_end", TrackEnd(data)
         elif name == "TrackStartEvent":
