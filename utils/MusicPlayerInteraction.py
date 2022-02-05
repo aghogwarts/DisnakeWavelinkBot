@@ -396,7 +396,7 @@ class MenuControllerView(disnake.ui.View):
         self,
         error: Exception,
         item: Item,
-        interaction: disnake.ApplicationCommandInteraction,
+        interaction: disnake.MessageInteraction,
     ) -> None:
         """
         This method is called when an error occurs.
@@ -417,7 +417,7 @@ class MenuControllerView(disnake.ui.View):
         await safe_send(
             embed=disnake.Embed(
                 description=f"{self.bot.icons['redtick']} `An error has occurred while "
-                f"executing {interaction.application_command.name} command. The error has been generated on "
+                f"executing {interaction.data.name} command. The error has been generated on "
                 f"mystbin. "
                 f"Please report this to {', '.join([str(owner) for owner in await self.bot.get_owners])}`",
                 colour=disnake.Colour.random(),
@@ -426,7 +426,7 @@ class MenuControllerView(disnake.ui.View):
         )
 
         print(
-            f"Ignoring exception in command {interaction.application_command}: ",
+            f"Ignoring exception in command {interaction.data.name}: ",
             file=sys.stderr,
         )
         traceback.print_exception(
