@@ -12,6 +12,8 @@ from disnake.ext import commands
 from disnake.ext.commands.params import Param
 
 import wavelink
+from core.MusicBot import Bot
+from utils.exceptions import IncorrectChannelError, NoChannelProvided
 from utils.helpers import ErrorView, LyricsPaginator, SearchService
 from utils.MusicPlayerInteraction import Player, QueuePages, Track
 from utils.views import FilterView
@@ -24,21 +26,9 @@ SOUNDCLOUD_URL_REGEX = re.compile(
     r"^(https?:\/\/)?(www.)?(m\.)?soundcloud\.com\/[\w\-\.]+(\/)+[\w\-\.]+/?$"
 )
 
-
-class NoChannelProvided(commands.CommandError):
-    """
-    Error raised when no suitable voice channel was supplied.
-    """
-
-    pass
-
-
-class IncorrectChannelError(commands.CommandError):
-    """
-    Error raised when commands are issued outside the players' session channel.
-    """
-
-    pass
+SPOTIFY_URL_REGEX = re.compile(
+    r"https?://open.spotify.com/(?P<type>album|playlist|track)/(?P<id>[a-zA-Z0-9]+)"
+)
 
 
 class Music(commands.Cog, wavelink.WavelinkMixin):
@@ -46,7 +36,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     Your friendly music bot
     """
 
-    def __init__(self, bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     async def cog_load(self) -> None:
@@ -92,7 +82,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         Parameters
         ----------
-        node : wavelink.Node
+        node: wavelink.Node
             The node that is ready.
         """
         self.bot.logger.info(f"Node {node.identifier} is running!", __name="Music Bot")
@@ -304,7 +294,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     def is_author(self, interaction: disnake.ApplicationCommandInteraction):
         """
-        Check whether the user is the command invoker / interaction.author`.
+        Check whether the user is the command invoker / interaction Author`.
 
         Parameters
         ----------
@@ -314,14 +304,15 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Returns
         -------
         bool
-            Whether the user is the command invoker / interaction.author or do they have permissions to kick members.`.
+            Whether the user is the command invoker / interaction Author or do they have permissions to kick members.`.
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=interaction.guild.id, cls=Player, context=interaction
         )
 
         return (
-            player.dj == interaction.author or interaction.author.guild_permissions.kick_members
+            player.dj == interaction.author
+            or interaction.author.guild_permissions.kick_members
         )  # you can change your
         # permissions here.
 
@@ -397,6 +388,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             "youtube": SearchService.ytsearch,
             "soundcloud": SearchService.scsearch,
             "youtubemusic": SearchService.ytmsearch,
+            "spotify": SearchService.spsearch,
         }
 
         await interaction.response.defer()
@@ -409,13 +401,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             not youtube_url_regex.match(query)
             and service.lower() == "youtubemusic"
             or service.lower() == "youtube"
+            and not youtube_url_regex.match(query)
         ):
             query = f"{services[service.lower()]}:{query}"
 
         if not SOUNDCLOUD_URL_REGEX.match(query) and service.lower() == "soundcloud":
             query = f"{services[service.lower()]}:{query}"
 
+        if not SPOTIFY_URL_REGEX.match(query) and service.lower() == "spotify":
+            query = f"{services[service.lower()]}:{query}"
+
         tracks = await self.bot.wavelink.get_tracks(query)
+
         if not tracks:
             return await interaction.edit_original_message(
                 content=f"{self.bot.icons['redtick']} No songs were found with that query. "
@@ -424,7 +421,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         if isinstance(tracks, wavelink.TrackPlaylist):
             for track in tracks.tracks:
-                track = Track(track.track_id, track.info, requester=interaction.author)
+                track = Track(track.id, track.info, requester=interaction.author)
                 await player.queue.put(track)
 
             await interaction.edit_original_message(
@@ -467,8 +464,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         list
             A list of autocomplete options.
         """
-        options = ["youtube", "soundcloud", "youtubemusic"]
-        return [option for option in options if query in options]
+        options = ["youtube", "soundcloud", "youtubemusic", "spotify"]
+        return [option for option in options if query.lower() in options]
 
     @commands.slash_command(
         description="Switch the channel where the bot was first invoked."
@@ -1761,7 +1758,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             )
 
         embed = await player.make_song_embed()  # shows the song embed.
-        await interaction.response.send_message(content="Check your dms.", ephemeral=True)
+        await interaction.response.send_message(
+            content="Check your dms.", ephemeral=True
+        )
         try:
             await interaction.author.send(embed=embed)
         except disnake.Forbidden:
