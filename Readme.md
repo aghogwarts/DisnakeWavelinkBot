@@ -59,6 +59,11 @@ Before starting to use this project, here are some things you should note:
 **5**.) This bot is currently only tested on Linux. So if you encounter any issues, please create an issue and report it.
 
 **6**.) `You will need to have a spotify account to use play songs with spotify. Head over to [Spotify](https://developer.spotify.com/) to create one.`
+## Installing Lavalink
+
+Visit [Lavalink dev](https://ci.fredboat.com/buildConfiguration/Lavalink_Build?branch=refs%2Fheads%2Fdev&mode=builds&guest=1) to download the development version.
+
+Install Lavalink.jar in the directory ``Lavalink`` and that's it.
 
 ## Spotify Support
 This bot supports spotify. 
@@ -244,22 +249,6 @@ If you want to use poetry, you can run the following command:
 ```bash
 poetry run task bot
 ```
-
-**Also note**:
-This branch supports docker-compose deployment. Basically the project is divided into two containers
-
-1.) Lavalink - This is the container that runs the Lavalink server.
-
-2.) Bot - This is the container that runs the bot.
-
-To deploy this project, you can use the following command:
-
-```bash
-poetry run task compose
-```
-This will start the containers.
-
-If you are on a linux distro, you can install [portainer](https://portainer.io), to manage your containers.
 
 ## Credits
 Well, this project is entirely free and Open Source, if you want, you can certainly use it in your own projects.
