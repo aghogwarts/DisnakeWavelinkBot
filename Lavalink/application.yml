@@ -1,3 +1,4 @@
+# Lavalink Configurations
 server: # REST and WS server
   port: 2333
   address: 127.0.0.1
@@ -20,12 +21,27 @@ lavalink:
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
     gc-warnings: true
+    youtubeConfig:
+      PAPISID: "Youtube PAPISID key" 
+      PSID: "Youtube PSID Key"
     #ratelimit:
       #ipBlocks: ["1.0.0.0/8", "..."] # list of ip blocks
       #excludedIps: ["...", "..."] # ips which should be explicit excluded from usage by lavalink
       #strategy: "RotateOnBan" # RotateOnBan | LoadBalance | NanoSwitch | RotatingNanoSwitch
       #searchTriggersFail: true # Whether a search 429 should trigger marking the ip as failing
       #retryLimit: -1 # -1 = use default lavaplayer value | 0 = infinity | >0 = retry will happen this numbers times
+    plugins:
+      - dependency: "com.github.Topis-Lavalink-Plugins:Spotify-Plugin:1.0.17" # spotify plugin, thanks @TopiSenpai 
+      - repository: "https://jitpack.io"
+plugins:
+  spotify:
+    clientId: "Spotify Client ID Here"
+    clientSecret: "Spotify Client Secret Here"
+    countryCode: "IN"
+    providers:
+      - "ytsearch:\"%ISRC%\""
+      - "scsearch: %QUERY%"
+      - "ytsearch: %QUERY%"
 
 metrics:
   prometheus:
@@ -46,5 +62,5 @@ logging:
   path: ./logs/
 
   level:
-    root: DEBUG
+    root: INFO
     lavalink: INFO
