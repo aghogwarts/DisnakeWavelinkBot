@@ -3,7 +3,7 @@
 An example music bot that is written in Disnake [Maintained discord.py Fork] 
 
 ## Disnake 
-Disnake is a maintained and updated fork of `discord.py`. It supports and covers everything of Discord's API.
+Disnake is a maintained and an updated fork of `discord.py`. It supports and covers everything of Discord's API.
 
 [Disnake Github Repo](https://github.com/DisnakeDev/disnake)
 
@@ -25,20 +25,25 @@ poetry install
 As we have included a `pyproject.toml` file, it will install the dependencies automatically.
 
 ## Bot Configuration
-You can configure the bot by using the file called ``config.yml`` in the ``config`` directory.
+You can configure the bot by using the file called ``application.yml`` in the ``config`` directory.
 You need to pass the bot token, prefix and the bot owner's ID. For example:
 ```yaml
 Bot:
   prefix: "!"  # Prefix for the bot, this is required.
   token: "..." # Bot token, this is required.
   owners: 
-    - 1234 # Bot owner's ID, this is required, if you do not have multiple owners, just pass your ID.
-    - 1234  # You can pass multiple owner IDs like this.
+     - 1234 # Bot owner's ID, this is required, if you do not have multiple owners, just pass your ID.
+     - 1234 # Another owner's ID, if you have multiple owners.
 ```
 You can also configure the emojis used by the bot, through the ``icons.json`` file in the ``config`` directory.
 You can pass your own emojis, or use the default ones. If you are passing custom emojis, 
 you need to pass the emojis in the following format:
 ``<:emoji_name:emoji_id>``
+
+Lavalink configuration is also available in the ``application.yml`` file. Read # Lavalink Configuration 
+section for more information.
+Lavalink is already configured by default, so you shouldn't change anything.
+
 
 ## Note
 Before starting to use this project, here are some things you should note:
@@ -53,12 +58,38 @@ Before starting to use this project, here are some things you should note:
 
 **5**.) This bot is currently only tested on Linux. So if you encounter any issues, please create an issue and report it.
 
-`Lavalink.jar` is not included in this repository as the file is too big to be included in the repository, so you have to install it yourself in the directory 
-``Lavalink``.
+**6**.) `You will need to have a spotify account to use play songs with spotify. Head over to [Spotify](https://developer.spotify.com/) to create one.`
 
-Visit [Lavalink 3.4](https://github.com/freyacodes/Lavalink/releases/tag/3.4) to download the latest version.
+## Spotify Support
+This bot supports spotify. 
+You will need to have a spotify account to use play songs with spotify. Head over to [Spotify](https://developer.spotify.com/) to create one.
+You will need client ID and client secret and pass it into ``application.yml`` file.
 
-Install Lavalink.jar in the directory ``Lavalink`` and that's it.
+```yaml
+plugins:
+  spotify:
+    clientId: "Stuff here"
+    clientSecret: "Stuff here"
+    countryCode: "IN"
+    providers:
+      - "ytsearch:\"%ISRC%\""
+      - "scsearch: %QUERY%"
+      - "ytsearch: %QUERY%"
+```
+
+This is required for the bot to work.
+
+## YouTube Age Restrictions
+You can configure the bot to play YouTube videos that are age restricted, normally Lavalink is not able to play age restricted videos.
+But by passing certain parameters to the ``application.yml`` file, you can configure the bot to play age restricted videos.
+
+```yaml
+youtubeConfig:
+  PAPISID: "__3-Secure-PAPISID__"
+  PSID: "__3-Secure-PSID__"
+```
+
+Read [YouTube Age Restriction Bypass](https://github.com/Walkyst/lavaplayer-fork/issues/18)  to know how to get these keys.
 
 
 ## What is Lavalink and how this music bot works??
@@ -186,11 +217,8 @@ Jishaku is only usable by the owner of the bot. To use jishaku, you can use the 
 Most notable features of Jishaku are:
 
 1.) To be able to run python code from discord.
-  
 2.) You can interact with your environment and your terminal, through your bot.
-  
 3.) You can interact with your bot extensions, through your bot. For example, loading / unloading extensions.
-  
 4.) You can interact with your bot, through your bot. For example, reloading the bot.
 and more.
 
@@ -206,39 +234,32 @@ To know more about Jishaku, visit this repository:
 
 4.) Go in `OAuth2` tab and enable ``applications.commands`` and `bot` scope, so that your bot can have slash commands.
 
-6.) Then run ``main.py`` file in your preferred code editor / IDE, by either pressing F5 or running it through the terminal.
+6.) Then run ``main.py`` file in your preferred code editor/IDE, by either pressing F5 or running it through the terminal.
 
 ```bash
-  python3 main.py
+python3 main.py
 ```
-You can even use poetry to run your bot, if you want to:
-  
+If you want to use poetry, you can run the following command:
+
 ```bash
- poetry run task bot
+poetry run task bot
 ```
 
 **Also note**:
-This project supports [Docker](https://www.docker.com/). So, if you have Docker installed, 
-you can build an image of this project from the Dockerfile we provided, using the following command.
+This branch supports docker-compose deployment. Basically the project is divided into two containers
+
+1.) Lavalink - This is the container that runs the Lavalink server.
+
+2.) Bot - This is the container that runs the bot.
+
+To deploy this project, you can use the following command:
 
 ```bash
-docker build -t disnake-music .
+poetry run task compose
 ```
-This will build the image and tag it as ``disnake-music``. You can then run the image using the following command.
+This will start the containers.
 
-```bash
-docker run -t disnake-music
-```
-
-This will run the container with the image ``disnake-music``.
-
-If you do not know how to use Docker, you can read the [Docker documentation](https://docs.docker.com/), for more information.
-Docker is one of the best ways to run your bot.
-
-
-If all the steps are correctly followed, the bot should be up and running.
-
-Enjoy :).
+If you are on a linux distro, you can install [portainer](https://portainer.io), to manage your containers.
 
 ## Credits
 Well, this project is entirely free and Open Source, if you want, you can certainly use it in your own projects.
