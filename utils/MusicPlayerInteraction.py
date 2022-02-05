@@ -646,17 +646,13 @@ class MenuController:
 
     async def show_lyrics(self, interaction: disnake.ApplicationCommandInteraction):
         """
-        A command that will show the lyrics of the current playing song or the name of the song you want lyrics
+        This method will show the lyrics of the current playing song or the name of the song you want lyrics
         for, if you explicitly specify it.
 
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
             The Interaction of the command.
-
-        Examples
-        --------
-        `/lyrics`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=interaction.guild.id, cls=Player, context=interaction
@@ -690,17 +686,13 @@ class MenuController:
 
     async def shuffle(self, interaction: disnake.ApplicationCommandInteraction):
         """
-        A command that will shuffle the entire queue of the current music player instance.
+        This method will shuffle the entire queue of the current music player instance.
         You need at least 3 songs or more in queue in order to shuffle properly.
 
          Parameters
         ----------
         interaction: disnake.ApplicationCommandInteraction
             The Interaction of the command.
-
-        Examples
-        --------
-        `/queue shuffle`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=interaction.guild.id, cls=Player, context=interaction
@@ -751,17 +743,13 @@ class MenuController:
 
     async def show_queue(self, interaction: disnake.ApplicationCommandInteraction):
         """
-        A command that will show all the songs that queued in the music player. It has pagination,
+        This method will show all the songs that queued in the music player. It has pagination,
         so it's easy for you to browse.
 
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        Examples
-        --------
-         `/queue show`
+            The Interaction of the command.`
         """
         player: Player = self.bot.wavelink.get_player(
             guild_id=interaction.guild.id, cls=Player, context=interaction
