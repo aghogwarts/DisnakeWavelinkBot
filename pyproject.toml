@@ -9,7 +9,7 @@ readme = "README.md"
 
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.8"
 disnake = "^2.2.2"
 youtube_dl = "^2021.6.6"
 youtube-search-python = "^1.5.3"
