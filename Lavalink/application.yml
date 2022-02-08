@@ -1,3 +1,4 @@
+
 # Lavalink Configurations
 server: # REST and WS server
   port: 2333
@@ -22,8 +23,8 @@ lavalink:
     soundcloudSearchEnabled: true
     gc-warnings: true
     youtubeConfig:
-      PAPISID: "Youtube PAPISID key" 
-      PSID: "Youtube PSID Key"
+      PAPISID: "__3-Secure PAPISID Key"
+      PSID: "__3-Secure PSID Key"
     #ratelimit:
       #ipBlocks: ["1.0.0.0/8", "..."] # list of ip blocks
       #excludedIps: ["...", "..."] # ips which should be explicit excluded from usage by lavalink
@@ -31,17 +32,37 @@ lavalink:
       #searchTriggersFail: true # Whether a search 429 should trigger marking the ip as failing
       #retryLimit: -1 # -1 = use default lavaplayer value | 0 = infinity | >0 = retry will happen this numbers times
     plugins:
-      - dependency: "com.github.Topis-Lavalink-Plugins:Spotify-Plugin:1.0.17" # spotify plugin, thanks @TopiSenpai 
+      - dependency: "com.github.Topis-Lavalink-Plugins:Topis-Source-Managers-Plugin:2.0.1" # replace vx.x.x with the latest release tag!
       - repository: "https://jitpack.io"
 plugins:
-  spotify:
-    clientId: "Spotify Client ID Here"
-    clientSecret: "Spotify Client Secret Here"
-    countryCode: "IN"
+  topissourcemanagers:
     providers:
       - "ytsearch:\"%ISRC%\""
       - "scsearch: %QUERY%"
       - "ytsearch: %QUERY%"
+
+    sources:
+      spotify: true
+      applemusic: true
+
+    spotify:
+      clientId: "Client ID of your spotify developer account here"
+      clientSecret: "Client Secret of your spotify developer account here"
+      countryCode: "IN"
+    applemusic:
+      countryCode: "IN"
+
+  dunctebot:
+    ttsLanguage: "en-AU" # language of the TTS engine
+    sources:
+      # true = source enabled, false = source disabled
+      getyarn: true # www.getyarn.io
+      clypit: true # www.clyp.it
+      tts: false # speak:Words to speak
+      pornhub: false # Uh, I don't know.
+      reddit: true # should be self-explanatory
+      ocremix: true # www.ocremix.org
+      tiktok: true # tiktok.com
 
 metrics:
   prometheus:
