@@ -16,11 +16,14 @@ from core.MusicBot import Bot
 from utils.exceptions import IncorrectChannelError, NoChannelProvided
 from utils.helpers import ErrorView, LyricsPaginator, SearchService
 from utils.MusicPlayerInteraction import Player, QueuePages, Track
-from utils.views import FilterView
 from utils.paginators import WrapText
+from utils.views import FilterView, SongSelectionView
 from wavelink.errors import FilterInvalidArgument
 
-youtube_url_regex = re.compile(r"https?://(?:www\.)?.+")
+url_regex = re.compile(r"https?://(?:www\.)?.+")
+
+youtube_url_regex = re.compile(
+    r"https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)(?P<id>[\w-]{11})(?:&.+)?$")
 
 SOUNDCLOUD_URL_REGEX = re.compile(
     r"^(https?:\/\/)?(www.)?(m\.)?soundcloud\.com\/[\w\-\.]+(\/)+[\w\-\.]+/?$"
@@ -106,10 +109,10 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.Cog.listener("on_voice_state_update")
     async def DJ_assign(
-        self,
-        member: disnake.Member,
-        before: disnake.VoiceState,
-        after: disnake.VoiceState,
+            self,
+            member: disnake.Member,
+            before: disnake.VoiceState,
+            after: disnake.VoiceState,
     ):
         """
         Assign DJ role to the user who is currently playing music.
@@ -148,7 +151,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             player.dj = member
 
     async def cog_slash_command_error(
-        self, interaction: disnake.ApplicationCommandInteraction, error: Exception
+            self, interaction: disnake.ApplicationCommandInteraction, error: Exception
     ) -> None:
         """
         Cog wide error handler.
@@ -156,7 +159,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed which creates an Interaction.
 
         error : Exception
             The error that was raised.
@@ -202,9 +205,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await safe_send(
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['redtick']} An error has occurred while "
-                    f"executing {interaction.application_command.name} command. The error has been generated on "
-                    f"mystbin. "
-                    f"Please report this to `{', '.join([str(owner) for owner in await self.bot.get_owners])}`",
+                                f"executing {interaction.application_command.name} command. The error has been generated on "
+                                f"mystbin. "
+                                f"Please report this to `{', '.join([str(owner) for owner in await self.bot.get_owners])}`",
                     colour=disnake.Colour.random(),
                 ),
                 view=ErrorView(url=url),
@@ -219,7 +222,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             )
 
     async def cog_before_slash_command_invoke(
-        self, interaction: disnake.ApplicationCommandInteraction
+            self, interaction: disnake.ApplicationCommandInteraction
     ) -> None:
         """
         Checks if the slash command is invoked in the correct channel and the user has joined in the correct channel.
@@ -227,7 +230,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed which creates an Interaction.
         """
         if interaction.response.is_done():
             safe_send = interaction.followup.send
@@ -273,7 +276,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         Returns
         -------
@@ -299,7 +303,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         Returns
         -------
@@ -311,15 +316,15 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         )
 
         return (
-            player.dj == interaction.author
-            or interaction.author.guild_permissions.kick_members
+                player.dj == interaction.author
+                or interaction.author.guild_permissions.kick_members
         )  # you can change your
         # permissions here.
 
     async def connect(
-        self,
-        interaction: disnake.ApplicationCommandInteraction,
-        channel: typing.Union[disnake.VoiceChannel, disnake.StageChannel] = None,
+            self,
+            interaction: disnake.ApplicationCommandInteraction,
+            channel: typing.Union[disnake.VoiceChannel, disnake.StageChannel] = None,
     ) -> None:
         """
         Connect to a voice channel.
@@ -327,7 +332,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         channel : disnake.VoiceChannel, Optional
             The voice channel to connect to.
@@ -353,28 +359,32 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Play or queue a song with the given query.")
     async def play(
-        self,
-        interaction: disnake.ApplicationCommandInteraction,
-        query: str = Param(description="Search your song...."),
-        service: str = Param(
-            description="The service to search on.", default="youtube"
-        ),
+            self,
+            interaction: disnake.ApplicationCommandInteraction,
+            query: str = Param(description="Search your song...."),
+            service: str = Param(
+                description="The service to search on.", default="youtube"
+            ),
     ):
         """
         A command that will play your favorite song and if a song is already playing, it will add the song in
         queue. You can search for songs on a specific service. For example, soundcloud, YouTube, etc.
-        Currently, three services are supported: YouTube, soundcloud, and YouTube music.
+        Supported Services: YouTube, SoundCloud, Bandcamp, Spotify and more. You can find a list of supported
+        by running /help info.
+        However, only spotify, souncloud track urls are supported, you cannot search for a song by its name.
 
-        Parameters
-        ----------
-        interaction: disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+        Parameters 
+        ---------- 
+        interaction: disnake.ApplicationCommandInteraction 
+            This parameter takes 
+            disnake.ApplicationCommandInteraction object, when this slash command is executed which creates an
+            Interaction.
 
         query: str
             The song query to search for.
 
         service: str
-            The service to search the song on.
+            The service platform to search the song on.
 
         Examples
         --------
@@ -389,6 +399,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             "soundcloud": SearchService.scsearch,
             "youtubemusic": SearchService.ytmsearch,
             "spotify": SearchService.spsearch,
+            "applemusic": SearchService.amsearch,
         }
 
         await interaction.response.defer()
@@ -398,10 +409,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         query = query.strip("<>")
         if (
-            not youtube_url_regex.match(query)
-            and service.lower() == "youtubemusic"
-            or service.lower() == "youtube"
-            and not youtube_url_regex.match(query)
+                not service.lower() == "youtubemusic"
+                or service.lower() == "youtube"
+                and not url_regex.match(query)
         ):
             query = f"{services[service.lower()]}:{query}"
 
@@ -411,12 +421,57 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if not SPOTIFY_URL_REGEX.match(query) and service.lower() == "spotify":
             query = f"{services[service.lower()]}:{query}"
 
-        tracks = await self.bot.wavelink.get_tracks(query)
+        if (
+                SPOTIFY_URL_REGEX.match(query)
+                or SOUNDCLOUD_URL_REGEX.match(query)
+                or url_regex.match(query) or youtube_url_regex.match(query)
+        ):
+            #  If the query is a spotify, soundcloud or YouTube url, we can just play it directly.
+            tracks = await self.bot.wavelink.get_tracks(query)
+
+            if not tracks:
+                return await interaction.edit_original_message(
+                    content=f"{self.bot.icons['redtick']} No songs were found with that query. "
+                            f"Please try again.",
+                )
+
+            if isinstance(tracks, wavelink.TrackPlaylist):
+                for track in tracks.tracks:
+                    track = Track(track.id, track.info, requester=interaction.author)
+                    await player.queue.put(track)
+
+                return await interaction.edit_original_message(
+                    embed=disnake.Embed(
+                        description=f'```ini\nAdded the playlist {tracks.data["playlistInfo"]["name"]}'
+                                    f" with {len(tracks.tracks)} songs to the queue.\n```",
+                        color=disnake.Colour.random(),
+                    ).set_footer(
+                        text=f"Requested by {interaction.author.name}",
+                        icon_url=interaction.author.display_avatar.url,
+                    )
+                )
+            else:
+                track = Track(
+                    tracks[0].id, tracks[0].info, requester=interaction.author
+                )
+                await interaction.edit_original_message(
+                    content=f"\n{self.bot.icons['headphones']} Enqueued `{track.title}` to the Queue\n"
+                )
+                await player.queue.put(track)
+
+            if not player.is_playing:
+                await player.play_next_song()
+                return
+
+        tracks = await self.bot.wavelink.get_tracks(
+            query
+        )  # If the query is not a spotify or soundcloud url,
+        # we need to search for it.
 
         if not tracks:
             return await interaction.edit_original_message(
                 content=f"{self.bot.icons['redtick']} No songs were found with that query. "
-                f"Please try again.",
+                        f"Please try again.",
             )
 
         if isinstance(tracks, wavelink.TrackPlaylist):
@@ -427,26 +482,31 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await interaction.edit_original_message(
                 embed=disnake.Embed(
                     description=f'```ini\nAdded the playlist {tracks.data["playlistInfo"]["name"]}'
-                    f" with {len(tracks.tracks)} songs to the queue.\n```",
+                                f" with {len(tracks.tracks)} songs to the queue.\n```",
                     color=disnake.Colour.random(),
                 ).set_footer(
                     text=f"Requested by {interaction.author.name}",
                     icon_url=interaction.author.display_avatar.url,
                 )
             )
+            if not player.is_playing:
+                await player.play_next_song()
+            return
         else:
-            track = Track(tracks[0].id, tracks[0].info, requester=interaction.author)
             await interaction.edit_original_message(
-                content=f"\n{self.bot.icons['headphones']} Enqueued `{track.title}` to the Queue\n"
+                content=f"\n{self.bot.icons['headphones']} Please select a song to play.\n",
+                view=SongSelectionView(
+                    tracks=tracks[:11],
+                    player=player,
+                    bot=self.bot,
+                    interaction=interaction,
+                ),
             )
-            await player.queue.put(track)
-
-        if not player.is_playing:
-            await player.play_next_song()
+            return
 
     @play.autocomplete(option_name="service")
     async def play_service_autocomplete(
-        self, interaction: disnake.ApplicationCommandInteraction, query: str
+            self, interaction: disnake.ApplicationCommandInteraction, query: str
     ):
         """
         Autocomplete for the play command.
@@ -454,7 +514,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction: disnake.ApplicationCommandInteraction
-            The Interaction of the command. This is not used.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction. This is not used.
 
         query: str
             The query to search for.
@@ -471,9 +532,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         description="Switch the channel where the bot was first invoked."
     )
     async def switch_channel(
-        self,
-        interaction: disnake.ApplicationCommandInteraction,
-        channel: disnake.TextChannel = Param(description="Channel to switch to."),
+            self,
+            interaction: disnake.ApplicationCommandInteraction,
+            channel: disnake.TextChannel = Param(description="Channel to switch to."),
     ):
         """
         A command that will switch to a different channel and set it as the channel where the bot was invoked.
@@ -484,7 +545,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         channel : disnake.TextChannel
             The channel where the bot will be invoked.
@@ -517,7 +579,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await interaction.response.send_message(
             embed=disnake.Embed(
                 description=f"{self.bot.icons['greentick']} `Successfully "
-                f"set {channel.mention} as the session channel.`",
+                            f"set {channel.mention} as the session channel.`",
                 colour=disnake.Colour.random(),
             ),
             delete_after=10,
@@ -531,7 +593,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction: disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         Examples
         --------
@@ -608,7 +671,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         Examples
         --------
@@ -679,7 +743,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction: disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         Examples
         --------
@@ -737,7 +802,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction: disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         Examples
         --------
@@ -801,7 +867,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction: disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         Examples
         --------
@@ -838,9 +905,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Change the players volume, between 1 and 100.")
     async def volume(
-        self,
-        interaction: disnake.ApplicationCommandInteraction,
-        vol: int = Param(description="The volume to set the player to.", gt=1, lt=100),
+            self,
+            interaction: disnake.ApplicationCommandInteraction,
+            vol: int = commands.Range[1, 100]
     ):
         """
         A command that will alter the volume of the music player, between 1 and 100.
@@ -848,7 +915,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction: disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         vol: int
             The volume to set the player to.
@@ -894,7 +962,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await interaction.response.send_message(
             embed=disnake.Embed(
                 description=f"{self.bot.icons['greentick']} Set the volume "
-                f"to **{vol}**%",
+                            f"to **{vol}**%",
                 colour=disnake.Colour.random(),
             )
         )
@@ -911,7 +979,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction: disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         Examples
         --------
@@ -971,7 +1040,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction: disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         Examples
         --------
@@ -1032,7 +1102,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         Examples
         --------
@@ -1074,7 +1145,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             )
 
         data = await resp.json()
-        await interaction.response.send_message(content="Generating lyrics....")
+        await interaction.response.send_message(content="Generating lyrics....", delete_after=5)
 
         lyrics = data["lyrics"]
         content = WrapText(lyrics, length=1000)
@@ -1099,7 +1170,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed which
+            creates an Interaction.
 
         Examples
         --------
@@ -1147,20 +1219,20 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         description="Add a custom filter, built from channel_mix."
     )
     async def channel_mix(
-        self,
-        interaction: disnake.ApplicationCommandInteraction,
-        left_to_right: float = Param(
-            description="Left to Right", default=0.5, ge=0.0, le=10.0
-        ),
-        right_to_left: float = Param(
-            description="Right to Left", default=0.5, ge=0.0, le=10.0
-        ),
-        right_to_right: float = Param(
-            description="Right to Right", default=0.5, ge=0.0, le=10.0
-        ),
-        left_to_left: float = Param(
-            description="Left to Left", default=0.5, ge=0.0, le=10.0
-        ),
+            self,
+            interaction: disnake.ApplicationCommandInteraction,
+            left_to_right: float = Param(
+                description="Left to Right", default=0.5, ge=0.0, le=10.0
+            ),
+            right_to_left: float = Param(
+                description="Right to Left", default=0.5, ge=0.0, le=10.0
+            ),
+            right_to_right: float = Param(
+                description="Right to Right", default=0.5, ge=0.0, le=10.0
+            ),
+            left_to_left: float = Param(
+                description="Left to Left", default=0.5, ge=0.0, le=10.0
+            ),
     ):
 
         """
@@ -1171,7 +1243,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed which
+            creates an Interaction.
 
         left_to_right : float
             The left to right panning.
@@ -1245,11 +1318,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         description="Build a custom Filter from base TimeScale Filter."
     )
     async def time_scale(
-        self,
-        interaction: disnake.ApplicationCommandInteraction,
-        speed: float = Param(description="Speed", default=1.0, ge=0.0),
-        pitch: float = Param(description="Pitch", default=1.0, ge=0.0),
-        rate: float = Param(description="Rate", default=1.0, ge=0.0),
+            self,
+            interaction: disnake.ApplicationCommandInteraction,
+            speed: float = Param(description="Speed", default=1.0, ge=0.0),
+            pitch: float = Param(description="Pitch", default=1.0, ge=0.0),
+            rate: float = Param(description="Rate", default=1.0, ge=0.0),
     ):
         """
         Filter which changes the speed and pitch of a track.
@@ -1258,7 +1331,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
          Parameters
          ----------
          interaction : disnake.ApplicationCommandInteraction
-             The Interaction of the command.
+             This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+              which creates an Interaction.
 
          speed : float
              The speed of the audio.
@@ -1326,16 +1400,16 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         description="Build a custom Filter from base Distortion Filter."
     )
     async def distortion(
-        self,
-        interaction: disnake.ApplicationCommandInteraction,
-        sin_offset: float = Param(description="Sin Offset", default=0.0),
-        cos_offset: float = Param(description="Cos Offset", default=0.0),
-        sin_scale: float = Param(description="Sin Scale", default=1.0),
-        cos_scale: float = Param(description="Cos Scale", default=1.0),
-        tan_offset: float = Param(description="Tan Offset", default=0.0),
-        tan_scale: float = Param(description="Tan Scale", default=1.0),
-        offset: float = Param(description="Offset", default=0.0),
-        scale: float = Param(description="Scale", default=1.0),
+            self,
+            interaction: disnake.ApplicationCommandInteraction,
+            sin_offset: float = Param(description="Sin Offset", default=0.0),
+            cos_offset: float = Param(description="Cos Offset", default=0.0),
+            sin_scale: float = Param(description="Sin Scale", default=1.0),
+            cos_scale: float = Param(description="Cos Scale", default=1.0),
+            tan_offset: float = Param(description="Tan Offset", default=0.0),
+            tan_scale: float = Param(description="Tan Scale", default=1.0),
+            offset: float = Param(description="Offset", default=0.0),
+            scale: float = Param(description="Scale", default=1.0),
     ):
         """
         This slash command builds a custom Filter from base Distortion Filter. This filter can be used to distort the
@@ -1344,7 +1418,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-             The Interaction of the command.
+             This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+             which creates an Interaction.
 
         sin_offset : float
             The sin offset of the filter.
@@ -1437,7 +1512,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         Examples
         --------
@@ -1460,7 +1536,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return await interaction.response.send_message(
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['info']} There are no more songs "
-                    f"in the queue.",
+                                f"in the queue.",
                     colour=disnake.Colour.random(),
                 ),
             )
@@ -1486,7 +1562,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed which
+            creates an Interaction.
 
         Examples
         --------
@@ -1548,9 +1625,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @queue.sub_command(description="Remove a song from the queue by its index.")
     async def remove(
-        self,
-        interaction: disnake.ApplicationCommandInteraction,
-        index: int = Param(description="The index of the song to remove."),
+            self,
+            interaction: disnake.ApplicationCommandInteraction,
+            index: int = Param(description="The index of the song to remove."),
     ):
         """
         A command that will remove the song based on its index/number from the queue.
@@ -1558,7 +1635,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed which
+            creates an Interaction.
 
         index : int
             The index of the song to remove.
@@ -1590,7 +1668,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return await interaction.response.send_message(
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['info']} There are no more songs "
-                    f"in the queue.",
+                                f"in the queue.",
                     colour=disnake.Colour.random(),
                 ),
             )
@@ -1623,10 +1701,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         A command that will shuffle the entire queue of the current music player instance.
         You need at least 3 songs or more in queue in order to shuffle properly.
 
-         Parameters
+        Parameters
         ----------
         interaction: disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed which
+            creates an Interaction.
 
         Examples
         --------
@@ -1693,7 +1772,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed
+            which creates an Interaction.
 
         Examples
         --------
@@ -1731,7 +1811,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed which
+            creates an Interaction.
 
         Examples
         --------
@@ -1759,7 +1840,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         embed = await player.make_song_embed()  # shows the song embed.
         await interaction.response.send_message(
-            content="Check your dms.", ephemeral=True
+            content="I have dm'ed you something!", ephemeral=True
         )
         try:
             await interaction.author.send(embed=embed)
@@ -1774,11 +1855,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.slash_command(description="Seek to a specific time in the song.")
     async def seek(
-        self,
-        interaction: disnake.ApplicationCommandInteraction,
-        position: str = Param(
-            description="The time position to seek to. For eg: /seek 3:56"
-        ),
+            self,
+            interaction: disnake.ApplicationCommandInteraction,
+            position: str = Param(
+                description="The time position to seek to. For eg: /seek 3:56"
+            ),
     ):
         """
         A command that will seek aka skip to a specific part of a track in a song that has been playing.
@@ -1786,7 +1867,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed which
+            creates an Interaction.
 
         position : str
             The time position to seek to. For eg: /seek 3:56
@@ -1819,7 +1901,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return await interaction.response.send_message(
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['redtick']} `There player is paused right now, resume it in order to "
-                    f"seek.`",
+                                f"seek.`",
                     colour=disnake.Colour.random(),
                 )
             )
@@ -1855,9 +1937,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         description="Swap the current DJ to another member in the voice channel."
     )
     async def swap_dj(
-        self,
-        interaction: disnake.ApplicationCommandInteraction,
-        member: disnake.Member = Param(description="The member to switvj to"),
+            self,
+            interaction: disnake.ApplicationCommandInteraction,
+            member: disnake.Member = Param(description="The member to switvj to"),
     ):
         """
         A command that will switch the player's DJ to another member in the same voice channel.
@@ -1865,7 +1947,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         Parameters
         ----------
         interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+            This parameter takes disnake.ApplicationCommandInteraction object, when this slash command is executed which creates an Interaction.
 
         member: disnake.Member
             The member to swap to.
@@ -1900,7 +1982,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return await interaction.response.send_message(
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['info']} `{member}` is not currently in voice, "
-                    f"so they cannot be a DJ."
+                                f"so they cannot be a DJ."
                 ),
             )
 
