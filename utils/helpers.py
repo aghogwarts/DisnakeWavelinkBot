@@ -266,9 +266,13 @@ class Config:
     """
 
     def __init__(self):
-        self.bot_config_file_path = "./config/application.yml"
+        self.bot_config_file_path = "./config/config.yaml"
+        self.Lavalink_config_file_path = "./Lavalink/application.yml"
         with open(self.bot_config_file_path, encoding="utf-8") as f:
             self.data = yaml.load(f, Loader=yaml.FullLoader)
+        with open(self.Lavalink_config_file_path, encoding="utf-8") as f:
+            self.Lavalink_data = yaml.load(f, Loader=yaml.FullLoader)
+        
 
     @property
     def prefix(self) -> typing.Optional[str]:
@@ -317,7 +321,7 @@ class Config:
         """
         This method returns the host of the Lavalink server.
         """
-        host = self.data["server"]["address"]
+        host = self.Lavalink_data["server"]["address"]
         if host is None:
             logger.error("No Lavalink address found in application.yml")
             sys.exit(1)
@@ -328,7 +332,7 @@ class Config:
         """
         This method returns the port of the Lavalink server.
         """
-        port = self.data["server"]["port"]
+        port = self.Lavalink_data["server"]["port"]
         if port is None:
             logger.error("No Lavalink port found in application.yml")
             sys.exit(1)
@@ -339,7 +343,7 @@ class Config:
         """
         This method returns the password of the Lavalink server.
         """
-        password = self.data["lavalink"]["server"]["password"]
+        password = self.Lavalink_data["lavalink"]["server"]["password"]
         if password is None:
             logger.error("No Lavalink password found in application.yml")
             sys.exit(1)
