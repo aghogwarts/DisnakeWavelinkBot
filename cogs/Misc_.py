@@ -14,6 +14,7 @@ import youtube_dl as ydl
 from disnake.ext import commands
 from disnake.ext.commands import InvokableSlashCommand, Param
 
+from core.MusicBot import Bot
 from utils.helpers import BotInformationView, ErrorView, executor_function
 from utils.paginators import SimpleEmbedPages
 from wavelink import Player
@@ -62,22 +63,22 @@ class Misc(commands.Cog):
     Miscellaneous commands.
     """
 
-    def __init__(self, bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     async def cog_slash_command_error(
-            self, interaction: disnake.ApplicationCommandInteraction, error: Exception
+        self, interaction: disnake.ApplicationCommandInteraction, error: Exception
     ) -> None:
         """
-        Cog wide error handler. This is called when a command fails to execute.
+        Cog wide error handler. This is called when a command fails to execute and raises an Exception.
 
         Parameters
         ----------
-       interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+        interaction : disnake.ApplicationCommandInteraction
+             The Interaction of the command.
 
         error : Exception
-            The error that was raised.
+             The error that was raised.
         """
         if interaction.response.is_done():
             safe_send = interaction.followup.send
@@ -95,9 +96,9 @@ class Misc(commands.Cog):
         await safe_send(
             embed=disnake.Embed(
                 description=f"{self.bot.icons['redtick']} `An error has occurred while "
-                            f"executing {interaction.application_command.name} command. The error has been generated on "
-                            f"mystbin. "
-                            f"Please report this to {', '.join([str(owner) for owner in await self.bot.get_owners])}`",
+                f"executing {interaction.application_command.name} command. The error has been generated on "
+                f"mystbin. "
+                f"Please report this to {', '.join([str(owner) for owner in await self.bot.get_owners])}`",
                 colour=disnake.Colour.random(),
             ),
             view=ErrorView(url=url),
@@ -111,130 +112,14 @@ class Misc(commands.Cog):
             type(error), error, error.__traceback__, file=sys.stderr
         )
 
-    @commands.slash_command(description="Shows information about the bot.")
-    async def info(self, interaction: disnake.ApplicationCommandInteraction):
-        """
-        This command shows various information about the bot.
-
-        Parameters
-        ----------
-       interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
-
-        Examples
-        --------
-        `/info`
-        """
-        player: Player = self.bot.wavelink.get_player(
-            guild_id=interaction.guild.id, cls=Player, context=interaction
-        )
-
-        permissions = disnake.Permissions(294410120513)
-        github_url = "https://github.com/KortaPo/DisnakeWavelinkBot"
-        url = disnake.utils.oauth_url(
-            client_id=self.bot.user.id,
-            scopes=["bot", "applications.commands"],
-            permissions=permissions,
-        )
-        version = sys.version_info
-        em = disnake.Embed(color=disnake.Colour.random())
-
-        # File Stats
-        def line_count():
-            """
-            Counts the number of lines in the codebase.
-
-            Returns
-            -------
-            tuple[int, int, int, int, int, int]
-                The number of lines in the codebase.
-            """
-            files = classes = funcs = comments = lines = letters = 0
-            p = pathlib.Path("./")
-            for f in p.rglob("*.py"):
-                files += 1
-                with f.open() as of:
-                    letters_ = sum(len(f.open().read()) for f in p.rglob("*.py"))
-                    for line in of.readlines():
-                        line = line.strip()
-                        if line.startswith("class"):
-                            classes += 1
-                        if line.startswith("def"):
-                            funcs += 1
-                        if line.startswith("async def"):
-                            funcs += 1
-                        if "#" in line:
-                            comments += 1
-                        lines += 1
-            return files, classes, funcs, comments, lines, letters_
-
-        (
-            files,
-            classes,
-            funcs,
-            comments,
-            lines,
-            letters,
-        ) = await self.bot.loop.run_in_executor(None, line_count)
-        #
-        em.add_field(
-            name="Bot",
-            value=f"""
-       {self.bot.icons['arrow']} **Guilds**: `{len(self.bot.guilds)}`
-       {self.bot.icons['arrow']} **Users**: `{len(self.bot.users)}`
-       {self.bot.icons['arrow']} **Commands**: 
-       `{len([cmd for cmd in list(self.bot.walk_commands()) if not cmd.hidden])}`""",
-            inline=True,
-        )
-        em.add_field(
-            name="File Statistics",
-            value=f"""
-       {self.bot.icons['arrow']} **Letters**: `{letters}`
-       {self.bot.icons['arrow']} **Files**: `{files}`
-       {self.bot.icons['arrow']} **Lines**: `{lines}`
-       {self.bot.icons['arrow']} **Functions**: `{funcs}`""",
-            inline=True,
-        )
-        em.add_field(
-            name="Bot Owner",
-            value=f"""
-       {self.bot.icons['arrow']} **Name**: `{', '.join([owner.name for owner in await self.bot.get_owners])}`
-       {self.bot.icons['arrow']} **ID**: `{', '.join([str(owner.id) for owner in await self.bot.get_owners])}`""",
-            inline=True,
-        )
-        em.add_field(
-            name="Developers",
-            value=f"""
-       {self.bot.icons['arrow']} `KortaPo#8459`      
-       """,
-            inline=True,
-        )
-        em.add_field(
-            name="Invite",
-            value=f"[Click here to Invite {self.bot.user.name}]({url})",
-            inline=True,
-        )
-        em.add_field(
-            name="Source Code",
-            value=f"[Click here to view the source code of {self.bot.user.name}]({github_url})",
-            inline=True,
-        )
-        em.set_thumbnail(url=self.bot.user.avatar.url)
-        em.set_footer(
-            text=f"Python {version[0]}.{version[1]}.{version[2]} • disnake {disnake.__version__}"
-        )
-        await interaction.response.send_message(
-            embed=em,
-            view=BotInformationView(bot=self.bot, player=player, interaction=interaction),
-        )
 
     @commands.slash_command(
         description="Shows you spotify song information of an user's spotify rich presence"
     )
     async def spotify(
-            self,
-            interaction: disnake.ApplicationCommandInteraction,
-            member: disnake.Member = Param(description="Member to search for"),
+        self,
+        interaction: disnake.ApplicationCommandInteraction,
+        member: disnake.Member = Param(description="Member to search for"),
     ):
         """
         This command shows you spotify song information of a user's spotify rich presence,
@@ -242,11 +127,11 @@ class Misc(commands.Cog):
 
         Parameters
         ----------
-       interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+        interaction : disnake.ApplicationCommandInteraction
+             The Interaction of the command.
 
         member : disnake.Member
-            The member to query.
+             The member to query.
 
         Examples
         --------
@@ -296,17 +181,17 @@ class Misc(commands.Cog):
 
     @youtube.sub_command(description="Search youtube videos")
     async def video(
-            self,
-            interaction: disnake.ApplicationCommandInteraction,
-            query: str = Param(description="Video to search for."),
+        self,
+        interaction: disnake.ApplicationCommandInteraction,
+        query: str = Param(description="Video to search for."),
     ):
         """
         A command that searches YouTube videos.
 
         Parameters
         ----------
-       interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+        interaction : disnake.ApplicationCommandInteraction
+             The Interaction of the command.
 
         query : str
             The query to search for.
@@ -357,17 +242,17 @@ class Misc(commands.Cog):
 
     @youtube.sub_command(description="Search youtube channels")
     async def channel(
-            self,
-            interaction: disnake.ApplicationCommandInteraction,
-            query: str = Param(description="Channel Query"),
+        self,
+        interaction: disnake.ApplicationCommandInteraction,
+        query: str = Param(description="Search a YouTube channel..."),
     ):
         """
         A command that searches YouTube channels.
 
         Parameters
         ----------
-       interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+        interaction : disnake.ApplicationCommandInteraction
+             The Interaction of the command.
 
         query : str
             The query to search for.
@@ -435,25 +320,29 @@ class Misc(commands.Cog):
         pag = SimpleEmbedPages(entries=embeds, ctx=interaction)
         await pag.start()
 
-    @commands.slash_command(name="help", description="Shows help about bot commands.")
-    async def show_help(
-            self,
-            interaction: disnake.ApplicationCommandInteraction,
-            slash_command: str = Param(description="Command to get help for."),
+    @commands.slash_command(name="help", description="Shows help about slash commands.")
+    async def show_help(self, interaction: disnake.ApplicationCommandInteraction):
+        pass
+
+    @commands.slash_command(name="show", description="Shows help about slash commands.")
+    async def show(
+        self,
+        interaction: disnake.ApplicationCommandInteraction,
+        slash_command: str = Param(description="The slash command to get help for."),
     ):
         """
         This command shows help about bot commands.
 
         Parameters
         ----------
-       interaction : disnake.ApplicationCommandInteraction
-            The Interaction of the command.
+        interaction : disnake.ApplicationCommandInteraction
+             The Interaction of the command.
         slash_command : str
-            The command to get help for.
+            the command to get help for.
 
         Examples
         --------
-        `/help slash_command: info`
+        `/help show slash_command: info`
         """
         slash_commands = [command for command in self.bot.all_slash_commands]
         if slash_command in slash_commands:
@@ -466,8 +355,8 @@ class Misc(commands.Cog):
                     try:
                         examples = (
                             value.callback.__doc__.replace("\n", "")
-                                .split("Examples")[1]
-                                .replace("--------", "")
+                            .split("Examples")[1]
+                            .replace("--------", "")
                         )
                     except AttributeError:
                         continue
@@ -500,8 +389,8 @@ class Misc(commands.Cog):
             try:
                 examples = (
                     command.callback.__doc__.replace("\n", "")
-                        .split("Examples")[1]
-                        .replace("--------", "")
+                    .split("Examples")[1]
+                    .replace("--------", "")
                 )
             except AttributeError:
                 pass
@@ -534,9 +423,133 @@ class Misc(commands.Cog):
                 ephemeral=True,
             )
 
-    @show_help.autocomplete(option_name="slash_command")
+    @show_help.sub_command(name="info", description="Shows information about the bot.")
+    async def info(self, interaction: disnake.ApplicationCommandInteraction):
+        """
+        This command shows various information about the bot.
+
+        Parameters
+        ----------
+        interaction : disnake.ApplicationCommandInteraction
+             The Interaction of the command.
+
+        Examples
+        --------
+        `/info`
+    """
+        player: Player = self.bot.wavelink.get_player(
+            guild_id=interaction.guild.id, cls=Player, context=interaction
+        )
+
+        permissions = disnake.Permissions(294410120513)
+        github_url = "https://github.com/KortaPo/DisnakeWavelinkBot"
+        new_line = "\n"
+        url = disnake.utils.oauth_url(
+            client_id=self.bot.user.id,
+            scopes=["bot", "applications.commands"],
+            permissions=permissions,
+        )
+        sources = ["youtube", "soundcloud", "twitch", "spotify", "tiktok", "bandcamp", "youtubemusic",
+                   "ocremix", "applemusic", "vimeo", "reddit"]
+        version = sys.version_info
+        em = disnake.Embed(color=disnake.Colour.random())
+
+        # File Stats
+        def line_count():
+            """
+            Counts the number of lines in the codebase.
+
+            Returns
+            -------
+            tuple[int, int, int, int, int, int]
+                The number of lines in the codebase.
+            """
+            files = classes = funcs = comments = lines = letters = 0
+            p = pathlib.Path("./")
+            for f in p.rglob("*.py"):
+                files += 1
+                with f.open() as of:
+                    letters_ = sum(len(f.open().read()) for f in p.rglob("*.py"))
+                    for line in of.readlines():
+                        line = line.strip()
+                        if line.startswith("class"):
+                            classes += 1
+                        if line.startswith("def"):
+                            funcs += 1
+                        if line.startswith("async def"):
+                            funcs += 1
+                        if "#" in line:
+                            comments += 1
+                        lines += 1
+            return files, classes, funcs, comments, lines, letters_
+
+        (
+            files,
+            classes,
+            funcs,
+            comments,
+            lines,
+            letters,
+        ) = await self.bot.loop.run_in_executor(None, line_count)
+        #
+        em.add_field(
+            name="Bot",
+            value=f"""
+       {self.bot.icons['arrow']} **Guilds**: `{len(self.bot.guilds)}`
+       {self.bot.icons['arrow']} **Users**: `{len(self.bot.users)}`
+       {self.bot.icons['arrow']} **Commands**: 
+       `{len([cmd for cmd in list(self.bot.walk_commands()) if not cmd.hidden])}`""",
+            inline=True,
+        )
+        em.add_field(
+            name="File Statistics",
+            value=f"""
+       {self.bot.icons['arrow']} **Letters**: `{letters}`
+       {self.bot.icons['arrow']} **Files**: `{files}`
+       {self.bot.icons['arrow']} **Lines**: `{lines}`
+       {self.bot.icons['arrow']} **Functions**: `{funcs}`""",
+            inline=True,
+        )
+
+        em.add_field(name="Song sources I support!", value=f"{new_line.join(sources)}")
+        em.add_field(
+            name="Bot Owner",
+            value=f"""
+       {self.bot.icons['arrow']} **Name**: `{', '.join([owner.name for owner in await self.bot.get_owners])}`
+       {self.bot.icons['arrow']} **ID**: `{', '.join([str(owner.id) for owner in await self.bot.get_owners])}`""",
+            inline=True,
+        )
+        em.add_field(
+            name="Developers",
+            value=f"""
+       {self.bot.icons['arrow']} `KortaPo#8459`      
+       """,
+            inline=True,
+        )
+        em.add_field(
+            name="Invite",
+            value=f"[Click here to Invite {self.bot.user.name}]({url})",
+            inline=True,
+        )
+        em.add_field(
+            name="Source Code",
+            value=f"[Click here to view the source code of {self.bot.user.name}]({github_url})",
+            inline=True,
+        )
+        em.set_thumbnail(url=self.bot.user.avatar.url)
+        em.set_footer(
+            text=f"Python {version[0]}.{version[1]}.{version[2]} • disnake {disnake.__version__}"
+        )
+        await interaction.response.send_message(
+            embed=em,
+            view=BotInformationView(
+                bot=self.bot, player=player, interaction=interaction
+            ),
+        )
+
+    @show.autocomplete(option_name="slash_command")
     async def command_auto(
-            self, interaction: disnake.ApplicationCommandInteraction, user_input: str
+        self, interaction: disnake.ApplicationCommandInteraction, user_input: str
     ):
         """
         This command autocompletes the command to get help for.
