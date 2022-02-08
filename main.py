@@ -8,6 +8,8 @@ from loguru import logger
 import sys
 from core.MusicBot import Bot
 from utils.helpers import Config
+from utils.process import lavalink_alive
+
 
 if __name__ == "__main__":
     if sys.platform == "Linux":
@@ -18,9 +20,10 @@ if __name__ == "__main__":
     config = Config()
     bot.load_cogs("cogs")
     logger.info("All cogs have been successfully loaded", __name="Music Bot")
-    logger.info("Starting Bot.....", __name="Music Bot")
+    logger.info("Starting Lavalink.....", __name="Music Bot")
     try:
-        time.sleep(16)  # Wait for lavalink to start
+        lavalink_alive()
+        time.sleep(30)  # Wait for lavalink to start
 
         bot.run(config.token, reconnect=True)
     except KeyboardInterrupt:
