@@ -1,8 +1,14 @@
 #  -*- coding: utf-8 -*-
+import datetime
+from typing import List
+
 import disnake
+import humanize
+from disnake import MessageInteraction
 
 import wavelink
-from utils.MusicPlayerInteraction import Player
+from core.MusicBot import Bot
+from utils.MusicPlayerInteraction import Player, Track
 
 
 class Filter(disnake.ui.Select["FilterView"]):
@@ -37,7 +43,9 @@ class Filter(disnake.ui.Select["FilterView"]):
             options=options,
         )
 
-    async def callback(self, interaction: disnake.ApplicationCommandInteraction) -> None:
+    async def callback(
+        self, interaction: disnake.ApplicationCommandInteraction
+    ) -> None:
         """
         Callback for the Filter view.
 
@@ -90,6 +98,109 @@ class FilterView(disnake.ui.View):
             Whether the interaction is the same as the one that created this view.
         """
         if interaction.author.id != self.interaction.author.id:
+            return await interaction.response.send_message(
+                "This is not your menu!", ephemeral=True
+            )
+        return True
+
+    async def on_timeout(self) -> None:
+        for item in self.children:
+            item.disabled = True
+        await self.interaction.edit_original_message(view=self)
+
+
+class SongSelection(disnake.ui.Select["SongSelectionView"]):
+    def __init__(self, tracks: List[Track], bot: Bot, player: Player):
+        """
+        A selection of songs.
+
+        Parameters
+        ----------
+        tracks : List[Track]
+            The tracks to select from.
+
+        bot : Bot
+            The bot instance.
+
+        player : Player
+            The player instance.
+        """
+        self.bot = bot
+        self.player = player
+        self.tracks = tracks
+
+        options = []
+        for index, track in enumerate(self.tracks):
+            option = disnake.SelectOption(
+                label=f"{index + 1}. {track.title}",
+                description=f"{track.author} - {humanize.precisedelta(datetime.timedelta(milliseconds=track.duration))}",
+                value=str(index),
+            )
+            options.append(option)
+
+        super().__init__(
+            placeholder="Select a song",
+            min_values=1,
+            max_values=1,
+            options=options,
+        )
+
+    async def callback(self, interaction: MessageInteraction) -> None:
+        """
+        This method is called when the user selects an option.
+        """
+
+        track = Track(
+            self.tracks[int(self.values[0])].id,
+            self.tracks[int(self.values[0])].info,
+            requester=interaction.author,
+        )
+        #  Creating a Track object from the selected track.
+        await interaction.response.send_message(
+            content=f"\n{self.bot.icons['headphones']} Enqueued `{track.title}` to the Queue\n"
+        )
+        await self.player.queue.put(track)
+
+        if not self.player.is_playing:
+            await self.player.play_next_song()
+
+
+class SongSelectionView(disnake.ui.View):
+    """
+    This class subclasses the disnake.ui.View class which shows a selection of songs.
+    """
+
+    def __init__(
+        self,
+        tracks: List[Track],
+        interaction: disnake.ApplicationCommandInteraction,
+        player: Player,
+        bot: Bot,
+    ):
+        super().__init__(timeout=60)
+        self.tracks = tracks
+        self.bot = bot
+        self.interaction = interaction
+        self.player = player
+        self.add_item(SongSelection(tracks=tracks, bot=self.bot, player=self.player))
+
+    async def interaction_check(
+        self, interaction: disnake.ApplicationCommandInteraction
+    ) -> bool:
+        """
+        Check if the interaction is the same as the one that created this view.
+
+        Parameters
+        ----------
+        interaction : disnake.ApplicationCommandInteraction
+            The interaction to check.
+
+        Returns
+        -------
+        bool
+            Whether the interaction is the same as the one that created this view.
+        """
+        if interaction.author.id != self.player.dj.id:
             return await interaction.response.send_message(
                 "This is not your menu!", ephemeral=True
             )
