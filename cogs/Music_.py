@@ -33,6 +33,10 @@ SPOTIFY_URL_REGEX = re.compile(
     r"https?://open.spotify.com/(?P<type>album|playlist|track)/(?P<id>[a-zA-Z0-9]+)"
 )
 
+APPLEMUSIC_URL_REGEX = re.compile(
+    r"https?://(?:www\.)?music\.apple\.com/[a-zA-Z0-9]+(/[a-zA-Z0-9]+)?$"
+)
+
 
 class Music(commands.Cog, wavelink.WavelinkMixin):
     """
@@ -419,6 +423,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             query = f"{services[service.lower()]}:{query}"
 
         if not SPOTIFY_URL_REGEX.match(query) and service.lower() == "spotify":
+            query = f"{services[service.lower()]}:{query}"
+        
+        if not APPLEMUSIC_URL_REGEX.match(query) and service.lower() == "applemusic":
             query = f"{services[service.lower()]}:{query}"
 
         if (
