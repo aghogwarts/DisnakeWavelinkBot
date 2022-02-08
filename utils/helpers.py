@@ -3,14 +3,17 @@ import asyncio
 import datetime
 import functools
 import pathlib
+import random
 import sys
 import time
 import typing
 from enum import Enum
+from random import Random
 
 import disnake
 import humanize
 import yaml
+from disnake.ext import commands
 from loguru import logger
 
 import wavelink
@@ -147,7 +150,7 @@ class BotInformation:
             value=f"""
                {self.bot.icons['arrow']} **Guilds**: `{len(self.bot.guilds)}`
                {self.bot.icons['arrow']} **Users**: `{len(self.bot.users)}`
-               {self.bot.icons['arrow']} **Commands**: `{len([cmd for cmd in list(self.bot.walk_commands()) 
+               {self.bot.icons['arrow']} **Commands**: `{len([cmd for cmd in list(self.bot.walk_commands())
                                                               if not cmd.hidden])}`""",
             inline=True,
         )
@@ -263,13 +266,9 @@ class Config:
     """
 
     def __init__(self):
-        self.bot_config_file_path = "./config/config.yaml"
-        self.Lavalink_config_file_path = "./Lavalink/application.yml"
+        self.bot_config_file_path = "./config/application.yml"
         with open(self.bot_config_file_path, encoding="utf-8") as f:
             self.data = yaml.load(f, Loader=yaml.FullLoader)
-        
-        with open(self.Lavalink_config_file_path, encoding="utf-8") as f:
-            self.Lavalink_data = yaml.load(f, Loader=yaml.FullLoader)
 
     @property
     def prefix(self) -> typing.Optional[str]:
@@ -318,7 +317,7 @@ class Config:
         """
         This method returns the host of the Lavalink server.
         """
-        host = self.Lavalink_data["server"]["address"]
+        host = self.data["server"]["address"]
         if host is None:
             logger.error("No Lavalink address found in application.yml")
             sys.exit(1)
@@ -329,7 +328,7 @@ class Config:
         """
         This method returns the port of the Lavalink server.
         """
-        port = self.Lavalink_data["server"]["port"]
+        port = self.data["server"]["port"]
         if port is None:
             logger.error("No Lavalink port found in application.yml")
             sys.exit(1)
@@ -340,7 +339,7 @@ class Config:
         """
         This method returns the password of the Lavalink server.
         """
-        password = self.Lavalink_data["lavalink"]["server"]["password"]
+        password = self.data["lavalink"]["server"]["password"]
         if password is None:
             logger.error("No Lavalink password found in application.yml")
             sys.exit(1)
@@ -378,9 +377,21 @@ class SearchService(str, Enum):
     ytmsearch = "ytmsearch"
     scsearch = "scsearch"
     spsearch = "spsearch"
+    amsearch = "amsearch"
 
     def __str__(self):
         return self.value
+
+
+ServiceOptions = commands.option_enum(
+    {
+        "youtube": "youtube",
+        "soundcloud": "soundcloud",
+        "youtubemusic": "youtubemusic",
+        "spotify": "spotify",
+        "applemusic": "applemusic",
+    }
+)
 
 
 class BotInformationView(disnake.ui.View):
@@ -565,3 +576,4 @@ class ErrorView(disnake.ui.View):
         super().__init__()
 
         self.add_item(item=disnake.ui.Button(label="View Error", url=url, emoji="🤖"))
+
