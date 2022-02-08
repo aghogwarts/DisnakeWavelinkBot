@@ -58,7 +58,8 @@ Before starting to use this project, here are some things you should note:
 
 **5**.) This bot is currently only tested on Linux. So if you encounter any issues, please create an issue and report it.
 
-**6**.) `You will need to have a spotify account to use play songs with spotify. Head over to [Spotify](https://developer.spotify.com/) to create one.`
+**6**.) You will need to have a spotify account to use play songs with spotify. Head over to [Spotify](https://developer.spotify.com/) to create one.
+
 ## Installing Lavalink
 
 Visit [Lavalink dev](https://ci.fredboat.com/buildConfiguration/Lavalink_Build?branch=refs%2Fheads%2Fdev&mode=builds&guest=1) to download the development version.
@@ -72,17 +73,39 @@ You will need client ID and client secret and pass it into ``application.yml`` f
 
 ```yaml
 plugins:
-  spotify:
-    clientId: "Stuff here"
-    clientSecret: "Stuff here"
-    countryCode: "IN"
+  topissourcemanagers:
     providers:
       - "ytsearch:\"%ISRC%\""
       - "scsearch: %QUERY%"
       - "ytsearch: %QUERY%"
+
+    sources:
+      spotify: true
+      applemusic: true
+
+    spotify:
+      clientId: "Client ID of your spotify developer account"
+      clientSecret: "Client Secret of your spotify developer account"
+      countryCode: "IN"
+    applemusic:
+      countryCode: "IN"
+
+  dunctebot:
+    ttsLanguage: "en-AU" # language of the TTS engine
+    sources:
+      # true = source enabled, false = source disabled
+      getyarn: true # www.getyarn.io
+      clypit: true # www.clyp.it
+      tts: false # speak:Words to speak
+      pornhub: false # Uh, I don't know.
+      reddit: true # should be self-explanatory
+      ocremix: true # www.ocremix.org
+      tiktok: true # tiktok.com
 ```
 
-This is required for the bot to work. This bot uses [TopiSenpai's Spotify Plugin](https://github.com/Topis-Lavalink-Plugins/Spotify-Plugin).
+This is required for the bot to work. This bot uses [TopiSenpai's Spotify Plugin](https://github.com/Topis-Lavalink-Plugins/Topis-Source-Managers-Plugin) and
+[Duncte's Source manager plugin](https://github.com/DuncteBot/skybot-lavalink-plugin).
+
 
 ## YouTube Age Restrictions
 You can configure the bot to play YouTube videos that are age restricted, normally Lavalink is not able to play age restricted videos.
