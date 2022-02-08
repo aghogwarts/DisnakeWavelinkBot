@@ -9,8 +9,7 @@ readme = "README.md"
 
 
 [tool.poetry.dependencies]
-python = "^3.8"
-disnake = "^2.2.2"
+python = "^3.9"
 youtube_dl = "^2021.6.6"
 youtube-search-python = "^1.5.3"
 aiohttp = "3.7.4.post0"
@@ -27,6 +26,8 @@ requests = "^2.26.0"
 humanize = "^3.13.1"
 taskipy = "^1.9.0"
 pydantic = "^1.9.0"
+uvloop = "^0.16.0"
+disnake = {git = "https://github.com/DisnakeDev/disnake.git"}
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
