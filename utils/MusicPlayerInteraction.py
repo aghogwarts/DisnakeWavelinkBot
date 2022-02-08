@@ -8,15 +8,15 @@ import sys
 import traceback
 import typing
 
-from disnake.ui import Item
-from loguru import logger
 import async_timeout
 import disnake
 import humanize
+from disnake.ui import Item
+from loguru import logger
 
 import wavelink
 from core.MusicBot import Bot
-from utils.helpers import LyricsPaginator, ErrorView
+from utils.helpers import ErrorView, LyricsPaginator
 from utils.paginators import RichPager, ViewPages, WrapText
 
 
@@ -109,10 +109,25 @@ class Player(wavelink.Player):
         self.stop_votes = set()
         self.clear_votes = set()
 
-    async def play_next_song(self) -> None:
+    async def play_next_song(
+        self, position: dict = None, play_immediately: bool = False
+    ) -> None:
         """
         Method which plays the next song in the queue.
+
+        Parameters
+        ----------
+        position : dict
+            This kwards is used to set the position of audio from where the player should start playing.
+            E.g. position = {'start': '1:30', end: '2:30'}
+
+        play_immediately : bool
+            This kwarg is used to determine if the player should play immediately or not, if it is set to False,
+            if you try to play a track and the player is already playing a track, it will add that track to the queue,
+            if it is set to True, it will play the track immediately disregarding the queue.
         """
+        if position is None:
+            position = {"start": 0, "end": 0}
         if self.is_playing or self.waiting:
             return
 
@@ -130,7 +145,12 @@ class Player(wavelink.Player):
                 with async_timeout.timeout(120):
                     track = await self.queue.get()
                     self.now = track
-                await self.play(track)
+                await self.play(
+                    track,
+                    start=position["start"],
+                    end=position["end"],
+                    replace=play_immediately,
+                )
                 self.waiting = False
 
                 # Start our song menu
@@ -154,8 +174,11 @@ class Player(wavelink.Player):
 
         if not self.menu:
             self.menu = await self.channel.send(
+                content=None,
                 embed=await self.make_song_embed(),
-                view=MenuControllerView(self, self.context, bot=self.bot),
+                view=MenuControllerView(
+                    player=self, interaction=self.context, bot=self.bot
+                ),
             )
 
         elif not await self.is_menu_available():
@@ -167,6 +190,7 @@ class Player(wavelink.Player):
                 logger.warning(f"Failed to delete menu message: {e}")
 
             await self.channel.send(
+                content=None,
                 embed=await self.make_song_embed(),
                 view=MenuControllerView(self, self.context, bot=self.bot),
             )
@@ -316,7 +340,7 @@ class MenuControllerView(disnake.ui.View):
             self.player, bot=self.bot, interaction=self.interaction
         )
 
-    @disnake.ui.button(label="⏸️", style=disnake.ButtonStyle.primary)
+    @disnake.ui.button(label="⏸️", style=disnake.ButtonStyle.gray)
     async def pause_song(
         self, button: disnake.Button, interaction: disnake.ApplicationCommandInteraction
     ):
@@ -326,7 +350,7 @@ class MenuControllerView(disnake.ui.View):
 
         await self.controller.pause(interaction=interaction)
 
-    @disnake.ui.button(label="▶", style=disnake.ButtonStyle.primary)
+    @disnake.ui.button(label="▶", style=disnake.ButtonStyle.gray)
     async def resume_song(
         self, button: disnake.Button, interaction: disnake.ApplicationCommandInteraction
     ):
@@ -336,7 +360,7 @@ class MenuControllerView(disnake.ui.View):
 
         await self.controller.resume(interaction=interaction)
 
-    @disnake.ui.button(label="⏩", style=disnake.ButtonStyle.primary)
+    @disnake.ui.button(label="⏩", style=disnake.ButtonStyle.gray)
     async def skip_song(
         self, button: disnake.Button, interaction: disnake.ApplicationCommandInteraction
     ):
@@ -346,7 +370,7 @@ class MenuControllerView(disnake.ui.View):
 
         await self.controller.skip(interaction=interaction)
 
-    @disnake.ui.button(label="🔁", style=disnake.ButtonStyle.primary)
+    @disnake.ui.button(label="🔁", style=disnake.ButtonStyle.gray)
     async def loop_song(
         self, button: disnake.Button, interaction: disnake.ApplicationCommandInteraction
     ):
@@ -356,7 +380,7 @@ class MenuControllerView(disnake.ui.View):
 
         await self.controller.loop(interaction=interaction)
 
-    @disnake.ui.button(label="Show", style=disnake.ButtonStyle.green)
+    @disnake.ui.button(label="💺", style=disnake.ButtonStyle.gray)
     async def show_queue(
         self, button: disnake.Button, interaction: disnake.ApplicationCommandInteraction
     ):
@@ -365,7 +389,7 @@ class MenuControllerView(disnake.ui.View):
         """
         await self.controller.show_queue(interaction=interaction)
 
-    @disnake.ui.button(label="Lyrics", style=disnake.ButtonStyle.blurple)
+    @disnake.ui.button(label="📃", style=disnake.ButtonStyle.gray)
     async def show_lyrics(
         self, button: disnake.Button, interaction: disnake.ApplicationCommandInteraction
     ):
@@ -374,7 +398,7 @@ class MenuControllerView(disnake.ui.View):
         """
         await self.controller.show_lyrics(interaction=interaction)
 
-    @disnake.ui.button(label="Shuffle", style=disnake.ButtonStyle.primary)
+    @disnake.ui.button(label="🔀", style=disnake.ButtonStyle.gray)
     async def shuffle_queue(
         self, button: disnake.Button, interaction: disnake.ApplicationCommandInteraction
     ):
@@ -383,7 +407,7 @@ class MenuControllerView(disnake.ui.View):
         """
         await self.controller.shuffle(interaction=interaction)
 
-    @disnake.ui.button(label="Stop", style=disnake.ButtonStyle.red)
+    @disnake.ui.button(label="⏹", style=disnake.ButtonStyle.gray)
     async def stop_song(
         self, button: disnake.Button, interaction: disnake.ApplicationCommandInteraction
     ):
@@ -564,6 +588,23 @@ class MenuController:
             guild_id=interaction.guild.id, cls=Player, context=interaction
         )
 
+        if not player.is_connected:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
+
+        if not player.is_playing:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
         if not player.is_paused:
             return await interaction.response.send_message(
                 embed=disnake.Embed(
@@ -614,6 +655,23 @@ class MenuController:
             guild_id=interaction.guild.id, cls=Player, context=interaction
         )
 
+        if not player.is_connected:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
+
+        if not player.is_playing:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
         if self.is_author(interaction):
             await interaction.response.send_message(
                 embed=disnake.Embed(
@@ -658,6 +716,23 @@ class MenuController:
             guild_id=interaction.guild.id, cls=Player, context=interaction
         )
 
+        if not player.is_connected:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
+
+        if not player.is_playing:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
         name = player.now.title
 
         lyrics_query = (
@@ -697,6 +772,32 @@ class MenuController:
         player: Player = self.bot.wavelink.get_player(
             guild_id=interaction.guild.id, cls=Player, context=interaction
         )
+
+        if not player.is_connected:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
+
+        if not player.is_playing:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        if player.is_paused:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `The player is already paused.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
 
         if player.queue.qsize() < 3:
             return await interaction.response.send_message(
@@ -755,6 +856,32 @@ class MenuController:
             guild_id=interaction.guild.id, cls=Player, context=interaction
         )
 
+        if not player.is_connected:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
+
+        if not player.is_playing:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        if player.is_paused:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `The player is already paused.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
+
         if player.queue.qsize() == 0:
             return await interaction.response.send_message(
                 embed=disnake.Embed(
@@ -790,6 +917,31 @@ class MenuController:
         player: Player = self.bot.wavelink.get_player(
             guild_id=interaction.guild.id, cls=Player, context=interaction
         )
+        if not player.is_connected:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
+
+        if not player.is_playing:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        if player.is_paused:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `The player is already paused.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
 
         if not self.is_author(interaction):
             return await interaction.response.send_message(
@@ -834,6 +986,31 @@ class MenuController:
         player: Player = self.bot.wavelink.get_player(
             guild_id=interaction.guild.id, cls=Player, context=interaction
         )
+        if not player.is_connected:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `You must be connected to a voice channel.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
+
+        if not player.is_playing:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `There is no track playing right now.`",
+                    colour=disnake.Colour.random(),
+                )
+            )
+
+        if player.is_paused:
+            return await interaction.response.send_message(
+                embed=disnake.Embed(
+                    description=f"{self.bot.icons['redtick']} `The player is already paused.`",
+                    colour=disnake.Colour.random(),
+                ),
+                delete_after=10,
+            )
 
         if self.is_author(interaction):
             await interaction.response.send_message(
@@ -853,7 +1030,8 @@ class MenuController:
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['info']} Vote passed, stopping the player.",
                     color=disnake.Colour.random(),
-                ), delete_after=10,
+                ),
+                delete_after=10,
             )
             await player.teardown()
         else:
@@ -861,5 +1039,6 @@ class MenuController:
                 embed=disnake.Embed(
                     description=f"{self.bot.icons['info']} `{interaction.author}` has voted to stop the song.",
                     color=disnake.Colour.random(),
-                ), delete_after=10
+                ),
+                delete_after=10,
             )
