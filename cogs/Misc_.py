@@ -324,7 +324,7 @@ class Misc(commands.Cog):
     async def show_help(self, interaction: disnake.ApplicationCommandInteraction):
         pass
 
-    @commands.slash_command(name="show", description="Shows help about slash commands.")
+    @show_help.sub_command(name="show", description="Shows help about slash commands.")
     async def show(
         self,
         interaction: disnake.ApplicationCommandInteraction,
