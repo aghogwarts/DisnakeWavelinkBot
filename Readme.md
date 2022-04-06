@@ -1,6 +1,6 @@
 # Welcome
 
-An example music bot that is written in Disnake [Maintained discord.py Fork] 
+An example music bot that is written by @KortaPo in Disnake [Maintained discord.py Fork] 
 
 ## Disnake 
 Disnake is a maintained and an updated fork of `discord.py`. It supports and covers everything of Discord's API.
